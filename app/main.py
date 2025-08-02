@@ -177,6 +177,8 @@ To exit reality, press ALT+F4. Good luck.
 </span><span id="ping_ct_line"><span class="label">Ping 浙江电信 :</span> <span class="value" id="ping_ct"></span> <canvas class="ping-chart" id="ping_ct_chart" width="100" height="40"></canvas>
 </span>
 
+<span id="ping_legend_line"><span class="label">Ping 图例     :</span> <span class="value"><span style="color:#00ff00">低 (&lt;80ms)</span> <span style="color:#ffff00">中 (&lt;160ms)</span> <span style="color:#ff0000">高 (&ge;160ms)</span></span></span>
+
 <span id="os_line"><span class="label">OS              :</span> <span class="value" id="os"></span>
 </span><span id="kernel_line"><span class="label">Kernel          :</span> <span class="value" id="kernel"></span>
 </span><span id="arch_line"><span class="label">Architecture    :</span> <span class="value" id="arch"></span>
@@ -260,33 +262,32 @@ To exit reality, press ALT+F4. Good luck.
         return '#ff0000';
     }
 
-    function setPing(id, ms, max) {
+    function setPing(id, ms, maxPing) {
         const line = document.getElementById(id + '_line');
         const el = document.getElementById(id);
         const canvas = document.getElementById(id + '_chart');
         if (line) line.style.display = '';
-        const display = ms === null || ms === undefined ? max : ms;
+        const display = ms === null || ms === undefined ? maxPing : ms;
         const val = ms === null || ms === undefined ? 'N/A' : `${ms.toFixed(1)}ms`;
-        const barText = pingBar(display, max);
+        const barText = pingBar(display, maxPing);
         el.textContent = `${val.padEnd(8)} ${barText}`;
         el.style.color = ms === null || ms === undefined ? '#ff0000' : pingColor(ms);
         if (canvas) {
             pingHistory[id].push(ms);
             if (pingHistory[id].length > 50) pingHistory[id].shift();
-            drawChart(canvas, pingHistory[id]);
+            drawChart(canvas, pingHistory[id], maxPing);
         }
     }
 
-    function drawChart(canvas, data) {
+    function drawChart(canvas, data, maxPing) {
         const ctx = canvas.getContext('2d');
         const width = canvas.width;
         const height = canvas.height;
         ctx.clearRect(0, 0, width, height);
-        const max = Math.max(...data.map(v => (v === null || v === undefined ? 0 : v)), 1);
         const barWidth = Math.max(1, Math.floor(width / 50));
         data.forEach((v, i) => {
-            const val = v === null || v === undefined ? max : v;
-            const h = Math.min(val, max) / max * height;
+            const val = v === null || v === undefined ? maxPing : v;
+            const h = Math.min(val, maxPing) / maxPing * height;
             ctx.fillStyle = v === null || v === undefined ? '#ff0000' : pingColor(v);
             for (let y = height; y > height - h; y -= 4) {
                 ctx.fillRect(i * barWidth, y - 3, barWidth - 1, 3);
