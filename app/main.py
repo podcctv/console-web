@@ -1,10 +1,33 @@
 from flask import Flask, render_template_string, jsonify
-import psutil, socket, os, urllib.request, platform
+import psutil, socket, os, urllib.request, platform, subprocess
 from datetime import datetime
 
 app = Flask(__name__)
 start_time = datetime.now()
 host_boot_time = datetime.fromtimestamp(psutil.boot_time())
+
+PING_TARGETS = {
+    "ping_cu": "zj-cu-v4.ip.zstaticcdn.com",
+    "ping_cm": "zj-cm-v4.ip.zstaticcdn.com",
+    "ping_ct": "zj-ct-v4.ip.zstaticcdn.com",
+}
+
+
+def ping(host: str):
+    host = host.split(":")[0]
+    try:
+        out = subprocess.check_output(
+            ["ping", "-c", "1", "-W", "1", host],
+            stderr=subprocess.STDOUT,
+            universal_newlines=True,
+            timeout=1,
+        )
+        for line in out.splitlines():
+            if "time=" in line:
+                return float(line.split("time=")[1].split(" ")[0])
+    except Exception:
+        return None
+    return None
 
 
 def humanize(seconds: int) -> str:
@@ -104,12 +127,18 @@ To exit reality, press ALT+F4. Good luck.
 <span class="label">Load Average    :</span> <span class="value" id="load"></span>
 <span class="label">IP Address      :</span> <span class="value" id="ip"></span>
 
-<span class="label">OS              :</span> <span class="value" id="os"></span>
-<span class="label">Kernel          :</span> <span class="value" id="kernel"></span>
-<span class="label">Architecture    :</span> <span class="value" id="arch"></span>
-<span class="label">CPU Model       :</span> <span class="value" id="cpu_model"></span>
-<span class="label">Total Memory    :</span> <span class="value" id="mem_total"></span>
-<span class="label">Total Disk      :</span> <span class="value" id="disk_total"></span>
+<span id="ping_cu_line"><span class="label">Ping 浙江联通 :</span> <span class="value" id="ping_cu"></span>
+</span><span id="ping_cm_line"><span class="label">Ping 浙江移动 :</span> <span class="value" id="ping_cm"></span>
+</span><span id="ping_ct_line"><span class="label">Ping 浙江电信 :</span> <span class="value" id="ping_ct"></span>
+</span>
+
+<span id="os_line"><span class="label">OS              :</span> <span class="value" id="os"></span>
+</span><span id="kernel_line"><span class="label">Kernel          :</span> <span class="value" id="kernel"></span>
+</span><span id="arch_line"><span class="label">Architecture    :</span> <span class="value" id="arch"></span>
+</span><span id="cpu_model_line"><span class="label">CPU Model       :</span> <span class="value" id="cpu_model"></span>
+</span><span id="mem_total_line"><span class="label">Total Memory    :</span> <span class="value" id="mem_total"></span>
+</span><span id="disk_total_line"><span class="label">Total Disk      :</span> <span class="value" id="disk_total"></span>
+</span>
 
 <span class="terminal-line">root@{{ hostname }}:~/console-web-v1.6# <span class="cursor"></span></span>
         </pre>
@@ -135,6 +164,9 @@ To exit reality, press ALT+F4. Good luck.
         document.getElementById('cores').textContent = data.cores;
         document.getElementById('load').textContent = data.load;
         document.getElementById('ip').textContent = data.ip;
+        setPing('ping_cu', data.ping_cu);
+        setPing('ping_cm', data.ping_cm);
+        setPing('ping_ct', data.ping_ct);
     }
     fetchStats();
     setInterval(fetchStats, 1000);
@@ -142,12 +174,12 @@ To exit reality, press ALT+F4. Good luck.
     async function fetchHost() {
         const res = await fetch('/host');
         const data = await res.json();
-        document.getElementById('os').textContent = data.system;
-        document.getElementById('kernel').textContent = data.release;
-        document.getElementById('arch').textContent = data.machine;
-        document.getElementById('cpu_model').textContent = data.processor;
-        document.getElementById('mem_total').textContent = data.total_memory;
-        document.getElementById('disk_total').textContent = data.total_disk;
+        setOrHide('os', data.system);
+        setOrHide('kernel', data.release);
+        setOrHide('arch', data.machine);
+        setOrHide('cpu_model', data.processor);
+        setOrHide('mem_total', data.total_memory);
+        setOrHide('disk_total', data.total_disk);
     }
     fetchHost();
 
@@ -160,6 +192,39 @@ To exit reality, press ALT+F4. Good luck.
         if (pct < 40) return '#00ff00';
         if (pct < 75) return '#ffff00';
         return '#ff0000';
+    }
+
+    function pingBar(ms) {
+        const max = 200;
+        const pct = Math.min(ms, max) / max * 100;
+        return bar(pct);
+    }
+
+    function pingColor(ms) {
+        if (ms < 80) return '#00ff00';
+        if (ms < 160) return '#ffff00';
+        return '#ff0000';
+    }
+
+    function setPing(id, ms) {
+        const line = document.getElementById(id + '_line');
+        const el = document.getElementById(id);
+        if (ms === null || ms === undefined) {
+            if (line) line.style.display = 'none';
+            return;
+        }
+        el.textContent = `${ms.toFixed(1)}ms ${pingBar(ms)}`;
+        el.style.color = pingColor(ms);
+    }
+
+    function setOrHide(id, value) {
+        const line = document.getElementById(id + '_line');
+        const el = document.getElementById(id);
+        if (value === null || value === undefined || value === '') {
+            if (line) line.style.display = 'none';
+        } else {
+            el.textContent = value;
+        }
     }
     </script>
 </body>
@@ -194,6 +259,7 @@ def stats():
     cores = psutil.cpu_count()
     load1, load5, load15 = os.getloadavg()
     load = f"{load1:.2f}, {load5:.2f}, {load15:.2f}"
+    pings = {k: ping(v) for k, v in PING_TARGETS.items()}
     return jsonify(
         cpu=cpu,
         memory=mem,
@@ -204,6 +270,7 @@ def stats():
         ip=ip_display,
         cores=cores,
         load=load,
+        **pings,
     )
 
 
