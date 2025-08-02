@@ -61,21 +61,29 @@ TEMPLATE = r"""
             <div class="window-btn green"></div>
         </div>
         <pre class="banner">
-    _    _     ___ ____ _____ 
-   / \  | |   |_ _/ ___| ____|
-  / _ \ | |    | | |   |  _|  
- / ___ \| |___ | | |___| |___ 
-/_/   \_\_____|___\____|_____|
-                              
- _   _ _____ _______        _____  ____  _  ______    _   _____ ____  
-| \ | | ____|_   _\ \      / / _ \|  _ \| |/ / ___|  | | |_   _|  _ \ 
-|  \| |  _|   | |  \ \ /\ / / | | | |_) | ' /\___ \  | |   | | | | | |
-| |\  | |___  | |   \ V  V /| |_| |  _ <| . \ ___) | | |___| | | |_| |
-|_| \_|_____| |_|    \_/\_/  \___/|_| \_\_|\_\____/  |_____\_| |____/ 
+   ___  ____  _____ ____  _      ____  ____   ___  ____  _____ ____  
+  / _ \|  _ \| ____|  _ \| |    / ___||  _ \ / _ \|  _ \| ____|  _ \ 
+ | | | | | | |  _| | |_) | |    \___ \| |_) | | | | | | |  _| | |_) |
+ | |_| | |_| | |___|  __/| |___  ___) |  _ <| |_| | |_| | |___|  _ < 
+  \___/|____/|_____|_|   |_____|____/|_| \_\\___/|____/|_____|_| \_\
+    
 
-Thanks for using Alice Network!
-Our website is: https://app.alice.ws
-If you encounter any issues, please contact us at: https://app.alice.ws/ticket
+Welcome to console-web v1.5-enhanced 😎
+Running on coffee ☕, duct tape 🛠️, and blind optimism 🤖.
+    
+
+Tips:
+- Don't press F12, we *see* you.
+- If something breaks, blame the intern.
+- Made with ❤️ by the ghost in the machine.
+    
+
+✨ Initiating sarcasm protocol...
+🤖 AI self-esteem module: [ERROR: Not Found]
+📟 System Check: 404 - Humility Not Installed
+    
+
+To exit reality, press ALT+F4. Good luck.
         </pre>
         <pre class="stats">
 <span class="label">Hostname        :</span> <span class="value" id="hostname"></span>
