@@ -1,6 +1,7 @@
 from flask import Flask, render_template_string, jsonify, Response, stream_with_context, request
 import psutil, socket, os, urllib.request, urllib.parse, platform, json, subprocess, shlex
 from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor
 
 app = Flask(__name__)
 start_time = datetime.now()
@@ -14,27 +15,29 @@ except Exception:
 _last_time = datetime.now()
 
 
-def get_isp_name():
+def get_isp_info():
     try:
         with urllib.request.urlopen(
             "http://ip-api.com/json/?fields=isp", timeout=2
         ) as resp:
             name = json.loads(resp.read().decode()).get("isp")
             if name:
-                # Return a short form like "Hostdzire" instead of the full company name
-                return name.split()[0]
-            return None
+                short = name.split()[0]
+                return name, short
+            return None, None
     except Exception:
-        return None
+        return None, None
 
 
-ISP_NAME = get_isp_name()
+ISP_FULL_NAME, ISP_SHORT_NAME = get_isp_info()
 
 PING_TARGETS = {
     "ping_cu": "zj-cu-v4.ip.zstaticcdn.com:80",
     "ping_cm": "zj-cm-v4.ip.zstaticcdn.com:80",
     "ping_ct": "zj-ct-v4.ip.zstaticcdn.com:80",
 }
+
+CLIENT_ISP_CACHE = {}
 
 COMMANDS = {
     "ping": lambda target, extra: ["ping", *extra, target]
@@ -145,6 +148,26 @@ def icmp_ping(ip: str):
     except Exception:
         pass
     return None
+
+
+@app.route("/pings")
+def pings():
+    client_ip = request.headers.get("X-Forwarded-For", request.remote_addr)
+    if client_ip and "," in client_ip:
+        client_ip = client_ip.split(",")[0].strip()
+
+    with ThreadPoolExecutor(max_workers=len(PING_TARGETS) + 1) as executor:
+        futures = {
+            executor.submit(tcp_ping, host): key
+            for key, host in PING_TARGETS.items()
+        }
+        if client_ip:
+            futures[executor.submit(icmp_ping, client_ip)] = "client_ping"
+        results = {key: future.result() for future, key in futures.items()}
+
+    if "client_ping" not in results:
+        results["client_ping"] = None
+    return jsonify(results)
 
 
 def humanize(seconds: int) -> str:
@@ -312,7 +335,7 @@ To exit reality, press ALT+F4. Good luck.
 </span>
 
 <span id="cmd_output"></span>
-<span class="terminal-line">root@Hostdzire:~/console-web-v1.6# <input id="cmd_input" class="terminal-input" autofocus placeholder="type 'help'" /></span>
+<span class="terminal-line">root@{{ short_isp }}:~/console-web-v1.6# <input id="cmd_input" class="terminal-input" autofocus placeholder="type 'help'" /></span>
         </pre>
     </div>
     <script>
@@ -340,7 +363,17 @@ To exit reality, press ALT+F4. Good luck.
         setStat('cores', data.cores);
         setStat('load', data.load);
         setStat('ip', data.ip);
-        setStat('client_ip', data.client_ip);
+        const cip = data.client_ip ? `${data.client_ip} [${data.client_isp || '未知'}]` : null;
+        setStat('client_ip', cip);
+        setStat('disk_io', data.disk_io);
+        setStat('net_io', data.net_io);
+    }
+    fetchStats();
+    setInterval(fetchStats, 1000);
+
+    async function fetchPings() {
+        const res = await fetch('/pings');
+        const data = await res.json();
         const cp = data.client_ping === null ? 'N/A' : data.client_ping;
         setStat(
             'client_ping',
@@ -348,16 +381,14 @@ To exit reality, press ALT+F4. Good luck.
             v => (typeof v === 'number' ? `${v.toFixed(1)}ms` : v),
             v => (typeof v === 'number' ? pingColor(v) : '#ff0000')
         );
-        setStat('disk_io', data.disk_io);
-        setStat('net_io', data.net_io);
         const pings = [data.ping_cu, data.ping_cm, data.ping_ct];
         const maxPing = Math.max(...pings.map(v => (v === null || v === undefined ? 0 : v))) || 1;
         setPing('ping_cu', data.ping_cu, maxPing);
         setPing('ping_cm', data.ping_cm, maxPing);
         setPing('ping_ct', data.ping_ct, maxPing);
     }
-    fetchStats();
-    setInterval(fetchStats, 1000);
+    fetchPings();
+    setInterval(fetchPings, 1000);
 
     async function fetchHost() {
         const res = await fetch('/host');
@@ -372,7 +403,7 @@ To exit reality, press ALT+F4. Good luck.
     fetchHost();
 
     const pingHistory = { ping_cu: [], ping_cm: [], ping_ct: [] };
-    const PROMPT = 'root@Hostdzire:~/console-web-v1.6#';
+    const PROMPT = 'root@{{ short_isp }}:~/console-web-v1.6#';
 
     function bar(pct, width = 20) {
         const filled = pct > 0 ? Math.max(1, Math.round(width * pct / 100)) : 0;
@@ -511,8 +542,9 @@ To exit reality, press ALT+F4. Good luck.
 
 @app.route("/")
 def index():
-    hostname = ISP_NAME or socket.gethostname()
-    return render_template_string(TEMPLATE, hostname=hostname)
+    hostname = ISP_FULL_NAME or socket.gethostname()
+    short_isp = ISP_SHORT_NAME or socket.gethostname()
+    return render_template_string(TEMPLATE, hostname=hostname, short_isp=short_isp)
 
 
 @app.route("/stats")
@@ -531,7 +563,7 @@ def stats():
         disk = None
     container_uptime = int((datetime.now() - start_time).total_seconds())
     host_uptime = int((datetime.now() - host_boot_time).total_seconds())
-    hostname = ISP_NAME or socket.gethostname()
+    hostname = ISP_FULL_NAME or socket.gethostname()
     try:
         ip = socket.gethostbyname(socket.gethostname())
     except Exception:
@@ -552,7 +584,9 @@ def stats():
     client_ip = request.headers.get("X-Forwarded-For", request.remote_addr)
     if client_ip and "," in client_ip:
         client_ip = client_ip.split(",")[0].strip()
-    client_ping = icmp_ping(client_ip) if client_ip else None
+    if client_ip not in CLIENT_ISP_CACHE:
+        CLIENT_ISP_CACHE[client_ip] = query_isp(client_ip) if client_ip else None
+    client_isp = CLIENT_ISP_CACHE.get(client_ip)
     try:
         cores = psutil.cpu_count()
     except Exception:
@@ -562,7 +596,6 @@ def stats():
         load = f"{load1:.2f}, {load5:.2f}, {load15:.2f}"
     except Exception:
         load = None
-    pings = {k: tcp_ping(v) for k, v in PING_TARGETS.items()}
     try:
         dio = psutil.disk_io_counters()
         disk_io = f"{humanize_bytes(dio.read_bytes)}/{humanize_bytes(dio.write_bytes)}"
@@ -595,12 +628,11 @@ def stats():
         hostname=hostname,
         ip=ip_display,
         client_ip=client_ip,
-        client_ping=client_ping,
         cores=cores,
         load=load,
         disk_io=disk_io,
         net_io=net_io,
-        **pings,
+        client_isp=client_isp,
     )
 
 
