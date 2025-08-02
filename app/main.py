@@ -68,7 +68,7 @@ TEMPLATE = r"""
   \___/|____/|_____|_|   |_____|____/|_| \_\\___/|____/|_____|_| \_\
     
 
-Welcome to console-web v1.5-enhanced 😎
+Welcome to console-web 😎
 Running on coffee ☕, duct tape 🛠️, and blind optimism 🤖.
     
 
