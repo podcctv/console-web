@@ -15,7 +15,9 @@ console-web 是一个使用 [Flask](https://flask.palletsprojects.com/) 和 [psu
 ## 本地运行
 ```bash
 pip install flask psutil
-# 安装官方 Speedtest CLI：https://www.speedtest.net/apps/cli
+
+# 安装官方 Speedtest CLI（下载并解压官方提供的压缩包）：https://www.speedtest.net/apps/cli
+
 python app/main.py
 ```
 应用默认监听在 `http://127.0.0.1:8080`。页面中提供 Ping、MTR、SpeedTest 按钮，可实时查看执行结果。
@@ -33,7 +35,9 @@ chmod +x deploy.sh
 ```
 脚本会自动克隆仓库、构建镜像并在 8180 端口运行容器。运行时如未输入指令，将在 3 秒倒计时后默认重新部署，部署完成后会自动显示可访问的服务器 IP。
 
-镜像内已预装 `iputils-ping`、`mtr` 和 官方 `speedtest` CLI，因此 Web 终端提供的网络诊断命令可开箱即用。
+
+镜像内已预装 `iputils-ping`、`mtr` 和 官方 `speedtest` CLI（通过官方压缩包安装），因此 Web 终端提供的网络诊断命令可开箱即用。
+
 
 ## 目录结构
 ```
