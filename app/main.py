@@ -1,5 +1,5 @@
 from flask import Flask, render_template_string, jsonify
-import psutil, socket, os, urllib.request, platform, subprocess
+import psutil, socket, os, urllib.request, platform
 from datetime import datetime
 
 app = Flask(__name__)
@@ -7,27 +7,25 @@ start_time = datetime.now()
 host_boot_time = datetime.fromtimestamp(psutil.boot_time())
 
 PING_TARGETS = {
-    "ping_cu": "zj-cu-v4.ip.zstaticcdn.com",
-    "ping_cm": "zj-cm-v4.ip.zstaticcdn.com",
-    "ping_ct": "zj-ct-v4.ip.zstaticcdn.com",
+    "ping_cu": "zj-cu-v4.ip.zstaticcdn.com:80",
+    "ping_cm": "zj-cm-v4.ip.zstaticcdn.com:80",
+    "ping_ct": "zj-ct-v4.ip.zstaticcdn.com:80",
 }
 
 
-def ping(host: str):
-    host = host.split(":")[0]
+def tcp_ping(host: str):
     try:
-        out = subprocess.check_output(
-            ["ping", "-c", "1", "-W", "1", host],
-            stderr=subprocess.STDOUT,
-            universal_newlines=True,
-            timeout=1,
-        )
-        for line in out.splitlines():
-            if "time=" in line:
-                return float(line.split("time=")[1].split(" ")[0])
+        if ":" in host:
+            host, port = host.rsplit(":", 1)
+            port = int(port)
+        else:
+            port = 80
+        start = datetime.now()
+        with socket.create_connection((host, port), timeout=1):
+            end = datetime.now()
+        return (end - start).total_seconds() * 1000
     except Exception:
         return None
-    return None
 
 
 def humanize(seconds: int) -> str:
@@ -37,7 +35,20 @@ def humanize(seconds: int) -> str:
     days, seconds = divmod(seconds, 86400)
     hours, seconds = divmod(seconds, 3600)
     minutes, seconds = divmod(seconds, 60)
-    return f"{years}年 {months}月 {days}天 {hours}小时 {minutes}分 {seconds}秒"
+    parts = []
+    if years:
+        parts.append(f"{years}年")
+    if months:
+        parts.append(f"{months}月")
+    if days:
+        parts.append(f"{days}天")
+    if hours:
+        parts.append(f"{hours}小时")
+    if minutes:
+        parts.append(f"{minutes}分")
+    if seconds or not parts:
+        parts.append(f"{seconds}秒")
+    return " ".join(parts)
 
 
 def humanize_bytes(size: int) -> str:
@@ -76,6 +87,7 @@ TEMPLATE = r"""
         .stats { margin-top: 20px; line-height: 1.4; }
         .label { color: #00cc00; }
         .value { color: #fff; }
+        .ping-chart { margin-left: 8px; background: #000; }
         .terminal-line { margin-top: 20px; }
         .cursor {
             display: inline-block; width: 10px; height: 1em;
@@ -127,9 +139,9 @@ To exit reality, press ALT+F4. Good luck.
 <span class="label">Load Average    :</span> <span class="value" id="load"></span>
 <span class="label">IP Address      :</span> <span class="value" id="ip"></span>
 
-<span id="ping_cu_line"><span class="label">Ping 浙江联通 :</span> <span class="value" id="ping_cu"></span>
-</span><span id="ping_cm_line"><span class="label">Ping 浙江移动 :</span> <span class="value" id="ping_cm"></span>
-</span><span id="ping_ct_line"><span class="label">Ping 浙江电信 :</span> <span class="value" id="ping_ct"></span>
+<span id="ping_cu_line"><span class="label">Ping 浙江联通 :</span> <span class="value" id="ping_cu"></span> <canvas class="ping-chart" id="ping_cu_chart" width="100" height="40"></canvas>
+</span><span id="ping_cm_line"><span class="label">Ping 浙江移动 :</span> <span class="value" id="ping_cm"></span> <canvas class="ping-chart" id="ping_cm_chart" width="100" height="40"></canvas>
+</span><span id="ping_ct_line"><span class="label">Ping 浙江电信 :</span> <span class="value" id="ping_ct"></span> <canvas class="ping-chart" id="ping_ct_chart" width="100" height="40"></canvas>
 </span>
 
 <span id="os_line"><span class="label">OS              :</span> <span class="value" id="os"></span>
@@ -183,6 +195,8 @@ To exit reality, press ALT+F4. Good luck.
     }
     fetchHost();
 
+    const pingHistory = { ping_cu: [], ping_cm: [], ping_ct: [] };
+
     function bar(pct, width = 20) {
         const filled = pct > 0 ? Math.max(1, Math.round(width * pct / 100)) : 0;
         return '[' + '#'.repeat(filled) + '.'.repeat(width - filled) + ']';
@@ -209,12 +223,34 @@ To exit reality, press ALT+F4. Good luck.
     function setPing(id, ms) {
         const line = document.getElementById(id + '_line');
         const el = document.getElementById(id);
+        const canvas = document.getElementById(id + '_chart');
         if (ms === null || ms === undefined) {
             if (line) line.style.display = 'none';
             return;
         }
         el.textContent = `${ms.toFixed(1)}ms ${pingBar(ms)}`;
         el.style.color = pingColor(ms);
+        if (canvas) {
+            pingHistory[id].push(ms);
+            if (pingHistory[id].length > 50) pingHistory[id].shift();
+            drawChart(canvas, pingHistory[id]);
+        }
+    }
+
+    function drawChart(canvas, data) {
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+        ctx.clearRect(0, 0, width, height);
+        const max = 200;
+        const barWidth = Math.max(1, Math.floor(width / 50));
+        data.forEach((v, i) => {
+            const h = Math.min(v, max) / max * height;
+            ctx.fillStyle = pingColor(v);
+            for (let y = height; y > height - h; y -= 4) {
+                ctx.fillRect(i * barWidth, y - 3, barWidth - 1, 3);
+            }
+        });
     }
 
     function setOrHide(id, value) {
@@ -259,7 +295,7 @@ def stats():
     cores = psutil.cpu_count()
     load1, load5, load15 = os.getloadavg()
     load = f"{load1:.2f}, {load5:.2f}, {load15:.2f}"
-    pings = {k: ping(v) for k, v in PING_TARGETS.items()}
+    pings = {k: tcp_ping(v) for k, v in PING_TARGETS.items()}
     return jsonify(
         cpu=cpu,
         memory=mem,
