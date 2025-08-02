@@ -30,7 +30,8 @@ deploy() {
     -e THEME=matrix \
     "$IMAGE_NAME"
 
-  echo "✅ 部署完成！请访问：http://<服务器IP>:${PORT}"
+  SERVER_IP=$(hostname -I | awk '{print $1}')
+  echo "✅ 部署完成！请访问：http://${SERVER_IP}:${PORT}"
 }
 
 delete() {
@@ -44,7 +45,13 @@ if [ -z "$ACTION" ]; then
   echo "请选择操作："
   echo "1) 重新部署系统"
   echo "2) 删除已运行的 Docker"
-  read -p "输入选项编号: " choice
+  echo -n "输入选项编号 (3 秒后默认选择 1): "
+  for i in 3 2 1; do
+    read -t 1 -n 1 choice && break
+    echo -n "$i "
+  done
+  echo
+  choice=${choice:-1}
   case "$choice" in
     1) ACTION=deploy ;;
     2) ACTION=delete ;;
