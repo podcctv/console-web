@@ -232,8 +232,9 @@ To exit reality, press ALT+F4. Good luck.
 </span><span id="disk_total_line"><span class="label">Total Disk      :</span> <span class="value" id="disk_total"></span>
 </span>
 
+<span id="cmd_hint_line"><span class="label">Hint            :</span> <span class="value">Type 'help' for available commands</span></span>
 <span id="cmd_output"></span>
-<span class="terminal-line">root@Hostdzire:~/console-web-v1.6# <input id="cmd_input" class="terminal-input" autofocus /></span>
+<span class="terminal-line">root@Hostdzire:~/console-web-v1.6# <input id="cmd_input" class="terminal-input" autofocus placeholder="type 'help'" /></span>
         </pre>
     </div>
     <script>
@@ -419,6 +420,16 @@ To exit reality, press ALT+F4. Good luck.
                     break;
                 case 'cat':
                     showCat();
+                    break;
+                case 'help':
+                    outputEl.textContent += `${PROMPT} ${text}\n` +
+                        'Available commands:\n' +
+                        '  ping <host>\n' +
+                        '  mtr <host>\n' +
+                        '  speedtest\n' +
+                        '  quote\n' +
+                        '  cat\n' +
+                        '  help\n';
                     break;
                 default:
                     outputEl.textContent += `${PROMPT} ${text}\ncommand not found\n`;
