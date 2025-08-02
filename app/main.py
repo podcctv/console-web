@@ -382,16 +382,17 @@ To exit reality, press ALT+F4. Good luck.
     }
 
     let currentSource;
-    function runCommand(cmd, target = '') {
+    function runCommand(cmd, target = '', args = '') {
         if (currentSource) currentSource.close();
         const output = document.getElementById('cmd_output');
-        const commandText = target ? `${cmd} ${target}` : cmd;
+        const commandText = [cmd, target, args].filter(Boolean).join(' ');
         output.insertAdjacentText('beforeend', `${PROMPT} ${commandText}\n`);
         output.scrollTop = output.scrollHeight;
         let url = `/run/${cmd}`;
-        if (cmd !== 'speedtest' && target) {
-            url += `?target=${encodeURIComponent(target)}`;
-        }
+        const params = [];
+        if (target) params.push(`target=${encodeURIComponent(target)}`);
+        if (args) params.push(`args=${encodeURIComponent(args)}`);
+        if (params.length) url += `?${params.join('&')}`;
         currentSource = new EventSource(url);
         currentSource.onmessage = e => {
             const data = e.data;
@@ -427,14 +428,14 @@ To exit reality, press ALT+F4. Good luck.
                     }
                     break;
                 case 'speedtest':
-                    runCommand('speedtest');
+                    runCommand('speedtest', '', args.join(' '));
                     break;
                 case 'help':
                     outputEl.insertAdjacentText('beforeend', `${PROMPT} ${text}\n` +
                         'Available commands:\n' +
                         '  ping <host>\n' +
                         '  mtr <host>\n' +
-                        '  speedtest\n' +
+                        '  speedtest [args]\n' +
                         '  help\n');
                     break;
                 default:
