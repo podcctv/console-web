@@ -5,7 +5,7 @@ set -e
 ACTION=${1:-deploy}
 
 # 自动识别版本号和压缩包
-ARCHIVE_NAME=$(find . -maxdepth 1 -name 'console-web-*-enhanced.tar.gz' | head -n 1)
+ARCHIVE_NAME=$(find . -maxdepth 1 -name 'console-web*.tar.gz' | head -n 1)
 ARCHIVE_NAME=${ARCHIVE_NAME#./}
 
 if [ -n "$ARCHIVE_NAME" ]; then
