@@ -253,11 +253,7 @@ To exit reality, press ALT+F4. Good luck.
             if (line) line.style.display = '';
             el.textContent = 'N/A';
             el.style.color = '#ff0000';
-            if (canvas) {
-                pingHistory[id] = [];
-                const ctx = canvas.getContext('2d');
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-            }
+            // Keep existing chart history when ping result is unavailable
             return;
         }
         el.textContent = `${ms.toFixed(1)}ms ${pingBar(ms)}`;
