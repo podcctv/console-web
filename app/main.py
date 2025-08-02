@@ -127,6 +127,26 @@ def tcp_ping(host: str):
         return None
 
 
+def icmp_ping(ip: str):
+    try:
+        proc = subprocess.run(
+            ["ping", "-c", "1", "-W", "1", ip],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        if proc.returncode == 0:
+            for line in proc.stdout.splitlines():
+                if "time=" in line:
+                    try:
+                        return float(line.split("time=")[1].split(" ")[0])
+                    except Exception:
+                        pass
+    except Exception:
+        pass
+    return None
+
+
 def humanize(seconds: int) -> str:
     seconds = int(seconds)
     years, seconds = divmod(seconds, 31536000)
@@ -271,6 +291,8 @@ To exit reality, press ALT+F4. Good luck.
 <span id="cores_line"><span class="label">CPU Cores       :</span> <span class="value" id="cores"></span></span>
 <span id="load_line"><span class="label">Load Average    :</span> <span class="value" id="load"></span></span>
 <span id="ip_line"><span class="label">IP Address      :</span> <span class="value" id="ip"></span></span>
+<span id="client_ip_line"><span class="label">Client IP       :</span> <span class="value" id="client_ip"></span></span>
+<span id="client_ping_line"><span class="label">Ping Client     :</span> <span class="value" id="client_ping"></span></span>
 <span id="disk_io_line"><span class="label">Disk IO (R/W)  :</span> <span class="value" id="disk_io"></span></span>
 <span id="net_io_line"><span class="label">Net IO (Up/Down):</span> <span class="value" id="net_io"></span></span>
 
@@ -318,6 +340,14 @@ To exit reality, press ALT+F4. Good luck.
         setStat('cores', data.cores);
         setStat('load', data.load);
         setStat('ip', data.ip);
+        setStat('client_ip', data.client_ip);
+        const cp = data.client_ping === null ? 'N/A' : data.client_ping;
+        setStat(
+            'client_ping',
+            cp,
+            v => (typeof v === 'number' ? `${v.toFixed(1)}ms` : v),
+            v => (typeof v === 'number' ? pingColor(v) : '#ff0000')
+        );
         setStat('disk_io', data.disk_io);
         setStat('net_io', data.net_io);
         const pings = [data.ping_cu, data.ping_cm, data.ping_ct];
@@ -519,6 +549,10 @@ def stats():
         ip_display = None
     else:
         ip_display = f"{ip} (公网 {public_ip})"
+    client_ip = request.headers.get("X-Forwarded-For", request.remote_addr)
+    if client_ip and "," in client_ip:
+        client_ip = client_ip.split(",")[0].strip()
+    client_ping = icmp_ping(client_ip) if client_ip else None
     try:
         cores = psutil.cpu_count()
     except Exception:
@@ -560,6 +594,8 @@ def stats():
         host_uptime=humanize(host_uptime),
         hostname=hostname,
         ip=ip_display,
+        client_ip=client_ip,
+        client_ping=client_ping,
         cores=cores,
         load=load,
         disk_io=disk_io,
