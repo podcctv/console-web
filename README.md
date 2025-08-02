@@ -10,13 +10,15 @@ console-web 是一个使用 [Flask](https://flask.palletsprojects.com/) 和 [psu
 - 容器与宿主机运行时间
 - 本地/公网 IP、磁盘 IO、网络 IO 以及实时上传/下载速度
 - 对多家运营商的 TCP Ping 监测
+- 内置网络工具：Ping、MTR、SpeedTest，支持实时回显
+- 额外的有趣功能，如随机一言和 ASCII 猫咪
 
 ## 本地运行
 ```bash
-pip install flask psutil
+pip install flask psutil speedtest-cli
 python app/main.py
 ```
-应用默认监听在 `http://127.0.0.1:8080`。
+应用默认监听在 `http://127.0.0.1:8080`。页面中提供 Ping、MTR、SpeedTest 按钮，可实时查看执行结果；还可以点击 “一言” 或 “猫” 获取随机语录或 ASCII 猫咪。
 
 ## Docker 部署
 可以直接构建镜像：

@@ -1,5 +1,5 @@
-from flask import Flask, render_template_string, jsonify
-import psutil, socket, os, urllib.request, platform, json
+from flask import Flask, render_template_string, jsonify, Response, stream_with_context, request
+import psutil, socket, os, urllib.request, platform, json, subprocess
 from datetime import datetime
 
 app = Flask(__name__)
@@ -35,6 +35,58 @@ PING_TARGETS = {
     "ping_cm": "zj-cm-v4.ip.zstaticcdn.com:80",
     "ping_ct": "zj-ct-v4.ip.zstaticcdn.com:80",
 }
+
+COMMANDS = {
+    "ping": lambda target: ["ping", "-c", "4", target],
+    "mtr": lambda target: ["mtr", "-w", "-c", "5", target],
+    "speedtest": lambda target: ["speedtest-cli", "--simple"],
+}
+
+CAT_ART = r"""
+ /\_/\
+( o.o )
+ > ^ <
+"""
+
+
+@app.route("/run/<cmd>")
+def run_cmd(cmd):
+    target = request.args.get("target", "")
+    if cmd not in COMMANDS:
+        return Response("unsupported command", status=400)
+    if cmd != "speedtest" and not target:
+        return Response("target required", status=400)
+    try:
+        args = COMMANDS[cmd](target)
+        proc = subprocess.Popen(
+            args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
+        )
+    except Exception:
+        return Response("unable to execute", status=500)
+
+    def generate():
+        for line in iter(proc.stdout.readline, ""):
+            yield f"data: {line.rstrip()}\n\n"
+        proc.wait()
+        yield f"data: [exit {proc.returncode}]\n\n"
+
+    return Response(stream_with_context(generate()), mimetype="text/event-stream")
+
+
+@app.route("/fun/quote")
+def fun_quote():
+    try:
+        with urllib.request.urlopen(
+            "https://v1.hitokoto.cn/?encode=text", timeout=2
+        ) as resp:
+            return resp.read().decode("utf-8")
+    except Exception:
+        return "今日无语录"
+
+
+@app.route("/fun/cat")
+def fun_cat():
+    return CAT_ART, 200, {"Content-Type": "text/plain; charset=utf-8"}
 
 
 def tcp_ping(host: str):
@@ -159,6 +211,16 @@ Tips:
 
 To exit reality, press ALT+F4. Good luck.
         </pre>
+        <div class="stats">
+            <span class="label">Net Tools       :</span>
+            <input id="cmd_target" placeholder="目标" />
+            <button onclick="runCommand('ping')">Ping</button>
+            <button onclick="runCommand('mtr')">MTR</button>
+            <button onclick="runCommand('speedtest')">SpeedTest</button>
+            <button onclick="fetchQuote()">一言</button>
+            <button onclick="showCat()">猫</button>
+            <pre id="cmd_output"></pre>
+        </div>
         <pre class="stats">
 <span id="hostname_line"><span class="label">ISP             :</span> <span class="value" id="hostname"></span></span>
 <span id="cpu_line"><span class="label">CPU Usage       :</span> <span class="value" id="cpu"></span></span>
@@ -304,6 +366,34 @@ To exit reality, press ALT+F4. Good luck.
             if (line) line.style.display = '';
             el.textContent = value;
         }
+    }
+
+    let currentSource;
+    function runCommand(cmd) {
+        if (currentSource) currentSource.close();
+        const target = document.getElementById('cmd_target').value;
+        const output = document.getElementById('cmd_output');
+        output.textContent = '';
+        let url = `/run/${cmd}`;
+        if (cmd !== 'speedtest' && target) {
+            url += `?target=${encodeURIComponent(target)}`;
+        }
+        currentSource = new EventSource(url);
+        currentSource.onmessage = e => {
+            output.textContent += e.data + '\n';
+            output.scrollTop = output.scrollHeight;
+        };
+        currentSource.onerror = () => currentSource.close();
+    }
+
+    async function fetchQuote() {
+        const res = await fetch('/fun/quote');
+        document.getElementById('cmd_output').textContent = await res.text();
+    }
+
+    async function showCat() {
+        const res = await fetch('/fun/cat');
+        document.getElementById('cmd_output').textContent = await res.text();
     }
     </script>
 </body>
