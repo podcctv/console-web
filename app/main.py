@@ -192,25 +192,6 @@ echo -e "\e[1;36m| \ | | / _ \ / ___|| ____|   \e[1;35m/ ___|| ____| ____| |/ / 
 echo -e "\e[1;36m|  \| || | | | |  _ |  _|    \e[1;35m \___ \|  _| |  _| | ' /|  _| | |_) |\e[0m"
 echo -e "\e[1;36m| |\  || |_| | |_| || |___    \e[1;35m ___) | |___| |___| . \| |___|  _ < \e[0m"
 echo -e "\e[1;36m|_| \_| \___/ \____||_____|   \e[1;35m|____/|_____|_____|_|\_\_____|_| \_\\\e[0m"
-
-    
-
-Welcome to console-web 😎
-Running on coffee ☕, duct tape 🛠️, and blind optimism 🤖.
-    
-
-Tips:
-- Don't press F12, we *see* you.
-- If something breaks, blame the intern.
-- Made with ❤️ by the ghost in the machine.
-    
-
-✨ Initiating sarcasm protocol...
-🤖 AI self-esteem module: [ERROR: Not Found]
-📟 System Check: 404 - Humility Not Installed
-    
-
-To exit reality, press ALT+F4. Good luck.
         </pre>
         <div class="stats">
             <span class="label">Net Tools       :</span>
@@ -302,6 +283,7 @@ To exit reality, press ALT+F4. Good luck.
     fetchHost();
 
     const pingHistory = { ping_cu: [], ping_cm: [], ping_ct: [] };
+    const PROMPT = 'root@{{ hostname }}:~/console-web-v1.6#';
 
     function bar(pct, width = 20) {
         const filled = pct > 0 ? Math.max(1, Math.round(width * pct / 100)) : 0;
@@ -374,27 +356,44 @@ To exit reality, press ALT+F4. Good luck.
         if (currentSource) currentSource.close();
         const target = document.getElementById('cmd_target').value;
         const output = document.getElementById('cmd_output');
-        output.textContent = '';
+        const commandText = cmd === 'speedtest' ? 'speedtest-cli --simple' : `${cmd} ${target}`;
+        output.textContent += `${PROMPT} ${commandText}\n`;
+        output.scrollTop = output.scrollHeight;
         let url = `/run/${cmd}`;
         if (cmd !== 'speedtest' && target) {
             url += `?target=${encodeURIComponent(target)}`;
         }
         currentSource = new EventSource(url);
         currentSource.onmessage = e => {
-            output.textContent += e.data + '\n';
-            output.scrollTop = output.scrollHeight;
+            const data = e.data;
+            if (data.startsWith('[exit')) {
+                output.textContent += `${PROMPT} \n`;
+                currentSource.close();
+            } else {
+                output.textContent += data + '\n';
+                output.scrollTop = output.scrollHeight;
+            }
         };
-        currentSource.onerror = () => currentSource.close();
+        currentSource.onerror = () => {
+            currentSource.close();
+            output.textContent += `${PROMPT} \n`;
+        };
     }
 
     async function fetchQuote() {
         const res = await fetch('/fun/quote');
-        document.getElementById('cmd_output').textContent = await res.text();
+        const text = await res.text();
+        const output = document.getElementById('cmd_output');
+        output.textContent += `${PROMPT} curl quote\n${text}\n${PROMPT} \n`;
+        output.scrollTop = output.scrollHeight;
     }
 
     async function showCat() {
         const res = await fetch('/fun/cat');
-        document.getElementById('cmd_output').textContent = await res.text();
+        const text = await res.text();
+        const output = document.getElementById('cmd_output');
+        output.textContent += `${PROMPT} cat\n${text}\n${PROMPT} \n`;
+        output.scrollTop = output.scrollHeight;
     }
     </script>
 </body>
