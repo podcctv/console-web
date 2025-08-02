@@ -7,7 +7,10 @@ start_time = datetime.now()
 host_boot_time = datetime.fromtimestamp(psutil.boot_time())
 
 # Track last network counters to compute realtime speed
-_last_net = psutil.net_io_counters()
+try:
+    _last_net = psutil.net_io_counters()
+except Exception:
+    _last_net = None
 _last_time = datetime.now()
 
 
@@ -150,17 +153,17 @@ Tips:
 To exit reality, press ALT+F4. Good luck.
         </pre>
         <pre class="stats">
-<span class="label">ISP             :</span> <span class="value" id="hostname"></span>
-<span class="label">CPU Usage       :</span> <span class="value" id="cpu"></span>
-<span class="label">Memory Usage    :</span> <span class="value" id="memory"></span>
-<span class="label">Disk Usage      :</span> <span class="value" id="disk"></span>
-<span class="label">Container Uptime:</span> <span class="value" id="cuptime"></span>
-<span class="label">Host Uptime     :</span> <span class="value" id="huptime"></span>
-<span class="label">CPU Cores       :</span> <span class="value" id="cores"></span>
-<span class="label">Load Average    :</span> <span class="value" id="load"></span>
-<span class="label">IP Address      :</span> <span class="value" id="ip"></span>
-<span class="label">Disk IO (R/W)  :</span> <span class="value" id="disk_io"></span>
-<span class="label">Net IO (Up/Down):</span> <span class="value" id="net_io"></span>
+<span id="hostname_line"><span class="label">ISP             :</span> <span class="value" id="hostname"></span></span>
+<span id="cpu_line"><span class="label">CPU Usage       :</span> <span class="value" id="cpu"></span></span>
+<span id="memory_line"><span class="label">Memory Usage    :</span> <span class="value" id="memory"></span></span>
+<span id="disk_line"><span class="label">Disk Usage      :</span> <span class="value" id="disk"></span></span>
+<span id="cuptime_line"><span class="label">Container Uptime:</span> <span class="value" id="cuptime"></span></span>
+<span id="huptime_line"><span class="label">Host Uptime     :</span> <span class="value" id="huptime"></span></span>
+<span id="cores_line"><span class="label">CPU Cores       :</span> <span class="value" id="cores"></span></span>
+<span id="load_line"><span class="label">Load Average    :</span> <span class="value" id="load"></span></span>
+<span id="ip_line"><span class="label">IP Address      :</span> <span class="value" id="ip"></span></span>
+<span id="disk_io_line"><span class="label">Disk IO (R/W)  :</span> <span class="value" id="disk_io"></span></span>
+<span id="net_io_line"><span class="label">Net IO (Up/Down):</span> <span class="value" id="net_io"></span></span>
 
 <span id="ping_cu_line"><span class="label">Ping 浙江联通 :</span> <span class="value" id="ping_cu"></span> <canvas class="ping-chart" id="ping_cu_chart" width="100" height="40"></canvas>
 </span><span id="ping_cm_line"><span class="label">Ping 浙江移动 :</span> <span class="value" id="ping_cm"></span> <canvas class="ping-chart" id="ping_cm_chart" width="100" height="40"></canvas>
@@ -179,28 +182,32 @@ To exit reality, press ALT+F4. Good luck.
         </pre>
     </div>
     <script>
+    function setStat(id, value, formatter, colorFn) {
+        const line = document.getElementById(id + '_line');
+        const el = document.getElementById(id);
+        if (value === null || value === undefined || value === '') {
+            if (line) line.style.display = 'none';
+            return;
+        }
+        if (line) line.style.display = '';
+        el.textContent = formatter ? formatter(value) : value;
+        if (colorFn) el.style.color = colorFn(value);
+    }
+
     async function fetchStats() {
         const res = await fetch('/stats');
         const data = await res.json();
-        document.getElementById('hostname').textContent = data.hostname;
-        const cpuEl = document.getElementById('cpu');
-        cpuEl.textContent = `${data.cpu.toFixed(1)}% ${bar(data.cpu)}`;
-        cpuEl.style.color = htopColor(data.cpu);
-
-        const memEl = document.getElementById('memory');
-        memEl.textContent = `${data.memory.toFixed(1)}% ${bar(data.memory)}`;
-        memEl.style.color = htopColor(data.memory);
-
-        const diskEl = document.getElementById('disk');
-        diskEl.textContent = `${data.disk.toFixed(1)}% ${bar(data.disk)}`;
-        diskEl.style.color = htopColor(data.disk);
-        document.getElementById('cuptime').textContent = data.container_uptime;
-        document.getElementById('huptime').textContent = data.host_uptime;
-        document.getElementById('cores').textContent = data.cores;
-        document.getElementById('load').textContent = data.load;
-        document.getElementById('ip').textContent = data.ip;
-        document.getElementById('disk_io').textContent = data.disk_io;
-        document.getElementById('net_io').textContent = data.net_io;
+        setStat('hostname', data.hostname);
+        setStat('cpu', data.cpu, v => `${v.toFixed(1)}% ${bar(v)}`, htopColor);
+        setStat('memory', data.memory, v => `${v.toFixed(1)}% ${bar(v)}`, htopColor);
+        setStat('disk', data.disk, v => `${v.toFixed(1)}% ${bar(v)}`, htopColor);
+        setStat('cuptime', data.container_uptime);
+        setStat('huptime', data.host_uptime);
+        setStat('cores', data.cores);
+        setStat('load', data.load);
+        setStat('ip', data.ip);
+        setStat('disk_io', data.disk_io);
+        setStat('net_io', data.net_io);
         setPing('ping_cu', data.ping_cu);
         setPing('ping_cm', data.ping_cm);
         setPing('ping_ct', data.ping_ct);
@@ -249,16 +256,12 @@ To exit reality, press ALT+F4. Good luck.
         const line = document.getElementById(id + '_line');
         const el = document.getElementById(id);
         const canvas = document.getElementById(id + '_chart');
-        if (ms === null || ms === undefined) {
-            if (line) line.style.display = '';
-            el.textContent = 'N/A';
-            el.style.color = '#ff0000';
-            // Keep existing chart history when ping result is unavailable
-            return;
-        }
-        el.textContent = `${ms.toFixed(1)}ms ${pingBar(ms)}`;
-        el.style.color = pingColor(ms);
-        if (canvas) {
+        if (line) line.style.display = '';
+        const val = ms === null || ms === undefined ? 'N/A' : `${ms.toFixed(1)}ms`;
+        const barText = ms === null || ms === undefined ? '[' + '#'.repeat(20) + ']' : pingBar(ms);
+        el.textContent = `${val.padEnd(8)} ${barText}`;
+        el.style.color = ms === null || ms === undefined ? '#ff0000' : pingColor(ms);
+        if (ms !== null && ms !== undefined && canvas) {
             pingHistory[id].push(ms);
             if (pingHistory[id].length > 50) pingHistory[id].shift();
             drawChart(canvas, pingHistory[id]);
@@ -287,6 +290,7 @@ To exit reality, press ALT+F4. Good luck.
         if (value === null || value === undefined || value === '') {
             if (line) line.style.display = 'none';
         } else {
+            if (line) line.style.display = '';
             el.textContent = value;
         }
     }
@@ -303,13 +307,25 @@ def index():
 
 @app.route("/stats")
 def stats():
-    cpu = psutil.cpu_percent(interval=None)
-    mem = psutil.virtual_memory().percent
-    disk = psutil.disk_usage("/").percent
+    try:
+        cpu = psutil.cpu_percent(interval=None)
+    except Exception:
+        cpu = None
+    try:
+        mem = psutil.virtual_memory().percent
+    except Exception:
+        mem = None
+    try:
+        disk = psutil.disk_usage("/").percent
+    except Exception:
+        disk = None
     container_uptime = int((datetime.now() - start_time).total_seconds())
     host_uptime = int((datetime.now() - host_boot_time).total_seconds())
     hostname = ISP_NAME or socket.gethostname()
-    ip = socket.gethostbyname(socket.gethostname())
+    try:
+        ip = socket.gethostbyname(socket.gethostname())
+    except Exception:
+        ip = "N/A"
     try:
         public_ip = (
             urllib.request.urlopen("https://ifconfig.me", timeout=2)
@@ -319,26 +335,43 @@ def stats():
         )
     except Exception:
         public_ip = "N/A"
-    ip_display = f"{ip} (公网 {public_ip})"
-    cores = psutil.cpu_count()
-    load1, load5, load15 = os.getloadavg()
-    load = f"{load1:.2f}, {load5:.2f}, {load15:.2f}"
+    if ip == "N/A" and public_ip == "N/A":
+        ip_display = None
+    else:
+        ip_display = f"{ip} (公网 {public_ip})"
+    try:
+        cores = psutil.cpu_count()
+    except Exception:
+        cores = None
+    try:
+        load1, load5, load15 = os.getloadavg()
+        load = f"{load1:.2f}, {load5:.2f}, {load15:.2f}"
+    except Exception:
+        load = None
     pings = {k: tcp_ping(v) for k, v in PING_TARGETS.items()}
-    dio = psutil.disk_io_counters()
-    nio = psutil.net_io_counters()
-    disk_io = f"{humanize_bytes(dio.read_bytes)}/{humanize_bytes(dio.write_bytes)}"
-
-    # Calculate realtime network speed along with total traffic
+    try:
+        dio = psutil.disk_io_counters()
+        disk_io = f"{humanize_bytes(dio.read_bytes)}/{humanize_bytes(dio.write_bytes)}"
+    except Exception:
+        disk_io = None
     global _last_net, _last_time
-    now = datetime.now()
-    interval = (now - _last_time).total_seconds() or 1
-    up_speed = (nio.bytes_sent - _last_net.bytes_sent) / interval
-    down_speed = (nio.bytes_recv - _last_net.bytes_recv) / interval
-    _last_net, _last_time = nio, now
-    net_io = (
-        f"{humanize_bytes(up_speed)}/s ({humanize_bytes(nio.bytes_sent)}) / "
-        f"{humanize_bytes(down_speed)}/s ({humanize_bytes(nio.bytes_recv)})"
-    )
+    try:
+        nio = psutil.net_io_counters()
+        if _last_net is None:
+            _last_net, _last_time = nio, datetime.now()
+            net_io = f"0.0B/s ({humanize_bytes(nio.bytes_sent)}) / 0.0B/s ({humanize_bytes(nio.bytes_recv)})"
+        else:
+            now = datetime.now()
+            interval = (now - _last_time).total_seconds() or 1
+            up_speed = (nio.bytes_sent - _last_net.bytes_sent) / interval
+            down_speed = (nio.bytes_recv - _last_net.bytes_recv) / interval
+            _last_net, _last_time = nio, now
+            net_io = (
+                f"{humanize_bytes(up_speed)}/s ({humanize_bytes(nio.bytes_sent)}) / "
+                f"{humanize_bytes(down_speed)}/s ({humanize_bytes(nio.bytes_recv)})"
+            )
+    except Exception:
+        net_io = None
     return jsonify(
         cpu=cpu,
         memory=mem,
@@ -357,22 +390,42 @@ def stats():
 
 @app.route("/host")
 def host():
-    uname = platform.uname()
-    vm = psutil.virtual_memory()
-    du = psutil.disk_usage("/")
-    freq = psutil.cpu_freq()
+    try:
+        uname = platform.uname()
+    except Exception:
+        uname = None
+    try:
+        vm = psutil.virtual_memory()
+    except Exception:
+        vm = None
+    try:
+        du = psutil.disk_usage("/")
+    except Exception:
+        du = None
+    try:
+        freq = psutil.cpu_freq()
+    except Exception:
+        freq = None
+    try:
+        physical_cores = psutil.cpu_count(logical=False)
+    except Exception:
+        physical_cores = None
+    try:
+        total_cores = psutil.cpu_count(logical=True)
+    except Exception:
+        total_cores = None
     return jsonify(
-        system=uname.system,
-        node=uname.node,
-        release=uname.release,
-        version=uname.version,
-        machine=uname.machine,
-        processor=uname.processor,
-        physical_cores=psutil.cpu_count(logical=False),
-        total_cores=psutil.cpu_count(logical=True),
-        max_freq=f"{freq.max:.2f}Mhz" if freq else "N/A",
-        total_memory=humanize_bytes(vm.total),
-        total_disk=humanize_bytes(du.total),
+        system=getattr(uname, "system", None),
+        node=getattr(uname, "node", None),
+        release=getattr(uname, "release", None),
+        version=getattr(uname, "version", None),
+        machine=getattr(uname, "machine", None),
+        processor=getattr(uname, "processor", None),
+        physical_cores=physical_cores,
+        total_cores=total_cores,
+        max_freq=f"{freq.max:.2f}Mhz" if freq else None,
+        total_memory=humanize_bytes(vm.total) if vm else None,
+        total_disk=humanize_bytes(du.total) if du else None,
     )
 
 if __name__ == "__main__":
