@@ -167,11 +167,8 @@ TEMPLATE = r"""
         .value { color: #fff; }
         .ping-chart { margin-left: 8px; background: #000; }
         .terminal-line { margin-top: 20px; }
-        .cursor {
-            display: inline-block; width: 10px; height: 1em;
-            background: #00FF00; animation: blink 1s steps(1) infinite;
-        }
-        @keyframes blink { 50% { background: transparent; } }
+        #cmd_output { display: block; white-space: pre-wrap; margin-top: 10px; max-height: 200px; overflow-y: auto; }
+        .terminal-input { background: black; color: #00FF00; font-family: 'Consolas', monospace; border: none; outline: none; }
         @media (max-width: 600px) {
             .window { width: 100%; padding: 10px; }
             pre { font-size: 12px; }
@@ -187,22 +184,26 @@ TEMPLATE = r"""
             <div class="window-btn green"></div>
         </div>
         <pre class="banner">
-echo -e "\e[1;36m _   _   ___   ____  _____     \e[1;35m ____  _____ _____ _  _______ ____  \e[0m"
-echo -e "\e[1;36m| \ | | / _ \ / ___|| ____|   \e[1;35m/ ___|| ____| ____| |/ / ____|  _ \ \e[0m"
-echo -e "\e[1;36m|  \| || | | | |  _ |  _|    \e[1;35m \___ \|  _| |  _| | ' /|  _| | |_) |\e[0m"
-echo -e "\e[1;36m| |\  || |_| | |_| || |___    \e[1;35m ___) | |___| |___| . \| |___|  _ < \e[0m"
-echo -e "\e[1;36m|_| \_| \___/ \____||_____|   \e[1;35m|____/|_____|_____|_|\_\_____|_| \_\\\e[0m"
+    _   ______  ____  ______   _____ ______________ __ __________
+   / | / / __ \/ __ \/ ____/  / ___// ____/ ____/ //_// ____/ __ \
+  /  |/ / / / / / / / __/     \__ \/ __/ / __/ / ,<  / __/ / /_/ /
+ / /|  / /_/ / /_/ / /___    ___/ / /___/ /___/ /| |/ /___/ _, _/
+/_/ |_|\____/_____/_/____/   /____/_____/_____/_/ |_|_/____/_/ |_|
+
+Welcome to console-web 😎
+Running on coffee ☕, duct tape 🛠️, and blind optimism 🤖.
+
+Tips:
+- Don't press F12, we *see* you.
+- If something breaks, blame the intern.
+- Made with ❤️ by the ghost in the machine.
+
+✨ Initiating sarcasm protocol...
+🤖 AI self-esteem module: [ERROR: Not Found]
+📟 System Check: 404 - Humility Not Installed
+
+To exit reality, press ALT+F4. Good luck.
         </pre>
-        <div class="stats">
-            <span class="label">Net Tools       :</span>
-            <input id="cmd_target" placeholder="目标" />
-            <button onclick="runCommand('ping')">Ping</button>
-            <button onclick="runCommand('mtr')">MTR</button>
-            <button onclick="runCommand('speedtest')">SpeedTest</button>
-            <button onclick="fetchQuote()">一言</button>
-            <button onclick="showCat()">猫</button>
-            <pre id="cmd_output"></pre>
-        </div>
         <pre class="stats">
 <span id="hostname_line"><span class="label">ISP             :</span> <span class="value" id="hostname"></span></span>
 <span id="cpu_line"><span class="label">CPU Usage       :</span> <span class="value" id="cpu"></span></span>
@@ -231,7 +232,8 @@ echo -e "\e[1;36m|_| \_| \___/ \____||_____|   \e[1;35m|____/|_____|_____|_|\_\_
 </span><span id="disk_total_line"><span class="label">Total Disk      :</span> <span class="value" id="disk_total"></span>
 </span>
 
-<span class="terminal-line">root@{{ hostname }}:~/console-web-v1.6# <span class="cursor"></span></span>
+<span id="cmd_output"></span>
+<span class="terminal-line">root@Hostdzire:~/console-web-v1.6# <input id="cmd_input" class="terminal-input" autofocus /></span>
         </pre>
     </div>
     <script>
@@ -283,7 +285,7 @@ echo -e "\e[1;36m|_| \_| \___/ \____||_____|   \e[1;35m|____/|_____|_____|_|\_\_
     fetchHost();
 
     const pingHistory = { ping_cu: [], ping_cm: [], ping_ct: [] };
-    const PROMPT = 'root@{{ hostname }}:~/console-web-v1.6#';
+    const PROMPT = 'root@Hostdzire:~/console-web-v1.6#';
 
     function bar(pct, width = 20) {
         const filled = pct > 0 ? Math.max(1, Math.round(width * pct / 100)) : 0;
@@ -352,11 +354,10 @@ echo -e "\e[1;36m|_| \_| \___/ \____||_____|   \e[1;35m|____/|_____|_____|_|\_\_
     }
 
     let currentSource;
-    function runCommand(cmd) {
+    function runCommand(cmd, target = '') {
         if (currentSource) currentSource.close();
-        const target = document.getElementById('cmd_target').value;
         const output = document.getElementById('cmd_output');
-        const commandText = cmd === 'speedtest' ? 'speedtest-cli --simple' : `${cmd} ${target}`;
+        const commandText = target ? `${cmd} ${target}` : cmd === 'speedtest' ? 'speedtest-cli --simple' : cmd;
         output.textContent += `${PROMPT} ${commandText}\n`;
         output.scrollTop = output.scrollHeight;
         let url = `/run/${cmd}`;
@@ -366,17 +367,15 @@ echo -e "\e[1;36m|_| \_| \___/ \____||_____|   \e[1;35m|____/|_____|_____|_|\_\_
         currentSource = new EventSource(url);
         currentSource.onmessage = e => {
             const data = e.data;
-            if (data.startsWith('[exit')) {
-                output.textContent += `${PROMPT} \n`;
-                currentSource.close();
-            } else {
+            if (!data.startsWith('[exit')) {
                 output.textContent += data + '\n';
                 output.scrollTop = output.scrollHeight;
+            } else {
+                currentSource.close();
             }
         };
         currentSource.onerror = () => {
             currentSource.close();
-            output.textContent += `${PROMPT} \n`;
         };
     }
 
@@ -384,7 +383,7 @@ echo -e "\e[1;36m|_| \_| \___/ \____||_____|   \e[1;35m|____/|_____|_____|_|\_\_
         const res = await fetch('/fun/quote');
         const text = await res.text();
         const output = document.getElementById('cmd_output');
-        output.textContent += `${PROMPT} curl quote\n${text}\n${PROMPT} \n`;
+        output.textContent += `${PROMPT} quote\n${text}\n`;
         output.scrollTop = output.scrollHeight;
     }
 
@@ -392,9 +391,42 @@ echo -e "\e[1;36m|_| \_| \___/ \____||_____|   \e[1;35m|____/|_____|_____|_|\_\_
         const res = await fetch('/fun/cat');
         const text = await res.text();
         const output = document.getElementById('cmd_output');
-        output.textContent += `${PROMPT} cat\n${text}\n${PROMPT} \n`;
+        output.textContent += `${PROMPT} cat\n${text}\n`;
         output.scrollTop = output.scrollHeight;
     }
+
+    const inputEl = document.getElementById('cmd_input');
+    const outputEl = document.getElementById('cmd_output');
+    inputEl.addEventListener('keydown', e => {
+        if (e.key === 'Enter') {
+            const text = inputEl.value.trim();
+            if (!text) return;
+            const [cmd, ...args] = text.split(/\s+/);
+            switch (cmd) {
+                case 'ping':
+                case 'mtr':
+                    if (args.length) {
+                        runCommand(cmd, args.join(' '));
+                    } else {
+                        outputEl.textContent += `${PROMPT} ${text}\nmissing target\n`;
+                    }
+                    break;
+                case 'speedtest':
+                    runCommand('speedtest');
+                    break;
+                case 'quote':
+                    fetchQuote();
+                    break;
+                case 'cat':
+                    showCat();
+                    break;
+                default:
+                    outputEl.textContent += `${PROMPT} ${text}\ncommand not found\n`;
+            }
+            outputEl.scrollTop = outputEl.scrollHeight;
+            inputEl.value = '';
+        }
+    });
     </script>
 </body>
 </html>
