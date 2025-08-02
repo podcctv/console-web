@@ -1,5 +1,7 @@
 # console-web
 
+![Build & Publish Docker](https://github.com/podcctv/console-web/actions/workflows/docker-publish.yml/badge.svg)
+
 console-web 是一个使用 [Flask](https://flask.palletsprojects.com/) 和 [psutil](https://psutil.readthedocs.io/) 构建的极简系统状态面板，界面采用终端风格，实时展示 CPU、内存、磁盘、网络等信息。
 
 ## 功能

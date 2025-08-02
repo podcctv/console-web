@@ -88,18 +88,20 @@ TEMPLATE = r"""
 <head>
     <meta charset="UTF-8">
     <title>{{ hostname }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             background: black; color: #00FF00; font-family: 'Consolas', monospace;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            height: 100vh;
+            min-height: 100vh; padding: 10px;
         }
         .window {
-            border: 1px solid #00FF00; width: 80%; padding: 20px;
+            border: 1px solid #00FF00; width: 80%; max-width: 900px; padding: 20px;
             box-shadow: 0 0 20px #00FF00; border-radius: 8px;
             position: relative; background: black;
         }
+        pre { overflow-x: auto; }
         .window-bar {
             display: flex; gap: 8px; position: absolute; top: 10px; left: 10px;
         }
@@ -118,6 +120,11 @@ TEMPLATE = r"""
             background: #00FF00; animation: blink 1s steps(1) infinite;
         }
         @keyframes blink { 50% { background: transparent; } }
+        @media (max-width: 600px) {
+            .window { width: 100%; padding: 10px; }
+            pre { font-size: 12px; }
+            .window-bar { top: 5px; left: 5px; }
+        }
     </style>
 </head>
 <body>
