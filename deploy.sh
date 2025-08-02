@@ -27,7 +27,6 @@ deploy() {
   docker run -d \
     --name "$IMAGE_NAME" \
     -p ${PORT}:8080 \
-    -e CUSTOM_MSG="来自 Flanker 的神秘终端" \
     -e THEME=matrix \
     "$IMAGE_NAME"
 

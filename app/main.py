@@ -25,7 +25,7 @@ TEMPLATE = r"""
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            background: black; color: #00FF00; font-family: monospace;
+            background: black; color: #00FF00; font-family: 'Consolas', monospace;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             height: 100vh;
         }
@@ -95,7 +95,6 @@ To exit reality, press ALT+F4. Good luck.
 <span class="label">CPU Cores       :</span> <span class="value" id="cores"></span>
 <span class="label">Load Average    :</span> <span class="value" id="load"></span>
 <span class="label">IP Address      :</span> <span class="value" id="ip"></span>
-<span class="label">Message         :</span> <span class="value">{{ message }}</span>
 
 <span class="terminal-line">root@{{ hostname }}:~/console-web-v1.6# <span class="cursor"></span></span>
         </pre>
@@ -105,9 +104,17 @@ To exit reality, press ALT+F4. Good luck.
         const res = await fetch('/stats');
         const data = await res.json();
         document.getElementById('hostname').textContent = data.hostname;
-        document.getElementById('cpu').textContent = `${data.cpu.toFixed(1)}% ${bar(data.cpu)}`;
-        document.getElementById('memory').textContent = `${data.memory.toFixed(1)}% ${bar(data.memory)}`;
-        document.getElementById('disk').textContent = `${data.disk.toFixed(1)}% ${bar(data.disk)}`;
+        const cpuEl = document.getElementById('cpu');
+        cpuEl.textContent = `${data.cpu.toFixed(1)}% ${bar(data.cpu)}`;
+        cpuEl.style.color = htopColor(data.cpu);
+
+        const memEl = document.getElementById('memory');
+        memEl.textContent = `${data.memory.toFixed(1)}% ${bar(data.memory)}`;
+        memEl.style.color = htopColor(data.memory);
+
+        const diskEl = document.getElementById('disk');
+        diskEl.textContent = `${data.disk.toFixed(1)}% ${bar(data.disk)}`;
+        diskEl.style.color = htopColor(data.disk);
         document.getElementById('cuptime').textContent = data.container_uptime;
         document.getElementById('huptime').textContent = data.host_uptime;
         document.getElementById('cores').textContent = data.cores;
@@ -121,6 +128,12 @@ To exit reality, press ALT+F4. Good luck.
         const filled = pct > 0 ? Math.max(1, Math.round(width * pct / 100)) : 0;
         return '[' + '#'.repeat(filled) + '.'.repeat(width - filled) + ']';
     }
+
+    function htopColor(pct) {
+        if (pct < 40) return '#00ff00';
+        if (pct < 75) return '#ffff00';
+        return '#ff0000';
+    }
     </script>
 </body>
 </html>
@@ -129,8 +142,7 @@ To exit reality, press ALT+F4. Good luck.
 @app.route("/")
 def index():
     hostname = socket.gethostname()
-    message = os.getenv("CUSTOM_MSG", "console-web v1.6 running")
-    return render_template_string(TEMPLATE, hostname=hostname, message=message)
+    return render_template_string(TEMPLATE, hostname=hostname)
 
 
 @app.route("/stats")
