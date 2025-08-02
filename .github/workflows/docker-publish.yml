@@ -32,4 +32,3 @@ jobs:
           push: true
           tags: |
             ghcr.io/podcctv/console-web:latest
-            ghcr.io/podcctv/console-web:v1.5
