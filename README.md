@@ -10,6 +10,7 @@ console-web 是一个使用 [Flask](https://flask.palletsprojects.com/) 和 [psu
 - 容器与宿主机运行时间
 - 本地/公网 IP、磁盘 IO、网络 IO 以及实时上传/下载速度
 - 对多家运营商的 TCP Ping 监测
+- 查询任意 URL 的 IP、ISP 及 Ping 信息
 - 内置网络工具：Ping、MTR、SpeedTest，支持实时回显
 
 ## 本地运行
