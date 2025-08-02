@@ -1,5 +1,5 @@
 from flask import Flask, render_template_string, jsonify
-import psutil, socket, os, urllib.request
+import psutil, socket, os, urllib.request, platform
 from datetime import datetime
 
 app = Flask(__name__)
@@ -15,6 +15,14 @@ def humanize(seconds: int) -> str:
     hours, seconds = divmod(seconds, 3600)
     minutes, seconds = divmod(seconds, 60)
     return f"{years}年 {months}月 {days}天 {hours}小时 {minutes}分 {seconds}秒"
+
+
+def humanize_bytes(size: int) -> str:
+    for unit in ["B", "KB", "MB", "GB", "TB", "PB"]:
+        if size < 1024:
+            return f"{size:.1f}{unit}"
+        size /= 1024
+    return f"{size:.1f}EB"
 
 TEMPLATE = r"""
 <!DOCTYPE html>
@@ -96,6 +104,13 @@ To exit reality, press ALT+F4. Good luck.
 <span class="label">Load Average    :</span> <span class="value" id="load"></span>
 <span class="label">IP Address      :</span> <span class="value" id="ip"></span>
 
+<span class="label">OS              :</span> <span class="value" id="os"></span>
+<span class="label">Kernel          :</span> <span class="value" id="kernel"></span>
+<span class="label">Architecture    :</span> <span class="value" id="arch"></span>
+<span class="label">CPU Model       :</span> <span class="value" id="cpu_model"></span>
+<span class="label">Total Memory    :</span> <span class="value" id="mem_total"></span>
+<span class="label">Total Disk      :</span> <span class="value" id="disk_total"></span>
+
 <span class="terminal-line">root@{{ hostname }}:~/console-web-v1.6# <span class="cursor"></span></span>
         </pre>
     </div>
@@ -123,6 +138,18 @@ To exit reality, press ALT+F4. Good luck.
     }
     fetchStats();
     setInterval(fetchStats, 1000);
+
+    async function fetchHost() {
+        const res = await fetch('/host');
+        const data = await res.json();
+        document.getElementById('os').textContent = data.system;
+        document.getElementById('kernel').textContent = data.release;
+        document.getElementById('arch').textContent = data.machine;
+        document.getElementById('cpu_model').textContent = data.processor;
+        document.getElementById('mem_total').textContent = data.total_memory;
+        document.getElementById('disk_total').textContent = data.total_disk;
+    }
+    fetchHost();
 
     function bar(pct, width = 20) {
         const filled = pct > 0 ? Math.max(1, Math.round(width * pct / 100)) : 0;
@@ -177,6 +204,27 @@ def stats():
         ip=ip_display,
         cores=cores,
         load=load,
+    )
+
+
+@app.route("/host")
+def host():
+    uname = platform.uname()
+    vm = psutil.virtual_memory()
+    du = psutil.disk_usage("/")
+    freq = psutil.cpu_freq()
+    return jsonify(
+        system=uname.system,
+        node=uname.node,
+        release=uname.release,
+        version=uname.version,
+        machine=uname.machine,
+        processor=uname.processor,
+        physical_cores=psutil.cpu_count(logical=False),
+        total_cores=psutil.cpu_count(logical=True),
+        max_freq=f"{freq.max:.2f}Mhz" if freq else "N/A",
+        total_memory=humanize_bytes(vm.total),
+        total_disk=humanize_bytes(du.total),
     )
 
 if __name__ == "__main__":
