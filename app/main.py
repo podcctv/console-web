@@ -46,14 +46,6 @@ COMMANDS = {
     "mtr": lambda target, extra: ["mtr", *extra, target]
     if extra
     else ["mtr", "-w", "-c", "5", target],
-    # Use the official Speedtest CLI instead of the Python speedtest-cli
-    "speedtest": lambda target, extra: [
-        "speedtest",
-        "--progress=no",
-        "--accept-license",
-        "--accept-gdpr",
-        *extra,
-    ],
 }
 
 @app.route("/run/<cmd>")
@@ -62,7 +54,7 @@ def run_cmd(cmd):
     raw_args = request.args.get("args", "")
     if cmd not in COMMANDS:
         return Response("unsupported command", status=400)
-    if cmd != "speedtest" and not target:
+    if not target:
         return Response("target required", status=400)
     extra_args = shlex.split(raw_args) if raw_args else []
     try:
@@ -517,15 +509,11 @@ To exit reality, press ALT+F4. Good luck.
                         outputEl.insertAdjacentText('beforeend', `${PROMPT} ${text}\nmissing target\n`);
                     }
                     break;
-                case 'speedtest':
-                    runCommand('speedtest', '', args.join(' '));
-                    break;
                 case 'help':
                     outputEl.insertAdjacentText('beforeend', `${PROMPT} ${text}\n` +
                         'Available commands:\n' +
                         '  ping <host>\n' +
                         '  mtr <host>\n' +
-                        '  speedtest [args]\n' +
                         '  help\n');
                     break;
                 default:
