@@ -1,5 +1,5 @@
 from flask import Flask, render_template_string, jsonify, Response, stream_with_context, request
-import psutil, socket, os, urllib.request, platform, json, subprocess
+import psutil, socket, os, urllib.request, platform, json, subprocess, shlex
 from datetime import datetime
 
 app = Flask(__name__)
@@ -37,26 +37,33 @@ PING_TARGETS = {
 }
 
 COMMANDS = {
-    "ping": lambda target: ["ping", "-c", "4", target],
-    "mtr": lambda target: ["mtr", "-w", "-c", "5", target],
+    "ping": lambda target, extra: ["ping", *extra, target]
+    if extra
+    else ["ping", "-c", "4", target],
+    "mtr": lambda target, extra: ["mtr", *extra, target]
+    if extra
+    else ["mtr", "-w", "-c", "5", target],
     # Use the official Speedtest CLI instead of the Python speedtest-cli
-    "speedtest": lambda target: [
+    "speedtest": lambda target, extra: [
         "speedtest",
         "--progress=no",
         "--accept-license",
         "--accept-gdpr",
+        *extra,
     ],
 }
 
 @app.route("/run/<cmd>")
 def run_cmd(cmd):
     target = request.args.get("target", "")
+    raw_args = request.args.get("args", "")
     if cmd not in COMMANDS:
         return Response("unsupported command", status=400)
     if cmd != "speedtest" and not target:
         return Response("target required", status=400)
+    extra_args = shlex.split(raw_args) if raw_args else []
     try:
-        args = COMMANDS[cmd](target)
+        args = COMMANDS[cmd](target, extra_args)
         proc = subprocess.Popen(
             args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
         )
