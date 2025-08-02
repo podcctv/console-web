@@ -39,7 +39,13 @@ PING_TARGETS = {
 COMMANDS = {
     "ping": lambda target: ["ping", "-c", "4", target],
     "mtr": lambda target: ["mtr", "-w", "-c", "5", target],
-    "speedtest": lambda target: ["speedtest-cli", "--simple"],
+    # Use the official Speedtest CLI instead of the Python speedtest-cli
+    "speedtest": lambda target: [
+        "speedtest",
+        "--progress=no",
+        "--accept-license",
+        "--accept-gdpr",
+    ],
 }
 
 @app.route("/run/<cmd>")
@@ -157,6 +163,32 @@ TEMPLATE = r"""
         .terminal-input {
             background: black; color: #00FF00; font-family: 'Consolas', monospace;
             border: none; outline: none; caret-color: #00FF00; caret-shape: block;
+        }
+        /* Custom scrollbar styling */
+        .stats::-webkit-scrollbar,
+        #cmd_output::-webkit-scrollbar {
+            width: 8px;
+        }
+        .stats::-webkit-scrollbar-track,
+        #cmd_output::-webkit-scrollbar-track {
+            background: #001100;
+        }
+        .stats::-webkit-scrollbar-thumb,
+        #cmd_output::-webkit-scrollbar-thumb {
+            background: #00FF00;
+            border-radius: 4px;
+        }
+        .stats::-webkit-scrollbar-thumb:hover,
+        #cmd_output::-webkit-scrollbar-thumb:hover {
+            background: #00cc00;
+        }
+        .stats {
+            scrollbar-color: #00FF00 #001100;
+            scrollbar-width: thin;
+        }
+        #cmd_output {
+            scrollbar-color: #00FF00 #001100;
+            scrollbar-width: thin;
         }
         @media (max-width: 600px) {
             .window { width: 100%; padding: 10px; }
@@ -346,7 +378,7 @@ To exit reality, press ALT+F4. Good luck.
     function runCommand(cmd, target = '') {
         if (currentSource) currentSource.close();
         const output = document.getElementById('cmd_output');
-        const commandText = target ? `${cmd} ${target}` : cmd === 'speedtest' ? 'speedtest-cli --simple' : cmd;
+        const commandText = target ? `${cmd} ${target}` : cmd;
         output.insertAdjacentText('beforeend', `${PROMPT} ${commandText}\n`);
         output.scrollTop = output.scrollHeight;
         let url = `/run/${cmd}`;
