@@ -54,8 +54,12 @@ def run_cmd(cmd):
         proc = subprocess.Popen(
             args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
         )
-    except Exception:
-        return Response("unable to execute", status=500)
+    except Exception as e:
+        err = e
+        def generate_error():
+            yield f"data: unable to execute: {err}\n\n"
+            yield "data: [exit 1]\n\n"
+        return Response(stream_with_context(generate_error()), mimetype="text/event-stream")
 
     def generate():
         for line in iter(proc.stdout.readline, ""):
@@ -217,7 +221,6 @@ To exit reality, press ALT+F4. Good luck.
 </span><span id="disk_total_line"><span class="label">Total Disk      :</span> <span class="value" id="disk_total"></span>
 </span>
 
-<span id="cmd_hint_line"><span class="label">Hint            :</span> <span class="value">Type 'help' for available commands</span></span>
 <span id="cmd_output"></span>
 <span class="terminal-line">root@Hostdzire:~/console-web-v1.6# <input id="cmd_input" class="terminal-input" autofocus placeholder="type 'help'" /></span>
         </pre>
@@ -361,12 +364,15 @@ To exit reality, press ALT+F4. Good luck.
             }
         };
         currentSource.onerror = () => {
+            output.insertAdjacentText('beforeend', 'command failed\n');
+            output.scrollTop = output.scrollHeight;
             currentSource.close();
         };
     }
 
     const inputEl = document.getElementById('cmd_input');
     const outputEl = document.getElementById('cmd_output');
+    outputEl.textContent = "Hint: Type 'help' for available commands\n";
     inputEl.addEventListener('keydown', e => {
         if (e.key === 'Enter') {
             const text = inputEl.value.trim();
