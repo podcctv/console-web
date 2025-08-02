@@ -1,10 +1,23 @@
 from flask import Flask, render_template_string, jsonify
-import psutil, socket, os, urllib.request, platform
+import psutil, socket, os, urllib.request, platform, json
 from datetime import datetime
 
 app = Flask(__name__)
 start_time = datetime.now()
 host_boot_time = datetime.fromtimestamp(psutil.boot_time())
+
+
+def get_isp_name():
+    try:
+        with urllib.request.urlopen(
+            "http://ip-api.com/json/?fields=isp", timeout=2
+        ) as resp:
+            return json.loads(resp.read().decode()).get("isp")
+    except Exception:
+        return None
+
+
+ISP_NAME = get_isp_name()
 
 PING_TARGETS = {
     "ping_cu": "zj-cu-v4.ip.zstaticcdn.com:80",
@@ -129,7 +142,7 @@ Tips:
 To exit reality, press ALT+F4. Good luck.
         </pre>
         <pre class="stats">
-<span class="label">Hostname        :</span> <span class="value" id="hostname"></span>
+<span class="label">ISP             :</span> <span class="value" id="hostname"></span>
 <span class="label">CPU Usage       :</span> <span class="value" id="cpu"></span>
 <span class="label">Memory Usage    :</span> <span class="value" id="memory"></span>
 <span class="label">Disk Usage      :</span> <span class="value" id="disk"></span>
@@ -138,6 +151,8 @@ To exit reality, press ALT+F4. Good luck.
 <span class="label">CPU Cores       :</span> <span class="value" id="cores"></span>
 <span class="label">Load Average    :</span> <span class="value" id="load"></span>
 <span class="label">IP Address      :</span> <span class="value" id="ip"></span>
+<span class="label">Disk IO (R/W)  :</span> <span class="value" id="disk_io"></span>
+<span class="label">Net IO (Up/Down):</span> <span class="value" id="net_io"></span>
 
 <span id="ping_cu_line"><span class="label">Ping 浙江联通 :</span> <span class="value" id="ping_cu"></span> <canvas class="ping-chart" id="ping_cu_chart" width="100" height="40"></canvas>
 </span><span id="ping_cm_line"><span class="label">Ping 浙江移动 :</span> <span class="value" id="ping_cm"></span> <canvas class="ping-chart" id="ping_cm_chart" width="100" height="40"></canvas>
@@ -176,6 +191,8 @@ To exit reality, press ALT+F4. Good luck.
         document.getElementById('cores').textContent = data.cores;
         document.getElementById('load').textContent = data.load;
         document.getElementById('ip').textContent = data.ip;
+        document.getElementById('disk_io').textContent = data.disk_io;
+        document.getElementById('net_io').textContent = data.net_io;
         setPing('ping_cu', data.ping_cu);
         setPing('ping_cm', data.ping_cm);
         setPing('ping_ct', data.ping_ct);
@@ -225,7 +242,14 @@ To exit reality, press ALT+F4. Good luck.
         const el = document.getElementById(id);
         const canvas = document.getElementById(id + '_chart');
         if (ms === null || ms === undefined) {
-            if (line) line.style.display = 'none';
+            if (line) line.style.display = '';
+            el.textContent = 'N/A';
+            el.style.color = '#ff0000';
+            if (canvas) {
+                pingHistory[id] = [];
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
             return;
         }
         el.textContent = `${ms.toFixed(1)}ms ${pingBar(ms)}`;
@@ -269,7 +293,7 @@ To exit reality, press ALT+F4. Good luck.
 
 @app.route("/")
 def index():
-    hostname = socket.gethostname()
+    hostname = ISP_NAME or socket.gethostname()
     return render_template_string(TEMPLATE, hostname=hostname)
 
 
@@ -280,8 +304,8 @@ def stats():
     disk = psutil.disk_usage("/").percent
     container_uptime = int((datetime.now() - start_time).total_seconds())
     host_uptime = int((datetime.now() - host_boot_time).total_seconds())
-    hostname = socket.gethostname()
-    ip = socket.gethostbyname(hostname)
+    hostname = ISP_NAME or socket.gethostname()
+    ip = socket.gethostbyname(socket.gethostname())
     try:
         public_ip = (
             urllib.request.urlopen("https://ifconfig.me", timeout=2)
@@ -296,6 +320,10 @@ def stats():
     load1, load5, load15 = os.getloadavg()
     load = f"{load1:.2f}, {load5:.2f}, {load15:.2f}"
     pings = {k: tcp_ping(v) for k, v in PING_TARGETS.items()}
+    dio = psutil.disk_io_counters()
+    nio = psutil.net_io_counters()
+    disk_io = f"{humanize_bytes(dio.read_bytes)}/{humanize_bytes(dio.write_bytes)}"
+    net_io = f"{humanize_bytes(nio.bytes_sent)}/{humanize_bytes(nio.bytes_recv)}"
     return jsonify(
         cpu=cpu,
         memory=mem,
@@ -306,6 +334,8 @@ def stats():
         ip=ip_display,
         cores=cores,
         load=load,
+        disk_io=disk_io,
+        net_io=net_io,
         **pings,
     )
 
