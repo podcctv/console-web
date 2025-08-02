@@ -6,13 +6,21 @@ app = Flask(__name__)
 start_time = datetime.now()
 host_boot_time = datetime.fromtimestamp(psutil.boot_time())
 
+# Track last network counters to compute realtime speed
+_last_net = psutil.net_io_counters()
+_last_time = datetime.now()
+
 
 def get_isp_name():
     try:
         with urllib.request.urlopen(
             "http://ip-api.com/json/?fields=isp", timeout=2
         ) as resp:
-            return json.loads(resp.read().decode()).get("isp")
+            name = json.loads(resp.read().decode()).get("isp")
+            if name:
+                # Return a short form like "Hostdzire" instead of the full company name
+                return name.split()[0]
+            return None
     except Exception:
         return None
 
@@ -323,7 +331,18 @@ def stats():
     dio = psutil.disk_io_counters()
     nio = psutil.net_io_counters()
     disk_io = f"{humanize_bytes(dio.read_bytes)}/{humanize_bytes(dio.write_bytes)}"
-    net_io = f"{humanize_bytes(nio.bytes_sent)}/{humanize_bytes(nio.bytes_recv)}"
+
+    # Calculate realtime network speed along with total traffic
+    global _last_net, _last_time
+    now = datetime.now()
+    interval = (now - _last_time).total_seconds() or 1
+    up_speed = (nio.bytes_sent - _last_net.bytes_sent) / interval
+    down_speed = (nio.bytes_recv - _last_net.bytes_recv) / interval
+    _last_net, _last_time = nio, now
+    net_io = (
+        f"{humanize_bytes(up_speed)}/s ({humanize_bytes(nio.bytes_sent)}) / "
+        f"{humanize_bytes(down_speed)}/s ({humanize_bytes(nio.bytes_recv)})"
+    )
     return jsonify(
         cpu=cpu,
         memory=mem,
