@@ -1,5 +1,5 @@
 from flask import Flask, render_template_string, jsonify, Response, stream_with_context, request
-import psutil, socket, os, urllib.request, platform, json, subprocess, shlex
+import psutil, socket, os, urllib.request, urllib.parse, platform, json, subprocess, shlex
 from datetime import datetime
 
 app = Flask(__name__)
@@ -81,6 +81,35 @@ def run_cmd(cmd):
         yield f"data: [exit {proc.returncode}]\n\n"
 
     return Response(stream_with_context(generate()), mimetype="text/event-stream")
+
+
+def query_isp(ip: str):
+    try:
+        with urllib.request.urlopen(
+            f"http://ip-api.com/json/{ip}?fields=isp", timeout=2
+        ) as resp:
+            return json.loads(resp.read().decode()).get("isp")
+    except Exception:
+        return None
+
+
+@app.route("/pinginfo")
+def ping_info():
+    url = request.args.get("url", "").strip()
+    if not url:
+        return Response("url required", status=400)
+    parsed = urllib.parse.urlparse(url if "://" in url else f"http://{url}")
+    host = parsed.hostname
+    if not host:
+        return Response("invalid url", status=400)
+    port = parsed.port or 80
+    try:
+        ip = socket.gethostbyname(host)
+    except Exception:
+        ip = None
+    latency = tcp_ping(f"{host}:{port}")
+    isp = query_isp(ip) if ip else None
+    return jsonify(ip=ip, isp=isp, ping=latency)
 
 
 def tcp_ping(host: str):
