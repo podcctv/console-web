@@ -306,10 +306,10 @@ To exit reality, press ALT+F4. Good luck.
 <span id="cores_line"><span class="label">CPU Cores       :</span> <span class="value" id="cores"></span></span>
 <span id="load_line"><span class="label">Load Average    :</span> <span class="value" id="load"></span></span>
 <span id="ip_line"><span class="label">IP Address      :</span> <span class="value" id="ip"></span></span>
-<span id="client_ip_line"><span class="label">Client IP       :</span> <span class="value" id="client_ip"></span></span>
-<span id="client_ping_line"><span class="label">Ping Client     :</span> <span class="value" id="client_ping"></span></span>
 <span id="disk_io_line"><span class="label">Disk IO (R/W)  :</span> <span class="value" id="disk_io"></span></span>
 <span id="net_io_line"><span class="label">Net IO (Up/Down):</span> <span class="value" id="net_io"></span></span>
+<span id="client_ip_line"><span class="label">Client IP       :</span> <span class="value" id="client_ip"></span></span>
+<span id="client_ping_line"><span class="label">Ping Client     :</span> <span class="value" id="client_ping"></span> <canvas class="ping-chart" id="client_ping_chart" width="100" height="40"></canvas></span>
 
 <span id="ping_cu_line"><span class="label">Ping 浙江联通 :</span> <span class="value" id="ping_cu"></span> <canvas class="ping-chart" id="ping_cu_chart" width="100" height="40"></canvas>
 </span><span id="ping_cm_line"><span class="label">Ping 浙江移动 :</span> <span class="value" id="ping_cm"></span> <canvas class="ping-chart" id="ping_cm_chart" width="100" height="40"></canvas>
@@ -366,15 +366,9 @@ To exit reality, press ALT+F4. Good luck.
     async function fetchPings() {
         const res = await fetch('/pings');
         const data = await res.json();
-        const cp = data.client_ping === null ? 'N/A' : data.client_ping;
-        setStat(
-            'client_ping',
-            cp,
-            v => (typeof v === 'number' ? `${v.toFixed(1)}ms` : v),
-            v => (typeof v === 'number' ? pingColor(v) : '#ff0000')
-        );
-        const pings = [data.ping_cu, data.ping_cm, data.ping_ct];
+        const pings = [data.ping_cu, data.ping_cm, data.ping_ct, data.client_ping];
         const maxPing = Math.max(...pings.map(v => (v === null || v === undefined ? 0 : v))) || 1;
+        setPing('client_ping', data.client_ping, maxPing);
         setPing('ping_cu', data.ping_cu, maxPing);
         setPing('ping_cm', data.ping_cm, maxPing);
         setPing('ping_ct', data.ping_ct, maxPing);
@@ -394,7 +388,7 @@ To exit reality, press ALT+F4. Good luck.
     }
     fetchHost();
 
-    const pingHistory = { ping_cu: [], ping_cm: [], ping_ct: [] };
+    const pingHistory = { ping_cu: [], ping_cm: [], ping_ct: [], client_ping: [] };
     const PROMPT = 'root@{{ short_isp }}:~/console-web-v1.6#';
 
     function bar(pct, width = 20) {
