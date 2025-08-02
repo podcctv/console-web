@@ -208,9 +208,11 @@ To exit reality, press ALT+F4. Good luck.
         setStat('ip', data.ip);
         setStat('disk_io', data.disk_io);
         setStat('net_io', data.net_io);
-        setPing('ping_cu', data.ping_cu);
-        setPing('ping_cm', data.ping_cm);
-        setPing('ping_ct', data.ping_ct);
+        const pings = [data.ping_cu, data.ping_cm, data.ping_ct];
+        const maxPing = Math.max(...pings.map(v => (v === null || v === undefined ? 0 : v))) || 1;
+        setPing('ping_cu', data.ping_cu, maxPing);
+        setPing('ping_cm', data.ping_cm, maxPing);
+        setPing('ping_ct', data.ping_ct, maxPing);
     }
     fetchStats();
     setInterval(fetchStats, 1000);
@@ -240,8 +242,7 @@ To exit reality, press ALT+F4. Good luck.
         return '#ff0000';
     }
 
-    function pingBar(ms) {
-        const max = 200;
+    function pingBar(ms, max) {
         const pct = Math.min(ms, max) / max * 100;
         return bar(pct);
     }
@@ -252,16 +253,17 @@ To exit reality, press ALT+F4. Good luck.
         return '#ff0000';
     }
 
-    function setPing(id, ms) {
+    function setPing(id, ms, max) {
         const line = document.getElementById(id + '_line');
         const el = document.getElementById(id);
         const canvas = document.getElementById(id + '_chart');
         if (line) line.style.display = '';
+        const display = ms === null || ms === undefined ? max : ms;
         const val = ms === null || ms === undefined ? 'N/A' : `${ms.toFixed(1)}ms`;
-        const barText = ms === null || ms === undefined ? '[' + '#'.repeat(20) + ']' : pingBar(ms);
+        const barText = pingBar(display, max);
         el.textContent = `${val.padEnd(8)} ${barText}`;
         el.style.color = ms === null || ms === undefined ? '#ff0000' : pingColor(ms);
-        if (ms !== null && ms !== undefined && canvas) {
+        if (canvas) {
             pingHistory[id].push(ms);
             if (pingHistory[id].length > 50) pingHistory[id].shift();
             drawChart(canvas, pingHistory[id]);
@@ -273,11 +275,12 @@ To exit reality, press ALT+F4. Good luck.
         const width = canvas.width;
         const height = canvas.height;
         ctx.clearRect(0, 0, width, height);
-        const max = 200;
+        const max = Math.max(...data.map(v => (v === null || v === undefined ? 0 : v)), 1);
         const barWidth = Math.max(1, Math.floor(width / 50));
         data.forEach((v, i) => {
-            const h = Math.min(v, max) / max * height;
-            ctx.fillStyle = pingColor(v);
+            const val = v === null || v === undefined ? max : v;
+            const h = Math.min(val, max) / max * height;
+            ctx.fillStyle = v === null || v === undefined ? '#ff0000' : pingColor(v);
             for (let y = height; y > height - h; y -= 4) {
                 ctx.fillRect(i * barWidth, y - 3, barWidth - 1, 3);
             }
