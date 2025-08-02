@@ -1,12 +1,22 @@
 from flask import Flask, render_template_string, jsonify
-import psutil, socket, os
+import psutil, socket, os, urllib.request
 from datetime import datetime
 
 app = Flask(__name__)
 start_time = datetime.now()
 host_boot_time = datetime.fromtimestamp(psutil.boot_time())
 
-TEMPLATE = """
+
+def humanize(seconds: int) -> str:
+    seconds = int(seconds)
+    years, seconds = divmod(seconds, 31536000)
+    months, seconds = divmod(seconds, 2592000)
+    days, seconds = divmod(seconds, 86400)
+    hours, seconds = divmod(seconds, 3600)
+    minutes, seconds = divmod(seconds, 60)
+    return f"{years}年 {months}月 {days}天 {hours}小时 {minutes}分 {seconds}秒"
+
+TEMPLATE = r"""
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -31,6 +41,7 @@ TEMPLATE = """
         .red { background: #ff5f56; }
         .yellow { background: #ffbd2e; }
         .green { background: #27c93f; }
+        .banner { margin-bottom: 20px; }
         .stats { margin-top: 20px; line-height: 1.4; }
         .label { color: #00cc00; }
         .value { color: #fff; }
@@ -49,6 +60,23 @@ TEMPLATE = """
             <div class="window-btn yellow"></div>
             <div class="window-btn green"></div>
         </div>
+        <pre class="banner">
+    _    _     ___ ____ _____ 
+   / \  | |   |_ _/ ___| ____|
+  / _ \ | |    | | |   |  _|  
+ / ___ \| |___ | | |___| |___ 
+/_/   \_\_____|___\____|_____|
+                              
+ _   _ _____ _______        _____  ____  _  ______    _   _____ ____  
+| \ | | ____|_   _\ \      / / _ \|  _ \| |/ / ___|  | | |_   _|  _ \ 
+|  \| |  _|   | |  \ \ /\ / / | | | |_) | ' /\___ \  | |   | | | | | |
+| |\  | |___  | |   \ V  V /| |_| |  _ <| . \ ___) | | |___| | | |_| |
+|_| \_|_____| |_|    \_/\_/  \___/|_| \_\_|\_\____/  |_____\_| |____/ 
+
+Thanks for using Alice Network!
+Our website is: https://app.alice.ws
+If you encounter any issues, please contact us at: https://app.alice.ws/ticket
+        </pre>
         <pre class="stats">
 <span class="label">Hostname        :</span> <span class="value" id="hostname"></span>
 <span class="label">CPU Usage       :</span> <span class="value" id="cpu"></span>
@@ -69,17 +97,22 @@ TEMPLATE = """
         const res = await fetch('/stats');
         const data = await res.json();
         document.getElementById('hostname').textContent = data.hostname;
-        document.getElementById('cpu').textContent = data.cpu + '%';
-        document.getElementById('memory').textContent = data.memory + '%';
-        document.getElementById('disk').textContent = data.disk + '%';
-        document.getElementById('cuptime').textContent = data.container_uptime + 's';
-        document.getElementById('huptime').textContent = data.host_uptime + 's';
+        document.getElementById('cpu').textContent = `${data.cpu.toFixed(1)}% ${bar(data.cpu)}`;
+        document.getElementById('memory').textContent = `${data.memory.toFixed(1)}% ${bar(data.memory)}`;
+        document.getElementById('disk').textContent = `${data.disk.toFixed(1)}% ${bar(data.disk)}`;
+        document.getElementById('cuptime').textContent = data.container_uptime;
+        document.getElementById('huptime').textContent = data.host_uptime;
         document.getElementById('cores').textContent = data.cores;
         document.getElementById('load').textContent = data.load;
         document.getElementById('ip').textContent = data.ip;
     }
     fetchStats();
     setInterval(fetchStats, 1000);
+
+    function bar(pct, width = 20) {
+        const filled = pct > 0 ? Math.max(1, Math.round(width * pct / 100)) : 0;
+        return '[' + '#'.repeat(filled) + '.'.repeat(width - filled) + ']';
+    }
     </script>
 </body>
 </html>
@@ -101,11 +134,30 @@ def stats():
     host_uptime = int((datetime.now() - host_boot_time).total_seconds())
     hostname = socket.gethostname()
     ip = socket.gethostbyname(hostname)
+    try:
+        public_ip = (
+            urllib.request.urlopen("https://ifconfig.me", timeout=2)
+            .read()
+            .decode()
+            .strip()
+        )
+    except Exception:
+        public_ip = "N/A"
+    ip_display = f"{ip} (公网 {public_ip})"
     cores = psutil.cpu_count()
     load1, load5, load15 = os.getloadavg()
     load = f"{load1:.2f}, {load5:.2f}, {load15:.2f}"
-    return jsonify(cpu=cpu, memory=mem, disk=disk, container_uptime=container_uptime,
-                   host_uptime=host_uptime, hostname=hostname, ip=ip, cores=cores, load=load)
+    return jsonify(
+        cpu=cpu,
+        memory=mem,
+        disk=disk,
+        container_uptime=humanize(container_uptime),
+        host_uptime=humanize(host_uptime),
+        hostname=hostname,
+        ip=ip_display,
+        cores=cores,
+        load=load,
+    )
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
