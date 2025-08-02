@@ -42,13 +42,6 @@ COMMANDS = {
     "speedtest": lambda target: ["speedtest-cli", "--simple"],
 }
 
-CAT_ART = r"""
- /\_/\
-( o.o )
- > ^ <
-"""
-
-
 @app.route("/run/<cmd>")
 def run_cmd(cmd):
     target = request.args.get("target", "")
@@ -71,22 +64,6 @@ def run_cmd(cmd):
         yield f"data: [exit {proc.returncode}]\n\n"
 
     return Response(stream_with_context(generate()), mimetype="text/event-stream")
-
-
-@app.route("/fun/quote")
-def fun_quote():
-    try:
-        with urllib.request.urlopen(
-            "https://v1.hitokoto.cn/?encode=text", timeout=2
-        ) as resp:
-            return resp.read().decode("utf-8")
-    except Exception:
-        return "今日无语录"
-
-
-@app.route("/fun/cat")
-def fun_cat():
-    return CAT_ART, 200, {"Content-Type": "text/plain; charset=utf-8"}
 
 
 def tcp_ping(host: str):
@@ -143,15 +120,17 @@ TEMPLATE = r"""
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; overflow: hidden; }
         body {
             background: black; color: #00FF00; font-family: 'Consolas', monospace;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            min-height: 100vh; padding: 10px;
+            height: 100%; padding: 10px;
         }
         .window {
             border: 1px solid #00FF00; width: 80%; max-width: 900px; padding: 20px;
             box-shadow: 0 0 20px #00FF00; border-radius: 8px;
             position: relative; background: black;
+            height: 100%; overflow: hidden; display: flex; flex-direction: column;
         }
         pre { overflow-x: auto; }
         .window-bar {
@@ -162,13 +141,19 @@ TEMPLATE = r"""
         .yellow { background: #ffbd2e; }
         .green { background: #27c93f; }
         .banner { margin-bottom: 20px; }
-        .stats { margin-top: 20px; line-height: 1.4; }
+        .stats {
+            margin-top: 20px; line-height: 1.4;
+            flex: 1; display: flex; flex-direction: column; overflow-y: auto;
+        }
         .label { color: #00cc00; }
         .value { color: #fff; }
         .ping-chart { margin-left: 8px; background: #000; }
         .terminal-line { margin-top: 20px; }
-        #cmd_output { display: block; white-space: pre-wrap; margin-top: 10px; max-height: 200px; overflow-y: auto; }
-        .terminal-input { background: black; color: #00FF00; font-family: 'Consolas', monospace; border: none; outline: none; }
+        #cmd_output { display: block; white-space: pre-wrap; margin-top: 10px; flex: 1; overflow-y: auto; }
+        .terminal-input {
+            background: black; color: #00FF00; font-family: 'Consolas', monospace;
+            border: none; outline: none; caret-color: #00FF00; caret-shape: block;
+        }
         @media (max-width: 600px) {
             .window { width: 100%; padding: 10px; }
             pre { font-size: 12px; }
@@ -359,7 +344,7 @@ To exit reality, press ALT+F4. Good luck.
         if (currentSource) currentSource.close();
         const output = document.getElementById('cmd_output');
         const commandText = target ? `${cmd} ${target}` : cmd === 'speedtest' ? 'speedtest-cli --simple' : cmd;
-        output.textContent += `${PROMPT} ${commandText}\n`;
+        output.insertAdjacentText('beforeend', `${PROMPT} ${commandText}\n`);
         output.scrollTop = output.scrollHeight;
         let url = `/run/${cmd}`;
         if (cmd !== 'speedtest' && target) {
@@ -369,7 +354,7 @@ To exit reality, press ALT+F4. Good luck.
         currentSource.onmessage = e => {
             const data = e.data;
             if (!data.startsWith('[exit')) {
-                output.textContent += data + '\n';
+                output.insertAdjacentText('beforeend', data + '\n');
                 output.scrollTop = output.scrollHeight;
             } else {
                 currentSource.close();
@@ -378,22 +363,6 @@ To exit reality, press ALT+F4. Good luck.
         currentSource.onerror = () => {
             currentSource.close();
         };
-    }
-
-    async function fetchQuote() {
-        const res = await fetch('/fun/quote');
-        const text = await res.text();
-        const output = document.getElementById('cmd_output');
-        output.textContent += `${PROMPT} quote\n${text}\n`;
-        output.scrollTop = output.scrollHeight;
-    }
-
-    async function showCat() {
-        const res = await fetch('/fun/cat');
-        const text = await res.text();
-        const output = document.getElementById('cmd_output');
-        output.textContent += `${PROMPT} cat\n${text}\n`;
-        output.scrollTop = output.scrollHeight;
     }
 
     const inputEl = document.getElementById('cmd_input');
@@ -409,30 +378,22 @@ To exit reality, press ALT+F4. Good luck.
                     if (args.length) {
                         runCommand(cmd, args.join(' '));
                     } else {
-                        outputEl.textContent += `${PROMPT} ${text}\nmissing target\n`;
+                        outputEl.insertAdjacentText('beforeend', `${PROMPT} ${text}\nmissing target\n`);
                     }
                     break;
                 case 'speedtest':
                     runCommand('speedtest');
                     break;
-                case 'quote':
-                    fetchQuote();
-                    break;
-                case 'cat':
-                    showCat();
-                    break;
                 case 'help':
-                    outputEl.textContent += `${PROMPT} ${text}\n` +
+                    outputEl.insertAdjacentText('beforeend', `${PROMPT} ${text}\n` +
                         'Available commands:\n' +
                         '  ping <host>\n' +
                         '  mtr <host>\n' +
                         '  speedtest\n' +
-                        '  quote\n' +
-                        '  cat\n' +
-                        '  help\n';
+                        '  help\n');
                     break;
                 default:
-                    outputEl.textContent += `${PROMPT} ${text}\ncommand not found\n`;
+                    outputEl.insertAdjacentText('beforeend', `${PROMPT} ${text}\ncommand not found\n`);
             }
             outputEl.scrollTop = outputEl.scrollHeight;
             inputEl.value = '';
