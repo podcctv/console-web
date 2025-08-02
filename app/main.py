@@ -204,7 +204,7 @@ TEMPLATE = r"""
         html, body { height: 100%; }
         body {
             background: black; color: #00FF00; font-family: 'Consolas', monospace;
-            display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
             min-height: 100%; padding: 10px; overflow: auto;
         }
         .window {
@@ -225,7 +225,7 @@ TEMPLATE = r"""
         .stats {
             margin-top: 20px; line-height: 1.4;
             display: flex; flex-direction: column;
-            white-space: pre-wrap; word-break: break-word;
+            white-space: pre; word-break: normal;
         }
         .label {
             color: #00cc00;
@@ -236,7 +236,7 @@ TEMPLATE = r"""
             padding-right: 8px;
         }
         .label::after { content: ':'; position: absolute; right: 0; }
-        .value { color: #fff; word-break: break-word; margin-left: 4px; }
+        .value { color: #fff; word-break: keep-all; margin-left: 4px; white-space: nowrap; }
         .ping-chart { margin-left: 8px; background: #000; }
         .terminal-line { margin-top: 20px; }
         #cmd_output { display: block; white-space: pre-wrap; margin-top: 10px; flex: 1; overflow-y: auto; word-break: break-word; }
