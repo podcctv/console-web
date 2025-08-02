@@ -201,17 +201,17 @@ TEMPLATE = r"""
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { height: 100%; overflow: hidden; }
+        html, body { height: 100%; }
         body {
             background: black; color: #00FF00; font-family: 'Consolas', monospace;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            height: 100%; padding: 10px;
+            display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start;
+            min-height: 100%; padding: 10px; overflow: auto;
         }
         .window {
             border: 1px solid #00FF00; width: 80%; max-width: 900px; padding: 20px;
             box-shadow: 0 0 20px #00FF00; border-radius: 8px;
             position: relative; background: black;
-            height: 100%; overflow: hidden; display: flex; flex-direction: column;
+            display: flex; flex-direction: column;
         }
         pre { overflow-x: auto; }
         .window-bar {
@@ -224,19 +224,22 @@ TEMPLATE = r"""
         .banner { margin-bottom: 20px; }
         .stats {
             margin-top: 20px; line-height: 1.4;
-            flex: 1; display: flex; flex-direction: column; overflow-y: auto;
+            display: flex; flex-direction: column;
+            white-space: pre-wrap; word-break: break-word;
         }
         .label {
             color: #00cc00;
             display: inline-block;
             width: 160px;
-            text-align: right;
-            margin-right: 4px;
+            text-align: left;
+            position: relative;
+            padding-right: 8px;
         }
-        .value { color: #fff; }
+        .label::after { content: ':'; position: absolute; right: 0; }
+        .value { color: #fff; word-break: break-word; margin-left: 4px; }
         .ping-chart { margin-left: 8px; background: #000; }
         .terminal-line { margin-top: 20px; }
-        #cmd_output { display: block; white-space: pre-wrap; margin-top: 10px; flex: 1; overflow-y: auto; }
+        #cmd_output { display: block; white-space: pre-wrap; margin-top: 10px; flex: 1; overflow-y: auto; word-break: break-word; }
         .terminal-input {
             background: black; color: #00FF00; font-family: 'Consolas', monospace;
             border: none; outline: none; caret-color: #00FF00; caret-shape: block;
@@ -303,33 +306,33 @@ Tips:
 To exit reality, press ALT+F4. Good luck.
         </pre>
         <pre class="stats">
-<span id="hostname_line"><span class="label">ISP:</span><span class="value" id="hostname"></span></span>
-<span id="cpu_line"><span class="label">CPU Usage:</span><span class="value" id="cpu"></span></span>
-<span id="memory_line"><span class="label">Memory Usage:</span><span class="value" id="memory"></span></span>
-<span id="disk_line"><span class="label">Disk Usage:</span><span class="value" id="disk"></span></span>
-<span id="cuptime_line"><span class="label">Container Uptime:</span><span class="value" id="cuptime"></span></span>
-<span id="huptime_line"><span class="label">Host Uptime:</span><span class="value" id="huptime"></span></span>
-<span id="cores_line"><span class="label">CPU Cores:</span><span class="value" id="cores"></span></span>
-<span id="load_line"><span class="label">Load Average:</span><span class="value" id="load"></span></span>
-<span id="ip_line"><span class="label">IP Address:</span><span class="value" id="ip"></span></span>
-<span id="disk_io_line"><span class="label">Disk IO (R/W):</span><span class="value" id="disk_io"></span></span>
-<span id="net_io_line"><span class="label">Net IO (Up/Down):</span><span class="value" id="net_io"></span></span>
-<span id="client_ip_line"><span class="label">Client IP:</span><span class="value" id="client_ip"></span></span>
-<span id="client_ping_line"><span class="label">Ping Client:</span><span class="value" id="client_ping"></span><canvas class="ping-chart" id="client_ping_chart" width="100" height="40"></canvas></span>
+<span id="hostname_line"><span class="label">ISP</span><span class="value" id="hostname"></span></span>
+<span id="cpu_line"><span class="label">CPU Usage</span><span class="value" id="cpu"></span></span>
+<span id="memory_line"><span class="label">Memory Usage</span><span class="value" id="memory"></span></span>
+<span id="disk_line"><span class="label">Disk Usage</span><span class="value" id="disk"></span></span>
+<span id="cuptime_line"><span class="label">Container Uptime</span><span class="value" id="cuptime"></span></span>
+<span id="huptime_line"><span class="label">Host Uptime</span><span class="value" id="huptime"></span></span>
+<span id="cores_line"><span class="label">CPU Cores</span><span class="value" id="cores"></span></span>
+<span id="load_line"><span class="label">Load Average</span><span class="value" id="load"></span></span>
+<span id="ip_line"><span class="label">IP Address</span><span class="value" id="ip"></span></span>
+<span id="disk_io_line"><span class="label">Disk IO (R/W)</span><span class="value" id="disk_io"></span></span>
+<span id="net_io_line"><span class="label">Net IO (Up/Down)</span><span class="value" id="net_io"></span></span>
+<span id="client_ip_line"><span class="label">Client IP</span><span class="value" id="client_ip"></span></span>
+<span id="client_ping_line"><span class="label">Ping Client</span><span class="value" id="client_ping"></span><canvas class="ping-chart" id="client_ping_chart" width="100" height="40"></canvas></span>
 
-<span id="ping_cu_line"><span class="label">Ping 浙江联通:</span><span class="value" id="ping_cu"></span><canvas class="ping-chart" id="ping_cu_chart" width="100" height="40"></canvas>
-</span><span id="ping_cm_line"><span class="label">Ping 浙江移动:</span><span class="value" id="ping_cm"></span><canvas class="ping-chart" id="ping_cm_chart" width="100" height="40"></canvas>
-</span><span id="ping_ct_line"><span class="label">Ping 浙江电信:</span><span class="value" id="ping_ct"></span><canvas class="ping-chart" id="ping_ct_chart" width="100" height="40"></canvas>
+<span id="ping_cu_line"><span class="label">Ping 浙江联通</span><span class="value" id="ping_cu"></span><canvas class="ping-chart" id="ping_cu_chart" width="100" height="40"></canvas>
+</span><span id="ping_cm_line"><span class="label">Ping 浙江移动</span><span class="value" id="ping_cm"></span><canvas class="ping-chart" id="ping_cm_chart" width="100" height="40"></canvas>
+</span><span id="ping_ct_line"><span class="label">Ping 浙江电信</span><span class="value" id="ping_ct"></span><canvas class="ping-chart" id="ping_ct_chart" width="100" height="40"></canvas>
 </span>
 
-<span id="ping_legend_line"><span class="label">Ping 图例:</span><span class="value"><span style="color:#00ff00">低 (&lt;80ms)</span> <span style="color:#ffff00">中 (&lt;160ms)</span> <span style="color:#ff0000">高 (&ge;160ms)</span></span></span>
+<span id="ping_legend_line"><span class="label">Ping 图例</span><span class="value"><span style="color:#00ff00">低 (&lt;80ms)</span> <span style="color:#ffff00">中 (&lt;160ms)</span> <span style="color:#ff0000">高 (&ge;160ms)</span></span></span>
 
-<span id="os_line"><span class="label">OS:</span><span class="value" id="os"></span>
-</span><span id="kernel_line"><span class="label">Kernel:</span><span class="value" id="kernel"></span>
-</span><span id="arch_line"><span class="label">Architecture:</span><span class="value" id="arch"></span>
-</span><span id="cpu_model_line"><span class="label">CPU Model:</span><span class="value" id="cpu_model"></span>
-</span><span id="mem_total_line"><span class="label">Total Memory:</span><span class="value" id="mem_total"></span>
-</span><span id="disk_total_line"><span class="label">Total Disk:</span><span class="value" id="disk_total"></span>
+<span id="os_line"><span class="label">OS</span><span class="value" id="os"></span>
+</span><span id="kernel_line"><span class="label">Kernel</span><span class="value" id="kernel"></span>
+</span><span id="arch_line"><span class="label">Architecture</span><span class="value" id="arch"></span>
+</span><span id="cpu_model_line"><span class="label">CPU Model</span><span class="value" id="cpu_model"></span>
+</span><span id="mem_total_line"><span class="label">Total Memory</span><span class="value" id="mem_total"></span>
+</span><span id="disk_total_line"><span class="label">Total Disk</span><span class="value" id="disk_total"></span>
 </span>
 
 <span id="cmd_output"></span>
