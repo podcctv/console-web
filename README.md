@@ -28,7 +28,7 @@ python app/main.py
 可以直接构建镜像：
 ```bash
 docker build -t console-web .
-docker run -d -p 8080:8080 console-web
+docker run -d -p 8180:8080 console-web
 ```
 或者使用仓库自带的脚本：
 ```bash
