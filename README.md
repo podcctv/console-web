@@ -4,6 +4,9 @@
 
 console-web 是一个使用 [Flask](https://flask.palletsprojects.com/) 和 [psutil](https://psutil.readthedocs.io/) 构建的极简系统状态面板，界面采用终端风格，实时展示 CPU、内存、磁盘、网络等信息。
 
+<img width="1012" height="1054" alt="image" src="https://github.com/user-attachments/assets/5093b202-5b38-4929-ac9a-1db5062d863a" />
+
+
 ## 功能
 - 黑客风格的单页界面
 - 实时显示 CPU、内存、磁盘使用率
