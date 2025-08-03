@@ -1,7 +1,6 @@
-version: '3'
 services:
   console-web:
     image: ghcr.io/podcctv/console-web:latest
     ports:
-      - "8080:8080"
+      - "8180:8080"
     restart: unless-stopped
