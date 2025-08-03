@@ -32,8 +32,8 @@ docker run -d -p 8180:8080 console-web
 ```
 或者使用仓库自带的脚本：
 ```bash
-chmod +x deploy.sh
-./deploy.sh
+chmod +x console-web/deploy.sh   # 赋予执行权限
+./console-web/deploy.sh          # 执行脚本
 ```
 脚本会自动克隆仓库、构建镜像并在 8180 端口运行容器。运行时如未输入指令，将在 3 秒倒计时后默认重新部署，部署完成后会自动显示可访问的服务器 IP。
 
