@@ -38,6 +38,15 @@ chmod +x deploy.sh
 镜像内已预装 `iputils-ping`、`mtr`，因此 Web 终端提供的网络诊断命令可开箱即用。
 
 
+## Docker Compose 部署
+仓库提供了 `docker-compose.yml` 示例，可以直接使用：
+
+```bash
+docker compose up -d
+```
+
+默认将容器的 `8080` 端口映射到宿主机的 `8080` 端口，并在后台运行。
+
 ## 目录结构
 ```
 .
