@@ -24,6 +24,44 @@ python app/main.py
 ```
 应用默认监听在 `http://127.0.0.1:8080`。页面中提供 Ping、MTR 按钮，可实时查看执行结果。
 
+## Alpine 系统部署
+在 Alpine Linux 中可以直接通过以下命令部署并运行：
+
+```bash
+apk add --no-cache python3 py3-pip git iputils mtr
+git clone https://github.com/podcctv/console-web.git /opt/console-web
+cd /opt/console-web
+pip install -r requirements.txt
+python app/main.py
+```
+
+### 添加服务
+如需开机自启，可创建 OpenRC 服务：
+
+```bash
+cat <<'EOF' >/etc/init.d/console-web
+#!/sbin/openrc-run
+command="/usr/bin/python3 /opt/console-web/app/main.py"
+command_background="yes"
+pidfile="/run/console-web.pid"
+depend() {
+    need net
+}
+EOF
+chmod +x /etc/init.d/console-web
+rc-update add console-web default
+service console-web start
+```
+
+### 卸载服务与程序
+```bash
+service console-web stop
+rc-update del console-web default
+rm /etc/init.d/console-web
+rm -rf /opt/console-web
+apk del python3 py3-pip git iputils mtr
+```
+
 ## Docker 部署
 可以直接构建镜像：
 ```bash
