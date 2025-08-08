@@ -37,7 +37,7 @@ chmod +x console-web/deploy.sh   # 赋予执行权限
 ```
 <img width="1215" height="703" alt="image" src="https://github.com/user-attachments/assets/c73ec314-2feb-4064-a5e5-d27f3617d77f" />
 
-脚本会自动克隆仓库、构建镜像并在 8180 端口运行容器。运行时如未输入指令，将在 3 秒倒计时后默认重新部署，部署完成后会自动显示可访问的服务器 IP。
+脚本会自动安装 Docker（如未安装）、拉取预构建镜像并在 8180 端口运行容器，默认限制容器内存为 128MB。运行时如未输入指令，将在 3 秒后默认重新部署，部署完成后会自动显示可访问的服务器 IP。
 
 
 镜像内已预装 `iputils-ping`、`mtr`，因此 Web 终端提供的网络诊断命令可开箱即用。
