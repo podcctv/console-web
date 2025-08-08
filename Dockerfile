@@ -1,4 +1,4 @@
-FROM python:3.9-slim
+FROM python:3.9-alpine
 
 WORKDIR /app
 
@@ -6,9 +6,7 @@ WORKDIR /app
 COPY requirements.txt .
 
 # Install system dependencies for network tools and Python requirements
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    iputils-ping mtr \
-    && rm -rf /var/lib/apt/lists/* \
+RUN apk add --no-cache iputils mtr \
     && pip install --no-cache-dir -r requirements.txt
 
 # Copy application source

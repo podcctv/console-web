@@ -1,36 +1,42 @@
-#!/bin/bash
+#!/bin/sh
 
 set -e
 
-REPO_URL="https://github.com/podcctv/console-web.git"
-CLONE_DIR="console-web"
-IMAGE_NAME="console-web"
+IMAGE_NAME="ghcr.io/podcctv/console-web:latest"
+CONTAINER_NAME="console-web"
 PORT=8180
+
+check_env() {
+  if ! command -v docker >/dev/null 2>&1; then
+    echo "⚙️  安装 Docker..."
+    apk add --no-cache docker >/dev/null
+    rc-update add docker boot >/dev/null
+    service docker start >/dev/null
+  fi
+}
 
 clean() {
   echo "🧹 正在清理旧容器和镜像..."
-  docker stop "$IMAGE_NAME" 2>/dev/null || true
-  docker rm "$IMAGE_NAME" 2>/dev/null || true
+  docker stop "$CONTAINER_NAME" 2>/dev/null || true
+  docker rm "$CONTAINER_NAME" 2>/dev/null || true
   docker rmi "$IMAGE_NAME" 2>/dev/null || true
+  docker system prune -f 2>/dev/null || true
 }
 
 deploy() {
   clean
-  echo "📥 正在克隆仓库：$REPO_URL"
-  rm -rf "$CLONE_DIR"
-  git clone "$REPO_URL" "$CLONE_DIR"
-
-  echo "🐳 正在构建 Docker 镜像：$IMAGE_NAME"
-  docker build --no-cache -t "$IMAGE_NAME" "$CLONE_DIR"
+  echo "📥 拉取镜像：$IMAGE_NAME"
+  docker pull "$IMAGE_NAME"
 
   echo "🚀 正在运行新容器..."
   docker run -d \
-    --name "$IMAGE_NAME" \
+    --name "$CONTAINER_NAME" \
     -p ${PORT}:8080 \
+    --memory=128m --memory-swap=128m \
     -e THEME=matrix \
     "$IMAGE_NAME"
 
-  SERVER_IP=$(hostname -I | awk '{print $1}')
+  SERVER_IP=$(ip route get 1 | awk '{print $7; exit}')
   echo "✅ 部署完成！请访问：http://${SERVER_IP}:${PORT}"
 }
 
@@ -40,18 +46,14 @@ delete() {
 }
 
 ACTION=$1
+check_env
 
 if [ -z "$ACTION" ]; then
   echo "请选择操作："
   echo "1) 重新部署系统"
   echo "2) 删除已运行的 Docker"
-  echo -n "输入选项编号 (3 秒后默认选择 1): "
-  for i in 3 2 1; do
-    read -t 1 -n 1 choice && break
-    echo -n "$i "
-  done
-  echo
-  choice=${choice:-1}
+  printf "输入选项编号 (3 秒后默认选择 1): "
+  read -t 3 choice || choice=1
   case "$choice" in
     1) ACTION=deploy ;;
     2) ACTION=delete ;;
