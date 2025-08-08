@@ -31,7 +31,7 @@ python app/main.py
 apk add --no-cache python3 py3-pip git iputils mtr
 git clone https://github.com/podcctv/console-web.git /opt/console-web
 cd /opt/console-web
-pip install -r requirements.txt
+pip install --break-system-packages -r requirements.txt
 python app/main.py
 ```
 
