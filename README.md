@@ -28,9 +28,15 @@ python app/main.py
 在 Alpine Linux 中可以直接通过以下命令部署并运行：
 
 ```bash
-apk add --no-cache python3 py3-pip git iputils mtr
+# 安装运行及编译依赖
+apk add --no-cache \
+  python3 py3-pip git iputils mtr \
+  build-base python3-dev linux-headers
+
 git clone https://github.com/podcctv/console-web.git /opt/console-web
 cd /opt/console-web
+
+# 安装 Python 依赖并启动服务
 pip install --break-system-packages -r requirements.txt
 python app/main.py
 ```
