@@ -10,8 +10,10 @@ COPY requirements.txt .
 RUN apk add --no-cache iputils mtr build-base python3-dev linux-headers \
     && pip install --no-cache-dir -r requirements.txt
 
-# Copy application source
-COPY app /app/app
-COPY main.py /app/main.py
+# Copy the full project so editable install can register the `main` module
+COPY . /app
+
+# Perform an editable install to ensure gunicorn can import `main:app`
+RUN pip install --no-cache-dir -e .
 
 CMD ["python", "main.py"]
