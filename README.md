@@ -113,6 +113,8 @@ pip install -r requirements.txt
 gunicorn -b 0.0.0.0:8080 main:app
 ```
 
+如果面板或启动器把入口写成带斜杠的 `app/main`，安装依赖后也可以正常启动——仓库提供的 `sitecustomize` 会在 Python 启动时把该“错误”模块名映射到正确的 `app.main`，避免 `ModuleNotFoundError: No module named 'app/main'` 的问题。
+
 可编辑安装会将项目根目录添加到环境中，无论 Gunicorn 的工作目录在哪里，都能正确找到 `main:app`。
 
 
