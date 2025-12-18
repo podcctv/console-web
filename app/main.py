@@ -29,7 +29,14 @@ def get_isp_info():
         return None, None
 
 
-ISP_FULL_NAME, ISP_SHORT_NAME = get_isp_info()
+ISP_FULL_NAME = None
+ISP_SHORT_NAME = None
+
+
+def ensure_isp_info():
+    global ISP_FULL_NAME, ISP_SHORT_NAME
+    if ISP_FULL_NAME is None and ISP_SHORT_NAME is None:
+        ISP_FULL_NAME, ISP_SHORT_NAME = get_isp_info()
 
 PING_TARGETS = {
     "ping_cu": "zj-cu-v4.ip.zstaticcdn.com:80",
@@ -533,6 +540,7 @@ To exit reality, press ALT+F4. Good luck.
 
 @app.route("/")
 def index():
+    ensure_isp_info()
     hostname = ISP_FULL_NAME or socket.gethostname()
     short_isp = ISP_SHORT_NAME or socket.gethostname()
     return render_template_string(TEMPLATE, hostname=hostname, short_isp=short_isp)
@@ -540,6 +548,7 @@ def index():
 
 @app.route("/stats")
 def stats():
+    ensure_isp_info()
     try:
         cpu = psutil.cpu_percent(interval=None)
     except Exception:
