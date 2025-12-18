@@ -1,0 +1,1 @@
+"""console-web application package."""
