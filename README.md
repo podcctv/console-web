@@ -119,13 +119,27 @@ gunicorn -b 0.0.0.0:8080 main:app
 
 
 ## Docker Compose 部署
-仓库提供了 `docker-compose.yml` 示例，可以直接使用：
+仓库提供了可直接构建并运行的 `docker-compose.yml` 示例：
 
 ```bash
 docker compose up -d
 ```
 
-默认将容器的 `8080` 端口映射到宿主机的 `8080` 端口，并在后台运行。
+默认将容器的 `8080` 端口映射到宿主机的 `8180` 端口，并在后台运行。
+
+- 本地有源代码时会自动使用当前目录构建镜像；如果只想拉取镜像，可以删除或注释掉 `build` 字段。
+- `command: ["python", "main.py"]` 和 `working_dir: /app` 保证容器启动时始终以正确的 Main File/入口脚本运行，避免某些面板默认工作目录错位导致的模块加载异常。
+
+### 容器入口与 Main File 配置指引
+
+在使用 Docker Desktop、1Panel、Pella 等面板或在服务器上以 Docker 服务方式部署时，可以参考下列参数，确保入口一致：
+
+- **工作目录（Working Directory）**：`/app`（或映射后的代码所在目录）
+- **命令（Command）**：`python`
+- **主文件（Main file / App Entry）**：`main.py`（若面板要求带路径，可填 `app/main.py`）
+- **WSGI/App Entry**：`main:app`（Gunicorn 或其他 WSGI 启动方式）
+
+配合端口映射 `8080` → 宿主机任意端口（示例为 `8180:8080`），即可在不同的 Docker 服务或面板中一致地运行容器。
 
 ## 目录结构
 ```
