@@ -95,7 +95,7 @@ chmod +x console-web/deploy.sh   # 赋予执行权限
 - **主文件（Main file / App Entry）**：`app/main.py`
 - **端口映射**：容器 `8080` 暴露到宿主机所需端口，例如 `8180:8080`。
 
-入口脚本 `app/main.py` 已直接调用 `app.run(host="0.0.0.0", port=8080)` 启动 Flask 服务，指定 Python 解释器与入口文件即可正常运行。
+入口脚本 `app/main.py` 已直接调用 `app.run(host="0.0.0.0", port=8080)` 启动 Flask 服务，指定 Python 解释器与入口文件即可正常运行。若运行环境默认使用 WSGI/Gunicorn 启动，可直接指定 `main:app` 作为入口（项目根目录提供了同名的转发脚本，避免在子目录下找不到模块）。
 
 
 ## Docker Compose 部署
