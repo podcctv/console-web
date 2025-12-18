@@ -97,6 +97,17 @@ chmod +x console-web/deploy.sh   # 赋予执行权限
 
 入口脚本 `app/main.py` 已直接调用 `app.run(host="0.0.0.0", port=8080)` 启动 Flask 服务，指定 Python 解释器与入口文件即可正常运行。若运行环境默认使用 WSGI/Gunicorn 启动，可直接指定 `main:app` 作为入口（项目根目录提供了同名的转发脚本，避免在子目录下找不到模块）。
 
+### Gunicorn 部署建议
+
+部分 PaaS/容器环境在启动 Gunicorn 时不会自动把当前项目目录加入 `PYTHONPATH`，导致出现 `ModuleNotFoundError: No module named 'main'` 报错。可以先在代码目录执行一次可编辑安装，确保 `main` 模块被正确注册：
+
+```bash
+pip install -e .
+gunicorn -b 0.0.0.0:8080 main:app
+```
+
+`pip install -e .` 会将项目根目录添加到环境中，无论 Gunicorn 的工作目录在哪里，都能正确找到 `main:app`。
+
 
 ## Docker Compose 部署
 仓库提供了 `docker-compose.yml` 示例，可以直接使用：
