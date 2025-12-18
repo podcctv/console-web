@@ -1,3 +1,6 @@
-flask
-psutil
+# Install project in editable mode so Gunicorn can import `main:app` even when
+# the working directory is not the project root. Dependency versions are
+# driven by `setup.cfg`.
+-e .
+gunicorn
 
