@@ -86,6 +86,17 @@ chmod +x console-web/deploy.sh   # 赋予执行权限
 
 镜像内已预装 `iputils-ping`、`mtr`，因此 Web 终端提供的网络诊断命令可开箱即用。
 
+### Pella 面板启动指引
+
+在 Pella 等面板启动容器时，避免出现 `Cannot find module '/app'` 的 Node 报错，可按以下配置填写：
+
+- **工作目录（Working Directory）**：`/workspace/console-web`（或镜像内代码所在目录）。
+- **命令（Command）**：`python`
+- **主文件（Main file / App Entry）**：`app/main.py`
+- **端口映射**：容器 `8080` 暴露到宿主机所需端口，例如 `8180:8080`。
+
+入口脚本 `app/main.py` 已直接调用 `app.run(host="0.0.0.0", port=8080)` 启动 Flask 服务，指定 Python 解释器与入口文件即可正常运行。
+
 
 ## Docker Compose 部署
 仓库提供了 `docker-compose.yml` 示例，可以直接使用：
