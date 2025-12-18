@@ -1,11 +1,62 @@
-from flask import Flask, render_template_string, jsonify, Response, stream_with_context, request
-import psutil, socket, os, urllib.request, urllib.parse, platform, json, subprocess, shlex
+import json
+import logging
+import os
+import platform
+import shlex
+import socket
+import subprocess
+import urllib.parse
+import urllib.request
 from datetime import datetime
+from logging.handlers import RotatingFileHandler
+from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
+
+import psutil
+from flask import Flask, render_template_string, jsonify, Response, stream_with_context, request
+
+def configure_logging():
+    log_dir = Path(__file__).resolve().parent.parent / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_file = log_dir / "console-web.log"
+
+    formatter = logging.Formatter(
+        "%(asctime)s %(levelname)s [%(name)s] %(message)s",
+    )
+
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)
+
+    if not any(isinstance(h, RotatingFileHandler) and Path(h.baseFilename) == log_file for h in root_logger.handlers):
+        file_handler = RotatingFileHandler(
+            log_file,
+            maxBytes=1_048_576,
+            backupCount=3,
+            encoding="utf-8",
+        )
+        file_handler.setFormatter(formatter)
+        root_logger.addHandler(file_handler)
+
+    if not any(isinstance(h, logging.StreamHandler) for h in root_logger.handlers):
+        stream_handler = logging.StreamHandler()
+        stream_handler.setFormatter(formatter)
+        root_logger.addHandler(stream_handler)
+
+
+configure_logging()
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 start_time = datetime.now()
 host_boot_time = datetime.fromtimestamp(psutil.boot_time())
+
+logger.info(
+    "console-web starting (pid=%s, platform=%s %s, python=%s)",
+    os.getpid(),
+    platform.system(),
+    platform.release(),
+    platform.python_version(),
+)
 
 # Track last network counters to compute realtime speed
 try:
@@ -23,9 +74,11 @@ def get_isp_info():
             name = json.loads(resp.read().decode()).get("isp")
             if name:
                 short = name.split()[0]
+                logger.info("Detected ISP: %s (short=%s)", name, short)
                 return name, short
             return None, None
     except Exception:
+        logger.exception("Failed to fetch ISP info")
         return None, None
 
 
@@ -37,6 +90,11 @@ def ensure_isp_info():
     global ISP_FULL_NAME, ISP_SHORT_NAME
     if ISP_FULL_NAME is None and ISP_SHORT_NAME is None:
         ISP_FULL_NAME, ISP_SHORT_NAME = get_isp_info()
+        logger.info(
+            "ISP info initialized: full=%s, short=%s",
+            ISP_FULL_NAME,
+            ISP_SHORT_NAME,
+        )
 
 PING_TARGETS = {
     "ping_cu": "zj-cu-v4.ip.zstaticcdn.com:80",
@@ -60,17 +118,27 @@ def run_cmd(cmd):
     target = request.args.get("target", "")
     raw_args = request.args.get("args", "")
     if cmd not in COMMANDS:
+        logger.warning("Unsupported command received: %s", cmd)
         return Response("unsupported command", status=400)
     if not target:
+        logger.warning("Command %s missing target", cmd)
         return Response("target required", status=400)
     extra_args = shlex.split(raw_args) if raw_args else []
     try:
         args = COMMANDS[cmd](target, extra_args)
+        logger.info(
+            "Executing command: cmd=%s target=%s args=%s remote=%s",
+            cmd,
+            target,
+            extra_args,
+            request.headers.get("X-Forwarded-For", request.remote_addr),
+        )
         proc = subprocess.Popen(
             args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
         )
     except Exception as e:
         err = e
+        logger.exception("Failed to start command %s %s", cmd, target)
         def generate_error():
             yield f"data: unable to execute: {err}\n\n"
             yield "data: [exit 1]\n\n"
@@ -99,15 +167,18 @@ def query_isp(ip: str):
 def ping_info():
     url = request.args.get("url", "").strip()
     if not url:
+        logger.warning("/pinginfo missing url parameter")
         return Response("url required", status=400)
     parsed = urllib.parse.urlparse(url if "://" in url else f"http://{url}")
     host = parsed.hostname
     if not host:
+        logger.warning("/pinginfo invalid url: %s", url)
         return Response("invalid url", status=400)
     port = parsed.port or 80
     try:
         ip = socket.gethostbyname(host)
     except Exception:
+        logger.exception("Failed to resolve host %s", host)
         ip = None
     latency = tcp_ping(f"{host}:{port}")
     isp = query_isp(ip) if ip else None
@@ -126,6 +197,7 @@ def tcp_ping(host: str):
             end = datetime.now()
         return (end - start).total_seconds() * 1000
     except Exception:
+        logger.exception("TCP ping failed for %s", host)
         return None
 
 
