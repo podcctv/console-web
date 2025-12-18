@@ -1,6 +1,10 @@
 services:
   console-web:
     image: ghcr.io/podcctv/console-web:latest
+    build:
+      context: .
+    working_dir: /app
+    command: ["python", "main.py"]
     ports:
       - "8180:8080"
     restart: unless-stopped
