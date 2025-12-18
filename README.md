@@ -106,7 +106,14 @@ pip install -e .
 gunicorn -b 0.0.0.0:8080 main:app
 ```
 
-`pip install -e .` 会将项目根目录添加到环境中，无论 Gunicorn 的工作目录在哪里，都能正确找到 `main:app`。
+`requirements.txt` 已内置 `-e .` 与 `gunicorn`，可以直接执行：
+
+```bash
+pip install -r requirements.txt
+gunicorn -b 0.0.0.0:8080 main:app
+```
+
+可编辑安装会将项目根目录添加到环境中，无论 Gunicorn 的工作目录在哪里，都能正确找到 `main:app`。
 
 
 ## Docker Compose 部署
