@@ -11,6 +11,7 @@ RUN apk add --no-cache iputils mtr build-base python3-dev linux-headers \
     && pip install --no-cache-dir -r requirements.txt
 
 # Copy application source
-COPY app /app
+COPY app /app/app
+COPY main.py /app/main.py
 
 CMD ["python", "main.py"]
