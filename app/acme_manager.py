@@ -187,34 +187,74 @@ def _cert_is_valid(min_days: int = 7) -> bool:
     return status["has_cert"] and status["days_left"] > min_days
 
 
-def ensure_acme_sh() -> bool:
-    if shutil.which("acme.sh") or ACME_SH_PATH.exists():
-        return True
-
-    logger.info("Installing acme.sh tool...")
-    try:
-        proc = subprocess.run(
-            ["curl", "-fsSL", "https://get.acme.sh", "-o", "/tmp/install_acme.sh"],
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
-        )
-        if proc.returncode == 0:
-            subprocess.run(
-                ["sh", "/tmp/install_acme.sh", "--install-online",
-                 "-m", "admin@console-web.local"],
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            )
-            return ACME_SH_PATH.exists() or shutil.which("acme.sh") is not None
-    except Exception as e:
-        logger.exception("Failed to auto-install acme.sh: %s", e)
-    return False
-
-
 def get_acme_cmd():
     if shutil.which("acme.sh"):
         return ["acme.sh"]
-    if ACME_SH_PATH.exists():
-        return [str(ACME_SH_PATH)]
+    for p in [
+        ACME_SH_PATH,
+        Path("/root/.acme.sh/acme.sh"),
+        Path("/usr/local/bin/acme.sh"),
+        Path("/usr/bin/acme.sh"),
+        Path.home() / ".acme.sh" / "acme.sh",
+    ]:
+        if p.exists():
+            return [str(p)]
     return None
+
+
+def ensure_acme_sh() -> bool:
+    if get_acme_cmd() is not None:
+        return True
+
+    logger.info("Installing acme.sh tool via git/curl fallbacks...")
+    acme_dir = Path.home() / ".acme.sh"
+    acme_dir.mkdir(parents=True, exist_ok=True)
+
+    # Strategy 1: Git clone from GitHub or Gitee mirror
+    for repo_url in [
+        "https://github.com/acmesh-official/acme.sh.git",
+        "https://gitee.com/neilpang/acme.sh.git",
+    ]:
+        try:
+            tmp_src = Path("/tmp/acme-src-runtime")
+            if tmp_src.exists():
+                shutil.rmtree(tmp_src, ignore_errors=True)
+            logger.info("Cloning acme.sh from %s ...", repo_url)
+            proc = subprocess.run(
+                ["git", "clone", "--depth", "1", repo_url, str(tmp_src)],
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=30,
+            )
+            if proc.returncode == 0 and (tmp_src / "acme.sh").exists():
+                subprocess.run(
+                    ["sh", str(tmp_src / "acme.sh"), "--install",
+                     "--home", str(acme_dir), "--config-home", str(acme_dir)],
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                )
+                shutil.rmtree(tmp_src, ignore_errors=True)
+                if get_acme_cmd() is not None:
+                    logger.info("acme.sh installed successfully via git clone!")
+                    return True
+        except Exception as e:
+            logger.warning("Git clone acme.sh failed from %s: %s", repo_url, e)
+
+    # Strategy 2: Direct curl installer script
+    try:
+        proc = subprocess.run(
+            ["curl", "-fsSL", "https://get.acme.sh", "-o", "/tmp/install_acme.sh"],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=20,
+        )
+        if proc.returncode == 0:
+            subprocess.run(
+                ["sh", "/tmp/install_acme.sh", "--install-online", "-m", "admin@console-web.local"],
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+            )
+            if get_acme_cmd() is not None:
+                logger.info("acme.sh installed successfully via curl!")
+                return True
+    except Exception as e:
+        logger.warning("Failed to install acme.sh via curl: %s", e)
+
+    return get_acme_cmd() is not None
 
 
 def _detect_public_ip() -> str:
