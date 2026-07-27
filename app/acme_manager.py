@@ -1,3 +1,13 @@
+"""
+ACME SSL Certificate Auto-Manager
+==================================
+Fully automatic SSL certificate lifecycle:
+  1. On startup: detect public IP, check if valid cert exists
+  2. If no cert or cert expired → auto-issue via acme.sh (ZeroSSL)
+  3. Background daemon: check every 12 hours, auto-renew if <30 days left
+  4. Zero manual intervention required
+"""
+
 import json
 import logging
 import os
@@ -18,6 +28,7 @@ CERTS_DIR = BASE_DIR / "certs"
 CHALLENGE_DIR = CERTS_DIR / ".well-known" / "acme-challenge"
 CERT_FILE = CERTS_DIR / "cert.pem"
 KEY_FILE = CERTS_DIR / "key.pem"
+META_FILE = CERTS_DIR / "acme_meta.json"  # persist target domain/IP for renewal
 ACME_SH_PATH = Path.home() / ".acme.sh" / "acme.sh"
 
 _acme_lock = threading.Lock()
@@ -31,7 +42,30 @@ def ensure_dirs():
 ensure_dirs()
 
 
-def get_cert_status():
+# ---------------------------------------------------------------------------
+# Meta persistence — remember what domain/IP we issued for
+# ---------------------------------------------------------------------------
+def _save_meta(target: str, email: str):
+    try:
+        META_FILE.write_text(json.dumps({"target": target, "email": email, "issued_at": time.time()}))
+    except Exception:
+        pass
+
+
+def _load_meta() -> dict:
+    try:
+        if META_FILE.exists():
+            return json.loads(META_FILE.read_text())
+    except Exception:
+        pass
+    return {}
+
+
+# ---------------------------------------------------------------------------
+# Certificate status
+# ---------------------------------------------------------------------------
+def get_cert_status() -> dict:
+    """Return current certificate status dict."""
     if not CERT_FILE.exists() or not KEY_FILE.exists():
         return {
             "has_cert": False,
@@ -43,43 +77,36 @@ def get_cert_status():
         }
 
     try:
-        cert_data = CERT_FILE.read_bytes()
-        x509 = ssl.parse_cert_key_file(CERT_FILE) if hasattr(ssl, 'parse_cert_key_file') else None
-        
-        # Fallback to openssl CLI parsing
         proc = subprocess.run(
-            ["openssl", "x509", "-in", str(CERT_FILE), "-noout", "-enddate", "-issuer", "-subject"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
+            ["openssl", "x509", "-in", str(CERT_FILE), "-noout",
+             "-enddate", "-issuer", "-subject"],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
         )
         if proc.returncode == 0:
             lines = proc.stdout.splitlines()
-            enddate_str = ""
-            issuer_str = ""
-            subject_str = ""
-            for l in lines:
-                if l.startswith("notAfter="):
-                    enddate_str = l.split("=", 1)[1]
-                elif l.startswith("issuer="):
-                    issuer_str = l.split("=", 1)[1]
-                elif l.startswith("subject="):
-                    subject_str = l.split("=", 1)[1]
+            enddate_str = issuer_str = subject_str = ""
+            for line in lines:
+                if line.startswith("notAfter="):
+                    enddate_str = line.split("=", 1)[1]
+                elif line.startswith("issuer="):
+                    issuer_str = line.split("=", 1)[1]
+                elif line.startswith("subject="):
+                    subject_str = line.split("=", 1)[1]
 
             if enddate_str:
-                # Format: Apr 27 12:00:00 2026 GMT
                 try:
-                    exp_dt = datetime.strptime(enddate_str, "%b %d %H:%M:%S %Y GMT").replace(tzinfo=timezone.utc)
-                    now_dt = datetime.now(timezone.utc)
-                    days_left = (exp_dt - now_dt).days
-                    
-                    domain_name = "N/A"
-                    if "CN =" in subject_str:
-                        domain_name = subject_str.split("CN =")[1].split("/")[0].strip()
-                    elif "CN=" in subject_str:
-                        domain_name = subject_str.split("CN=")[1].split("/")[0].strip()
+                    exp_dt = datetime.strptime(
+                        enddate_str.strip(), "%b %d %H:%M:%S %Y GMT"
+                    ).replace(tzinfo=timezone.utc)
+                    days_left = (exp_dt - datetime.now(timezone.utc)).days
 
-                    issuer_name = "ZeroSSL / Let's Encrypt"
+                    domain_name = "N/A"
+                    for prefix in ("CN = ", "CN="):
+                        if prefix in subject_str:
+                            domain_name = subject_str.split(prefix)[1].split("/")[0].strip()
+                            break
+
+                    issuer_name = "ACME CA"
                     if "ZeroSSL" in issuer_str:
                         issuer_name = "ZeroSSL"
                     elif "Let's Encrypt" in issuer_str:
@@ -95,32 +122,44 @@ def get_cert_status():
                     }
                 except Exception as e:
                     logger.warning("Failed to parse cert enddate: %s", e)
-
     except Exception as e:
         logger.exception("Error checking cert status: %s", e)
 
     return {
         "has_cert": True,
-        "status": "已安装 (有效)",
-        "days_left": 90,
-        "domain": "公网 IP / 域名",
-        "issuer": "ACME CA",
-        "expires_on": "未知",
+        "status": "已安装 (解析失败)",
+        "days_left": 0,
+        "domain": None,
+        "issuer": None,
+        "expires_on": None,
     }
 
 
-def ensure_acme_sh():
+def _cert_is_valid(min_days: int = 7) -> bool:
+    """Return True if a valid cert exists with at least `min_days` remaining."""
+    status = get_cert_status()
+    return status["has_cert"] and status["days_left"] > min_days
+
+
+# ---------------------------------------------------------------------------
+# acme.sh helpers
+# ---------------------------------------------------------------------------
+def ensure_acme_sh() -> bool:
     if shutil.which("acme.sh") or ACME_SH_PATH.exists():
         return True
-    
+
     logger.info("Installing acme.sh tool...")
     try:
         proc = subprocess.run(
             ["curl", "-fsSL", "https://get.acme.sh", "-o", "/tmp/install_acme.sh"],
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
         )
         if proc.returncode == 0:
-            subprocess.run(["sh", "/tmp/install_acme.sh", "email=admin@console-web.local"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            subprocess.run(
+                ["sh", "/tmp/install_acme.sh", "--install-online",
+                 "-m", "admin@console-web.local"],
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            )
             return ACME_SH_PATH.exists() or shutil.which("acme.sh") is not None
     except Exception as e:
         logger.exception("Failed to auto-install acme.sh: %s", e)
@@ -135,88 +174,197 @@ def get_acme_cmd():
     return None
 
 
-def issue_cert(target=None, email=None):
+def _detect_public_ip() -> str:
+    """Detect public IP from multiple sources."""
+    for url in ["https://ifconfig.me", "https://api64.ipify.org", "https://icanhazip.com"]:
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "curl/7.68.0"})
+            with urllib.request.urlopen(req, timeout=4) as resp:
+                ip = resp.read().decode().strip()
+                if ip:
+                    return ip
+        except Exception:
+            continue
+    return socket.gethostname()
+
+
+# ---------------------------------------------------------------------------
+# Issue & Renew
+# ---------------------------------------------------------------------------
+def issue_cert(target=None, email=None) -> tuple:
+    """Issue a new ACME certificate. Returns (success: bool, message: str)."""
     with _acme_lock:
         ensure_dirs()
         acme_cmd = get_acme_cmd()
         if not acme_cmd:
             if not ensure_acme_sh():
-                return False, "系统中未检测到 acme.sh 且自动安装失败，请先安装 acme.sh 或 openssl"
+                return False, "acme.sh 未安装且自动安装失败"
             acme_cmd = get_acme_cmd()
 
         if not target:
-            # Detect public IP
-            try:
-                with urllib.request.urlopen("https://ifconfig.me", timeout=3) as resp:
-                    target = resp.read().decode().strip()
-            except Exception:
-                target = socket.gethostname()
+            target = _detect_public_ip()
 
-        email_arg = email or f"admin@{target}"
+        email = email or f"admin@{target}"
+        logger.info("ACME issue: target=%s, email=%s", target, email)
 
-        logger.info("Initiating ACME SSL issuance for target: %s (webroot: %s)", target, CERTS_DIR)
+        # 1. Register account (idempotent)
+        subprocess.run(
+            [*acme_cmd, "--register-account", "-m", email, "--server", "zerossl"],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        )
 
-        # 1. Register account if needed
-        subprocess.run([*acme_cmd, "--register-account", "-m", email_arg, "--server", "zerossl"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-        # 2. Issue cert via webroot HTTP-01 challenge
+        # 2. Issue via standalone HTTP-01 (port 80 webroot)
         issue_args = [
-            *acme_cmd,
-            "--issue",
+            *acme_cmd, "--issue",
             "-d", target,
             "-w", str(CERTS_DIR),
             "--server", "zerossl",
-            "--force"
+            "--force",
         ]
-        proc = subprocess.run(issue_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        proc = subprocess.run(
+            issue_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+        )
         if proc.returncode != 0:
             logger.error("ACME issue failed: %s", proc.stdout)
             return False, f"ACME 证书签发失败: {proc.stdout[-300:]}"
 
         # 3. Install cert files
         install_args = [
-            *acme_cmd,
-            "--install-cert",
+            *acme_cmd, "--install-cert",
             "-d", target,
             "--cert-file", str(CERT_FILE),
             "--key-file", str(KEY_FILE),
-            "--fullchain-file", str(CERT_FILE)
+            "--fullchain-file", str(CERT_FILE),
         ]
-        install_proc = subprocess.run(install_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        install_proc = subprocess.run(
+            install_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+        )
         if install_proc.returncode != 0:
-            return False, f"证书安装拷贝失败: {install_proc.stdout[-200:]}"
+            return False, f"证书安装失败: {install_proc.stdout[-200:]}"
 
-        logger.info("ACME SSL certificate successfully issued for %s", target)
+        _save_meta(target, email)
+        logger.info("ACME SSL certificate issued successfully for %s", target)
         return True, f"成功为 {target} 签发并安装 ACME SSL 证书！"
 
 
-def renew_cert():
+def renew_cert() -> tuple:
+    """Renew existing certificate. Returns (success: bool, message: str)."""
     with _acme_lock:
         acme_cmd = get_acme_cmd()
         if not acme_cmd:
             return False, "未找到 acme.sh"
 
-        logger.info("Executing ACME certificate renewal...")
-        proc = subprocess.run([*acme_cmd, "--renew-all", "--force"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        # Try targeted renewal using saved meta
+        meta = _load_meta()
+        target = meta.get("target")
+
+        if target:
+            logger.info("Renewing certificate for %s ...", target)
+            proc = subprocess.run(
+                [*acme_cmd, "--renew", "-d", target, "--force"],
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+            )
+        else:
+            logger.info("Renewing all certificates...")
+            proc = subprocess.run(
+                [*acme_cmd, "--renew-all", "--force"],
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+            )
+
         if proc.returncode == 0:
-            logger.info("ACME SSL certificate auto-renewed successfully")
-            return True, "ACME SSL 证书自动续期成功！"
-        return False, f"续期未完成: {proc.stdout[-300:]}"
+            # Re-install cert files
+            if target:
+                subprocess.run(
+                    [*acme_cmd, "--install-cert", "-d", target,
+                     "--cert-file", str(CERT_FILE),
+                     "--key-file", str(KEY_FILE),
+                     "--fullchain-file", str(CERT_FILE)],
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                )
+            logger.info("ACME certificate renewed successfully")
+            return True, "SSL 证书续期成功！"
+
+        return False, f"续期失败: {proc.stdout[-300:]}"
+
+
+# ---------------------------------------------------------------------------
+# Auto-init & Daemon
+# ---------------------------------------------------------------------------
+def _auto_init():
+    """
+    Called once on startup. Checks:
+      1. Does a valid cert already exist? → skip, just log
+      2. No valid cert? → auto-issue using public IP
+    """
+    logger.info("ACME auto-init: checking existing certificate...")
+
+    if _cert_is_valid(min_days=7):
+        status = get_cert_status()
+        logger.info(
+            "ACME auto-init: valid certificate found for %s (%s days left). Skipping issuance.",
+            status.get("domain"), status.get("days_left"),
+        )
+        return
+
+    if _cert_is_valid(min_days=0):
+        # Cert exists but expiring soon → try renew first
+        logger.info("ACME auto-init: cert expiring soon, attempting renewal...")
+        ok, msg = renew_cert()
+        if ok and _cert_is_valid(min_days=7):
+            logger.info("ACME auto-init: renewal succeeded: %s", msg)
+            return
+        logger.warning("ACME auto-init: renewal failed (%s), will try fresh issue", msg)
+
+    # No cert or expired → fresh issue
+    logger.info("ACME auto-init: no valid certificate. Auto-issuing for public IP...")
+    try:
+        ok, msg = issue_cert()
+        if ok:
+            logger.info("ACME auto-init: %s", msg)
+        else:
+            logger.warning("ACME auto-init: issuance failed: %s", msg)
+    except Exception as e:
+        logger.exception("ACME auto-init error: %s", e)
 
 
 def _auto_renew_loop():
-    logger.info("ACME Auto-renewal daemon thread started.")
+    """Background daemon: check every 12 hours, renew if <30 days left."""
+    # Run auto-init on startup (with a short delay so Flask is ready for HTTP-01)
+    time.sleep(10)
+    try:
+        _auto_init()
+    except Exception as e:
+        logger.exception("ACME auto-init failed: %s", e)
+
+    logger.info("ACME auto-renewal daemon running (check interval: 12h)")
     while True:
         try:
-            time.sleep(86400) # Check once every 24 hours
+            time.sleep(43200)  # 12 hours
             status = get_cert_status()
-            if status["has_cert"] and status["days_left"] <= 30:
-                logger.info("Certificate has %s days left (<30 days). Triggering auto-renewal...", status["days_left"])
-                renew_cert()
+            if not status["has_cert"]:
+                logger.info("ACME daemon: no certificate found, attempting auto-issue...")
+                issue_cert()
+            elif status["days_left"] <= 30:
+                logger.info(
+                    "ACME daemon: cert has %s days left (<30). Auto-renewing...",
+                    status["days_left"],
+                )
+                ok, msg = renew_cert()
+                if not ok:
+                    # Renewal failed, try fresh issue
+                    logger.warning("ACME daemon: renewal failed, trying fresh issue...")
+                    issue_cert()
+            else:
+                logger.info(
+                    "ACME daemon: cert OK (%s days left). Next check in 12h.",
+                    status["days_left"],
+                )
         except Exception as e:
-            logger.exception("Error in ACME auto-renew loop: %s", e)
+            logger.exception("ACME daemon error: %s", e)
 
 
 def start_daemon():
+    """Start the ACME auto-renewal daemon thread."""
     t = threading.Thread(target=_auto_renew_loop, daemon=True, name="ACME-AutoRenew")
     t.start()
+    logger.info("ACME daemon thread started (will auto-init in 10s)")
