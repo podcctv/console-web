@@ -128,23 +128,46 @@ def ensure_isp_info():
             logger.info("ISP info updated: full=%s, short=%s", full, short)
 
 
+import ipaddress
+
+def is_private_ip(ip_str):
+    if not ip_str or ip_str in ("N/A", "None", "未检测到"):
+        return True
+    try:
+        clean_ip = ip_str.split()[0].strip()
+        ip_obj = ipaddress.ip_address(clean_ip)
+        return ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_link_local or ip_obj.is_reserved
+    except Exception:
+        return True
+
 def get_public_ip():
     now = time.time()
     with _cache_lock:
-        if _public_ip_cache["ip"] and (now - _public_ip_cache["timestamp"] < 300):
-            return _public_ip_cache["ip"]
+        cached = _public_ip_cache["ip"]
+        if cached and not is_private_ip(cached) and (now - _public_ip_cache["timestamp"] < 300):
+            return cached
 
-    try:
-        req = urllib.request.Request("https://ifconfig.me", headers={"User-Agent": "curl/7.68.0"})
-        with urllib.request.urlopen(req, timeout=2) as resp:
-            pub_ip = resp.read().decode().strip()
-            with _cache_lock:
-                _public_ip_cache["ip"] = pub_ip
-                _public_ip_cache["timestamp"] = now
-            return pub_ip
-    except Exception:
-        with _cache_lock:
-            return _public_ip_cache["ip"] or "N/A"
+    endpoints = [
+        "https://api.ipify.org",
+        "https://ifconfig.me",
+        "https://icanhazip.com"
+    ]
+    for ep in endpoints:
+        try:
+            req = urllib.request.Request(ep, headers={"User-Agent": "curl/7.68.0"})
+            with urllib.request.urlopen(req, timeout=2) as resp:
+                pub_ip = resp.read().decode().strip()
+                if not is_private_ip(pub_ip):
+                    with _cache_lock:
+                        _public_ip_cache["ip"] = pub_ip
+                        _public_ip_cache["timestamp"] = now
+                    return pub_ip
+        except Exception:
+            continue
+
+    with _cache_lock:
+        cached = _public_ip_cache["ip"]
+        return cached if (cached and not is_private_ip(cached)) else "未检测到"
 
 
 PING_TARGETS = {
@@ -1617,6 +1640,33 @@ Try typing 'acme status' or 'acme issue 您的域名.com' or 'ping 8.8.8.8'
         renderPixelBars(key);
     }
 
+    function updateAggregatedHeaderStatus() {
+        const statusDotItem = document.querySelector('.status-light-group .status-dot-item');
+        if (!statusDotItem) return;
+
+        const pings = [pingHistory.ping_cu, pingHistory.ping_cm, pingHistory.ping_ct];
+        let hasError = false;
+        let hasWarning = false;
+
+        pings.forEach(hist => {
+            if (!hist.length) return;
+            const last = hist[hist.length - 1];
+            if (last === null || last === undefined) {
+                hasError = true;
+            } else if (last >= 200) {
+                hasWarning = true;
+            }
+        });
+
+        if (hasError) {
+            statusDotItem.innerHTML = `<span class="pulse-dot dot-warning" style="background:var(--danger); box-shadow:0 0 6px var(--danger)"></span> ⚠️ 存在检测异常`;
+        } else if (hasWarning) {
+            statusDotItem.innerHTML = `<span class="pulse-dot dot-orange"></span> ⚡ 包含性能预警`;
+        } else {
+            statusDotItem.innerHTML = `<span class="pulse-dot"></span> ● 系统运行正常`;
+        }
+    }
+
     async function fetchPings() {
         try {
             const res = await fetch('/pings');
@@ -1625,6 +1675,8 @@ Try typing 'acme status' or 'acme issue 您的域名.com' or 'ping 8.8.8.8'
             updatePingUI('ping_cu', data.ping_cu);
             updatePingUI('ping_cm', data.ping_cm);
             updatePingUI('ping_ct', data.ping_ct);
+
+            updateAggregatedHeaderStatus();
 
             // Update Summary Cards 1 & 3
             const pings = [data.ping_cu, data.ping_cm, data.ping_ct].filter(v => v !== null && v !== undefined);
@@ -2077,8 +2129,8 @@ def stats():
         ip = "N/A"
     
     public_ip = get_public_ip()
-    if ip == "N/A" and public_ip == "N/A":
-        ip_display = None
+    if is_private_ip(public_ip):
+        ip_display = f"{ip} (公网 未检测到)"
     else:
         ip_display = f"{ip} (公网 {public_ip})"
         
