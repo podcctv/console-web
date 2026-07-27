@@ -296,14 +296,48 @@ def issue_cert(target=None, email=None) -> tuple:
             return False, "未能安装或找到 acme.sh 工具，请检查系统环境"
 
         try:
-            # 1. Register account with ZeroSSL using valid email syntax
+            is_ip = target.replace(".", "").isdigit() or ":" in target
+
+            # Case A: Target is an IP address -> Use Let's Encrypt with shortlived certificate profile
+            if is_ip:
+                logger.info("Target %s is an IP address, registering Let's Encrypt account and using shortlived profile...", target)
+                subprocess.run(
+                    [*acme_cmd, "--register-account", "-m", email, "--server", "letsencrypt"],
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+                )
+                ip_issue_args = [
+                    *acme_cmd, "--issue",
+                    "-d", target,
+                    "-w", str(CERTS_DIR),
+                    "--server", "letsencrypt",
+                    "--cert-profile", "shortlived",
+                    "--force",
+                ]
+                proc = subprocess.run(ip_issue_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+                logger.info("acme.sh IP issue output: %s", proc.stdout)
+
+                if proc.returncode == 0:
+                    install_proc = subprocess.run(
+                        [*acme_cmd, "--install-cert", "-d", target,
+                         "--cert-file", str(CERT_FILE),
+                         "--key-file", str(KEY_FILE),
+                         "--fullchain-file", str(CERT_FILE)],
+                        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
+                    )
+                    if install_proc.returncode == 0:
+                        _save_meta(target, email)
+                        logger.info("ACME Let's Encrypt IP certificate issued successfully for %s", target)
+                        return True, f"成功为 IP 地址 {target} 签发并安装 Let's Encrypt 官方 ACME SSL 证书！"
+
+                return False, f"IP 证书签发失败，请确认 80 端口可被外网访问 (详细: {proc.stdout[:140]})"
+
+            # Case B: Target is a domain name -> Try ZeroSSL first, then Let's Encrypt fallback
             reg_proc = subprocess.run(
                 [*acme_cmd, "--register-account", "-m", email, "--server", "zerossl"],
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
             )
             logger.info("ZeroSSL account registration output: %s", reg_proc.stdout)
 
-            # 2. Issue via standalone / webroot HTTP-01
             issue_args = [
                 *acme_cmd, "--issue",
                 "-d", target,
@@ -317,7 +351,6 @@ def issue_cert(target=None, email=None) -> tuple:
             logger.info("acme.sh issue output: %s", proc.stdout)
 
             if proc.returncode == 0:
-                # 3. Install cert files
                 install_args = [
                     *acme_cmd, "--install-cert",
                     "-d", target,
@@ -358,12 +391,7 @@ def issue_cert(target=None, email=None) -> tuple:
                     logger.info("ACME Let's Encrypt certificate issued successfully for %s", target)
                     return True, f"成功为 {target} 签发 Let's Encrypt ACME 证书！"
 
-            # Specific diagnostic check for IP address ACME limitations
-            combined_out = (proc.stdout or "") + (le_proc.stdout or "")
-            if "unsupportedIdentifier" in combined_out or "not yet supported" in combined_out:
-                return False, f"ACME 官方 CA (ZeroSSL/Let's Encrypt) 仅支持为域名签发免费证书。纯 IP 地址 ({target}) 不支持 ACME 协议，请输入绑定的真实域名后在终端执行 'acme issue 您的域名'。"
-
-            return False, f"ACME 官方证书签发失败，请确认域名/公网 IP ({target}) 的 80 端口可被外网访问 (详细: {proc.stdout[:120]})"
+            return False, f"ACME 官方证书签发失败，请确认 80 端口可被外网访问 (详细: {proc.stdout[:120]})"
         except Exception as e:
             logger.exception("ACME issuance exception: %s", e)
             return False, f"ACME 证书签发发生错误: {e}"
