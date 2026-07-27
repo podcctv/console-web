@@ -22,6 +22,11 @@ try:
 except ImportError:
     import acme_manager
 
+try:
+    from app import ip_quality
+except ImportError:
+    import ip_quality
+
 def configure_logging():
     log_dir = Path(__file__).resolve().parent.parent / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
@@ -183,6 +188,18 @@ def acme_issue_route():
 def acme_renew_route():
     success, msg = acme_manager.renew_cert()
     return jsonify(success=success, message=msg)
+
+
+@app.route("/ipcheck")
+def ipcheck_route():
+    """Run IP quality check and return JSON results."""
+    force = request.args.get("force", "").lower() in ("1", "true", "yes")
+    try:
+        result = ip_quality.get_ip_quality(force=force)
+        return jsonify(result)
+    except Exception as e:
+        logger.exception("IP quality check failed")
+        return jsonify(error=str(e)), 500
 
 
 @app.route("/run/<cmd>")
@@ -672,6 +689,119 @@ TEMPLATE = r"""
             font-family: var(--font-mono); font-size: 0.88rem; caret-color: var(--text-primary);
         }
 
+        /* IP Quality Check Card */
+        .ipcheck-card {
+            background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px;
+            padding: 20px; backdrop-filter: blur(10px); box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            display: flex; flex-direction: column; gap: 16px; transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+        .ipcheck-card:hover { border-color: var(--text-primary); box-shadow: 0 8px 32px var(--card-border-glow); }
+
+        .ipcheck-header {
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px dashed var(--card-border); padding-bottom: 10px;
+        }
+        .ipcheck-header-left { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 1rem; color: var(--text-white); }
+        .ipcheck-btn {
+            background: var(--text-primary); color: #000; border: none; padding: 6px 16px;
+            border-radius: 8px; font-weight: 700; font-family: var(--font-mono); font-size: 0.82rem;
+            cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 6px;
+        }
+        .ipcheck-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+        .ipcheck-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .ipcheck-btn .spinner {
+            width: 14px; height: 14px; border: 2px solid rgba(0,0,0,0.3); border-top-color: #000;
+            border-radius: 50%; animation: spin 0.6s linear infinite; display: none;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .ipcheck-body { display: none; flex-direction: column; gap: 16px; }
+        .ipcheck-body.visible { display: flex; }
+
+        /* Three-column info row */
+        .ipcheck-info-row {
+            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px;
+        }
+        .ipcheck-section {
+            background: var(--input-bg); border: 1px solid var(--card-border); border-radius: 10px;
+            padding: 14px; display: flex; flex-direction: column; gap: 8px;
+        }
+        .ipcheck-section-title {
+            font-size: 0.8rem; font-weight: 700; color: var(--text-primary);
+            border-bottom: 1px dashed rgba(255,255,255,0.08); padding-bottom: 6px;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .ipcheck-row {
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 0.78rem; padding: 2px 0;
+        }
+        .ipcheck-label { color: var(--text-muted); }
+        .ipcheck-val { color: var(--text-white); font-weight: 600; text-align: right; max-width: 60%; word-break: break-all; }
+
+        /* Risk score bar */
+        .risk-bar-track {
+            height: 10px; background: var(--bar-bg); border-radius: 6px; overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.05); position: relative; margin-top: 4px;
+        }
+        .risk-bar-fill {
+            height: 100%; width: 0%; border-radius: 6px; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .risk-bar-fill.risk-vlow { background: linear-gradient(90deg, #00ff66, #00cc55); box-shadow: 0 0 10px rgba(0,255,102,0.5); }
+        .risk-bar-fill.risk-low { background: linear-gradient(90deg, #00ff66, #66ff99); box-shadow: 0 0 10px rgba(0,255,102,0.4); }
+        .risk-bar-fill.risk-med { background: linear-gradient(90deg, #ffcc00, #ffaa00); box-shadow: 0 0 10px rgba(255,204,0,0.5); }
+        .risk-bar-fill.risk-high { background: linear-gradient(90deg, #ff6633, #ff3366); box-shadow: 0 0 10px rgba(255,51,102,0.5); }
+        .risk-bar-fill.risk-vhigh { background: linear-gradient(90deg, #ff0033, #cc0022); box-shadow: 0 0 10px rgba(255,0,51,0.6); }
+
+        /* IP Type Badge */
+        .ip-type-badge {
+            display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 6px;
+            font-size: 0.75rem; font-weight: 700; letter-spacing: 0.5px;
+        }
+        .ip-type-isp { background: rgba(0,255,102,0.15); color: var(--accent-green); border: 1px solid var(--accent-green); }
+        .ip-type-hosting { background: rgba(255,51,102,0.15); color: var(--accent-red); border: 1px solid var(--accent-red); }
+        .ip-type-business { background: rgba(255,204,0,0.15); color: var(--accent-yellow); border: 1px solid var(--accent-yellow); }
+        .ip-type-mobile { background: rgba(0,204,255,0.15); color: var(--accent-blue); border: 1px solid var(--accent-blue); }
+        .ip-type-proxy { background: rgba(255,51,102,0.15); color: var(--accent-red); border: 1px solid var(--accent-red); }
+        .ip-type-vpn { background: rgba(255,204,0,0.15); color: var(--accent-yellow); border: 1px solid var(--accent-yellow); }
+        .ip-type-tor { background: rgba(255,0,51,0.2); color: #ff4466; border: 1px solid #ff4466; }
+
+        /* Risk factor badges */
+        .factor-yes { color: var(--accent-red); font-weight: 700; }
+        .factor-no { color: var(--accent-green); font-weight: 700; }
+
+        /* Media/AI unlock grid */
+        .unlock-section-title {
+            font-size: 0.8rem; font-weight: 700; color: var(--text-primary);
+            border-bottom: 1px dashed rgba(255,255,255,0.08); padding-bottom: 6px;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .unlock-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 8px;
+        }
+        .unlock-tile {
+            background: var(--input-bg); border: 1px solid var(--card-border); border-radius: 8px;
+            padding: 12px 10px; display: flex; flex-direction: column; align-items: center; gap: 6px;
+            text-align: center; transition: all 0.2s ease;
+        }
+        .unlock-tile:hover { border-color: var(--text-primary); box-shadow: 0 0 12px var(--card-border-glow); }
+        .unlock-tile-icon { font-size: 1.4rem; }
+        .unlock-tile-name { font-size: 0.72rem; color: var(--text-muted); font-weight: 600; }
+        .unlock-tile-status {
+            display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px; border-radius: 12px;
+            font-size: 0.7rem; font-weight: 700;
+        }
+        .unlock-yes { background: rgba(0,255,102,0.15); color: var(--accent-green); border: 1px solid rgba(0,255,102,0.3); }
+        .unlock-no { background: rgba(255,51,102,0.15); color: var(--accent-red); border: 1px solid rgba(255,51,102,0.3); }
+        .unlock-fail { background: rgba(255,204,0,0.1); color: var(--accent-yellow); border: 1px solid rgba(255,204,0,0.2); }
+        .unlock-tile-region { font-size: 0.68rem; color: var(--text-muted); }
+
+        /* Skeleton loading */
+        .skeleton-line {
+            height: 12px; background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%);
+            background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 4px; margin: 4px 0;
+        }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
         /* Scrollbars */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: var(--bg-color); }
@@ -685,6 +815,8 @@ TEMPLATE = r"""
             .info-grid { grid-template-columns: 1fr; }
             .info-item.full-width { grid-column: span 1; }
             .ascii-banner { font-size: 0.55rem; }
+            .ipcheck-info-row { grid-template-columns: 1fr; }
+            .unlock-grid { grid-template-columns: repeat(2, 1fr); }
         }
     </style>
 </head>
@@ -871,6 +1003,81 @@ Welcome to Console-Web Cyber Edition 🚀 | System Status &amp; Realtime Network
             </div>
         </div>
 
+        <!-- Card 4: IP Quality Check & Streaming/AI Unlock Detection -->
+        <div class="ipcheck-card" id="ipcheck_card">
+            <div class="ipcheck-header">
+                <div class="ipcheck-header-left">
+                    <span class="card-header-icon">📊</span>
+                    <span>IP 质量体检 & 解锁检测</span>
+                </div>
+                <button class="ipcheck-btn" id="ipcheck_btn" onclick="fetchIPCheck()">
+                    <span class="spinner" id="ipcheck_spinner"></span>
+                    <span id="ipcheck_btn_text">开始检测</span>
+                </button>
+            </div>
+
+            <div class="ipcheck-body" id="ipcheck_body">
+                <!-- Three columns: Basic Info / IP Type / Risk Score -->
+                <div class="ipcheck-info-row">
+                    <!-- Basic Info -->
+                    <div class="ipcheck-section">
+                        <div class="ipcheck-section-title">🌍 基础信息</div>
+                        <div class="ipcheck-row"><span class="ipcheck-label">IP 地址</span><span class="ipcheck-val" id="ipc_ip">-</span></div>
+                        <div class="ipcheck-row"><span class="ipcheck-label">ASN</span><span class="ipcheck-val" id="ipc_asn">-</span></div>
+                        <div class="ipcheck-row"><span class="ipcheck-label">组织</span><span class="ipcheck-val" id="ipc_org">-</span></div>
+                        <div class="ipcheck-row"><span class="ipcheck-label">ISP</span><span class="ipcheck-val" id="ipc_isp">-</span></div>
+                        <div class="ipcheck-row"><span class="ipcheck-label">国家</span><span class="ipcheck-val" id="ipc_country">-</span></div>
+                        <div class="ipcheck-row"><span class="ipcheck-label">城市</span><span class="ipcheck-val" id="ipc_city">-</span></div>
+                        <div class="ipcheck-row"><span class="ipcheck-label">时区</span><span class="ipcheck-val" id="ipc_tz">-</span></div>
+                    </div>
+
+                    <!-- IP Type -->
+                    <div class="ipcheck-section">
+                        <div class="ipcheck-section-title">🏷️ IP 类型属性</div>
+                        <div class="ipcheck-row"><span class="ipcheck-label">IP 类型</span><span class="ipcheck-val" id="ipc_type">-</span></div>
+                        <div class="ipcheck-row"><span class="ipcheck-label">代理 Proxy</span><span class="ipcheck-val" id="ipc_proxy">-</span></div>
+                        <div class="ipcheck-row"><span class="ipcheck-label">VPN</span><span class="ipcheck-val" id="ipc_vpn">-</span></div>
+                        <div class="ipcheck-row"><span class="ipcheck-label">Tor</span><span class="ipcheck-val" id="ipc_tor">-</span></div>
+                        <div class="ipcheck-row"><span class="ipcheck-label">机房 Hosting</span><span class="ipcheck-val" id="ipc_hosting">-</span></div>
+                        <div class="ipcheck-row"><span class="ipcheck-label">手机网络</span><span class="ipcheck-val" id="ipc_mobile">-</span></div>
+                    </div>
+
+                    <!-- Risk Score -->
+                    <div class="ipcheck-section">
+                        <div class="ipcheck-section-title">⚠️ 风险评分</div>
+                        <div class="ipcheck-row">
+                            <span class="ipcheck-label">风险评分</span>
+                            <span class="ipcheck-val" id="ipc_risk_score" style="font-size:1.1rem">-</span>
+                        </div>
+                        <div class="risk-bar-track">
+                            <div class="risk-bar-fill" id="ipc_risk_bar"></div>
+                        </div>
+                        <div class="ipcheck-row">
+                            <span class="ipcheck-label">风险等级</span>
+                            <span class="ipcheck-val" id="ipc_risk_label">-</span>
+                        </div>
+                        <div style="margin-top:6px; font-size:0.68rem; color:var(--text-muted); text-align:center;">
+                            <span style="color:var(--accent-green)">■ 极低</span>&nbsp;
+                            <span style="color:var(--accent-green)">■ 低</span>&nbsp;
+                            <span style="color:var(--accent-yellow)">■ 中等</span>&nbsp;
+                            <span style="color:var(--accent-red)">■ 高</span>&nbsp;
+                            <span style="color:#ff0033">■ 极高</span>
+                        </div>
+                        <div class="ipcheck-row" style="margin-top:4px">
+                            <span class="ipcheck-label">检测时间</span>
+                            <span class="ipcheck-val" id="ipc_time" style="font-size:0.7rem">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Media & AI Unlock Detection -->
+                <div class="unlock-section-title">🎬 流媒体 & AI 服务解锁检测</div>
+                <div class="unlock-grid" id="unlock_grid">
+                    <!-- Tiles populated by JS -->
+                </div>
+            </div>
+        </div>
+
         <!-- Quick Lookup Tool Widget -->
         <div class="card">
             <div class="card-header">
@@ -897,6 +1104,7 @@ Welcome to Console-Web Cyber Edition 🚀 | System Status &amp; Realtime Network
                     <div class="win-dot win-green"></div>
                 </div>
                 <div class="terminal-quick-actions">
+                    <span class="action-chip" onclick="quickRun('ipcheck')">IP 质量体检</span>
                     <span class="action-chip" onclick="quickRun('acme status')">ACME 证书状态</span>
                     <span class="action-chip" onclick="quickRun('acme issue')">申请 IP 证书</span>
                     <span class="action-chip" onclick="quickRun('ping zj-cu-v4.ip.zstaticcdn.com')">Ping 联通</span>
@@ -1231,9 +1439,35 @@ Try typing 'acme status' or 'acme issue' or 'ping 8.8.8.8'
                     appendOutput(`${PROMPT} ${text}\nUsage: acme <status|issue|renew> [domain_or_ip]`);
                 }
                 break;
+            case 'ipcheck':
+                appendOutput(`${PROMPT} ${text}\nRunning IP Quality Check... Please wait (this may take 10-15s)...`);
+                fetch('/ipcheck').then(r=>r.json()).then(data => {
+                    if (data.error) { appendOutput(`Error: ${data.error}`); return; }
+                    let out = '\n╔══════════════════════════════════════╗\n';
+                    out += '║   IP QUALITY CHECK REPORT            ║\n';
+                    out += '╚══════════════════════════════════════╝\n';
+                    const b = data.basic || {};
+                    const r2 = data.risk || {};
+                    out += `\n[基础信息]\n  IP:     ${b.ip || 'N/A'}\n  ASN:    ${b.asn || 'N/A'}\n  组织:   ${b.org || 'N/A'}\n  ISP:    ${b.isp || 'N/A'}\n  位置:   ${b.country || ''} ${b.city || ''}\n  时区:   ${b.timezone || 'N/A'}`;
+                    out += `\n\n[IP类型]  ${r2.ip_type_label || 'N/A'}`;
+                    out += `\n  Proxy: ${r2.is_proxy ? '是 ⚠️' : '否 ✅'}  VPN: ${r2.is_vpn ? '是 ⚠️' : '否 ✅'}  Tor: ${r2.is_tor ? '是 ⚠️' : '否 ✅'}  Hosting: ${r2.is_hosting ? '是' : '否'}`;
+                    out += `\n\n[风险评分]  ${r2.risk_score || 0}/100  ${r2.risk_label || ''}`;
+                    out += '\n\n[流媒体 & AI 解锁]';
+                    (data.media || []).forEach(m => {
+                        const icon = m.status === 'unlocked' ? '✅' : m.status === 'blocked' ? '❌' : '⚠️';
+                        const region = m.region ? ` [${m.region}]` : '';
+                        out += `\n  ${icon} ${m.name}: ${m.status === 'unlocked' ? '解锁' : m.status === 'blocked' ? '屏蔽' : '检测失败'}${region}`;
+                    });
+                    out += `\n\n检测时间: ${data.timestamp || 'N/A'}`;
+                    appendOutput(out);
+                    // Also update the card
+                    renderIPCheckResult(data);
+                }).catch(err => appendOutput(`IP check error: ${err.message}`));
+                break;
             case 'help':
                 appendOutput(`${PROMPT} ${text}\n` +
                     'Available Cyber Commands:\n' +
+                    '  ipcheck             - Run IP quality & streaming unlock check\n' +
                     '  acme status         - Check ACME SSL certificate status\n' +
                     '  acme issue [domain] - Issue free ACME SSL certificate for IP/Domain\n' +
                     '  acme renew          - Force renew ACME SSL certificate\n' +
@@ -1286,6 +1520,103 @@ Try typing 'acme status' or 'acme issue' or 'ping 8.8.8.8'
             e.preventDefault();
         }
     });
+
+    // IP Quality Check
+    const MEDIA_ICONS = {
+        'Netflix': '🎬', 'YouTube Premium': '▶️', 'Disney+': '🏰', 'TikTok': '🎵',
+        'ChatGPT': '🤖', 'Claude': '🧠', 'Spotify': '🎧', 'Amazon Prime': '📦'
+    };
+
+    function renderIPCheckResult(data) {
+        const body = document.getElementById('ipcheck_body');
+        body.classList.add('visible');
+
+        const b = data.basic || {};
+        const r = data.risk || {};
+
+        // Basic info
+        document.getElementById('ipc_ip').textContent = b.ip || 'N/A';
+        document.getElementById('ipc_asn').textContent = b.asn || 'N/A';
+        document.getElementById('ipc_org').textContent = b.org || 'N/A';
+        document.getElementById('ipc_isp').textContent = b.isp || 'N/A';
+        const flag = b.countryCode ? String.fromCodePoint(...[...b.countryCode.toUpperCase()].map(c => 0x1F1E6 + c.charCodeAt(0) - 65)) + ' ' : '';
+        document.getElementById('ipc_country').textContent = flag + (b.country || 'N/A');
+        document.getElementById('ipc_city').textContent = b.city || 'N/A';
+        document.getElementById('ipc_tz').textContent = b.timezone || 'N/A';
+
+        // IP type badge
+        const typeClass = 'ip-type-' + (r.ip_type || 'isp');
+        document.getElementById('ipc_type').innerHTML = `<span class="ip-type-badge ${typeClass}">${r.ip_type_label || 'N/A'}</span>`;
+
+        // Risk factors
+        const factorHTML = (val) => val ? '<span class="factor-yes">⚠ 是</span>' : '<span class="factor-no">✅ 否</span>';
+        document.getElementById('ipc_proxy').innerHTML = factorHTML(r.is_proxy);
+        document.getElementById('ipc_vpn').innerHTML = factorHTML(r.is_vpn);
+        document.getElementById('ipc_tor').innerHTML = factorHTML(r.is_tor);
+        document.getElementById('ipc_hosting').innerHTML = factorHTML(r.is_hosting);
+        document.getElementById('ipc_mobile').innerHTML = factorHTML(r.is_mobile);
+
+        // Risk score
+        const score = r.risk_score || 0;
+        document.getElementById('ipc_risk_score').textContent = score + ' / 100';
+        const bar = document.getElementById('ipc_risk_bar');
+        bar.style.width = Math.min(100, score) + '%';
+        bar.className = 'risk-bar-fill';
+        if (score <= 15) bar.classList.add('risk-vlow');
+        else if (score <= 33) bar.classList.add('risk-low');
+        else if (score <= 66) bar.classList.add('risk-med');
+        else if (score <= 85) bar.classList.add('risk-high');
+        else bar.classList.add('risk-vhigh');
+
+        const labelEl = document.getElementById('ipc_risk_label');
+        labelEl.textContent = r.risk_label || '-';
+        if (score <= 33) labelEl.style.color = 'var(--accent-green)';
+        else if (score <= 66) labelEl.style.color = 'var(--accent-yellow)';
+        else labelEl.style.color = 'var(--accent-red)';
+
+        document.getElementById('ipc_time').textContent = data.timestamp || '-';
+
+        // Media unlock tiles
+        const grid = document.getElementById('unlock_grid');
+        grid.innerHTML = '';
+        (data.media || []).forEach(m => {
+            const icon = MEDIA_ICONS[m.name] || '🌐';
+            let statusClass, statusText;
+            if (m.status === 'unlocked') { statusClass = 'unlock-yes'; statusText = '✅ 解锁'; }
+            else if (m.status === 'blocked') { statusClass = 'unlock-no'; statusText = '❌ 屏蔽'; }
+            else { statusClass = 'unlock-fail'; statusText = '⚠️ 未知'; }
+            const regionText = m.region ? m.region : '-';
+            grid.innerHTML += `
+                <div class="unlock-tile">
+                    <div class="unlock-tile-icon">${icon}</div>
+                    <div class="unlock-tile-name">${m.name}</div>
+                    <div class="unlock-tile-status ${statusClass}">${statusText}</div>
+                    <div class="unlock-tile-region">${regionText}</div>
+                </div>`;
+        });
+    }
+
+    async function fetchIPCheck(force) {
+        const btn = document.getElementById('ipcheck_btn');
+        const spinner = document.getElementById('ipcheck_spinner');
+        const btnText = document.getElementById('ipcheck_btn_text');
+        btn.disabled = true;
+        spinner.style.display = 'inline-block';
+        btnText.textContent = '检测中...';
+        try {
+            const url = force ? '/ipcheck?force=1' : '/ipcheck';
+            const res = await fetch(url);
+            const data = await res.json();
+            if (data.error) { alert('检测失败: ' + data.error); return; }
+            renderIPCheckResult(data);
+        } catch(e) {
+            alert('IP 质量检测请求失败: ' + e.message);
+        } finally {
+            btn.disabled = false;
+            spinner.style.display = 'none';
+            btnText.textContent = '重新检测';
+        }
+    }
 
     // Initialize
     fetchStats();
