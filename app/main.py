@@ -2141,26 +2141,20 @@ if __name__ == "__main__":
     cert_file = acme_manager.FULLCHAIN_FILE if acme_manager.FULLCHAIN_FILE.exists() else acme_manager.CERT_FILE
     key_file = acme_manager.KEY_FILE
 
-    ssl_ctx = None
     if cert_file.exists() and key_file.exists():
-        try:
-            ssl_ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-            ssl_ctx.verify_mode = ssl.CERT_NONE
-            ssl_ctx.load_cert_chain(certfile=str(cert_file), keyfile=str(key_file))
-            logger.info("Loaded SSL certificate chain from: %s", cert_file)
-        except Exception as e:
-            logger.warning("Failed to load SSL cert chain: %s", e)
-            ssl_ctx = None
-
-    if ssl_ctx:
-        logger.info("Starting HTTPS Flask Server on 0.0.0.0:8080 (SSL Enabled)")
-        try:
-            app.run(host="0.0.0.0", port=8080, ssl_context=ssl_ctx, threaded=True)
-        except Exception as e:
-            logger.warning("Failed to start HTTPS server, falling back to HTTP: %s", e)
-            app.run(host="0.0.0.0", port=8080, threaded=True)
+        logger.info("🔒 SSL Certificate present (%s). Launching Gunicorn HTTPS server on 0.0.0.0:8080...", cert_file)
+        cmd = [
+            "gunicorn",
+            "-b", "0.0.0.0:8080",
+            "--certfile", str(cert_file),
+            "--keyfile", str(key_file),
+            "--workers", "2",
+            "--timeout", "120",
+            "app.main:app"
+        ]
+        os.execvp("gunicorn", cmd)
     else:
-        logger.info("No SSL Certificate found yet. Starting HTTP server on 0.0.0.0:8080...")
+        logger.info("🔓 No SSL Certificate found yet. Launching HTTP server on 0.0.0.0:8080...")
         app.run(host="0.0.0.0", port=8080, threaded=True)
 
 
