@@ -63,16 +63,36 @@ def generate_self_signed_cert(target: str = "console-web.local") -> bool:
     """Generate a self-signed fallback SSL certificate if ACME fails."""
     try:
         ensure_dirs()
+        # Ensure IP addresses have proper SAN (Subject Alternative Name) for Chrome/Edge compatibility
+        import re
+        is_ip_addr = bool(re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", target))
+        if is_ip_addr:
+            san_ext = f"subjectAltName=IP:{target},IP:127.0.0.1,DNS:localhost"
+        else:
+            san_ext = f"subjectAltName=DNS:{target},DNS:localhost,IP:127.0.0.1"
+
         cmd = [
             "openssl", "req", "-x509", "-newkey", "rsa:2048", "-nodes",
             "-keyout", str(KEY_FILE),
             "-out", str(CERT_FILE),
             "-days", "365",
-            "-subj", f"/CN={target}/O=Console-Web/OU=Security"
+            "-subj", f"/CN={target}/O=Console-Web/OU=Security",
+            "-addext", san_ext
         ]
         proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        if proc.returncode != 0:
+            # Fallback for OpenSSL versions that don't support -addext
+            cmd = [
+                "openssl", "req", "-x509", "-newkey", "rsa:2048", "-nodes",
+                "-keyout", str(KEY_FILE),
+                "-out", str(CERT_FILE),
+                "-days", "365",
+                "-subj", f"/CN={target}/O=Console-Web/OU=Security"
+            ]
+            proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
         if proc.returncode == 0:
-            logger.info("Generated fallback self-signed SSL certificate for %s", target)
+            logger.info("Generated fallback self-signed SSL certificate for %s (SAN: %s)", target, san_ext)
             _save_meta(target, "self-signed")
             return True
     except Exception as e:

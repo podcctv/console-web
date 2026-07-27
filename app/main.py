@@ -1646,36 +1646,6 @@ Try typing 'acme status' or 'acme issue' or 'ping 8.8.8.8'
         'Spotify': `<svg viewBox="0 0 24 24" width="18" height="18" style="vertical-align:middle; flex-shrink:0;"><path fill="#1DB954" d="M12 0C5.376 0 0 5.377 0 12s5.376 12 12 12 12-5.377 12-12S18.624 0 12 0zm5.521 17.341c-.217.357-.68.471-1.036.251-2.836-1.733-6.408-2.126-10.617-1.165-.403.092-.807-.156-.898-.558-.093-.404.156-.807.558-.899 4.607-1.052 8.547-.604 11.742 1.336.357.218.472.68.251 1.035zm1.472-3.272c-.273.443-.855.584-1.298.311-3.245-1.995-8.192-2.573-12.03-1.408-.497.151-1.022-.132-1.174-.629-.151-.497.132-1.022.629-1.174 4.385-1.332 9.851-.69 13.562 1.599.444.272.584.855.311 1.298zm.126-3.411c-3.893-2.312-10.319-2.525-14.072-1.385-.598.181-1.231-.157-1.413-.755-.181-.598.158-1.232.756-1.413 4.309-1.308 11.4-1.05 15.892 1.616.538.319.717 1.018.399 1.556-.319.539-1.018.718-1.562.381z"/></svg>`,
         'Amazon Prime': `<svg viewBox="0 0 24 24" width="18" height="18" style="vertical-align:middle; flex-shrink:0;"><path fill="#00A8E1" d="M14.5 12.8c-1.8 0-3.3-.6-4.7-1.7l1.1-1.3c1.1.9 2.3 1.4 3.6 1.4 1.2 0 1.9-.5 1.9-1.2 0-.8-.7-1.2-2.3-1.7-2.3-.7-3.6-1.6-3.6-3.4 0-2.1 1.7-3.5 4.3-3.5 1.6 0 3 .5 4.1 1.3l-1.1 1.3c-.9-.7-1.9-1-3-1-1.2 0-1.8.5-1.8 1.1 0 .7.6 1.1 2.2 1.6 2.5.8 3.7 1.7 3.7 3.5 0 2.2-1.7 3.6-4.4 3.6zm-1.8 6c-4.4 0-8.5-1.8-11.4-4.8-.3-.3-.1-.7.3-.6 3.6 1.3 7.6 1.9 11.5 1.5 3.8-.4 7.4-1.7 10.4-3.9.4-.3.8.1.5.5-3 2.9-7.2 4.9-11.3 7.3z"/></svg>`
     };
-        }
-        inputEl.value = '';
-    }
-
-    inputEl.addEventListener('keydown', e => {
-        if (e.key === 'Enter') {
-            handleCommand(inputEl.value);
-        } else if (e.key === 'ArrowUp') {
-            if (cmdHistory.length && historyIdx > 0) {
-                historyIdx--;
-                inputEl.value = cmdHistory[historyIdx];
-            }
-            e.preventDefault();
-        } else if (e.key === 'ArrowDown') {
-            if (cmdHistory.length && historyIdx < cmdHistory.length - 1) {
-                historyIdx++;
-                inputEl.value = cmdHistory[historyIdx];
-            } else {
-                historyIdx = cmdHistory.length;
-                inputEl.value = '';
-            }
-            e.preventDefault();
-        }
-    });
-
-    // IP Quality Check
-    const MEDIA_ICONS = {
-        'Netflix': '🎬', 'YouTube Premium': '▶️', 'Disney+': '🏰', 'TikTok': '🎵',
-        'ChatGPT': '🤖', 'Claude': '🧠', 'Spotify': '🎧', 'Amazon Prime': '📦'
-    };
 
     function renderIPCheckResult(data) {
         const body = document.getElementById('ipcheck_body');
