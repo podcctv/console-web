@@ -2138,7 +2138,7 @@ from werkzeug.serving import make_server
 
 if __name__ == "__main__":
     acme_manager._auto_init()
-    cert_file = acme_manager.CERT_FILE
+    cert_file = acme_manager.FULLCHAIN_FILE if acme_manager.FULLCHAIN_FILE.exists() else acme_manager.CERT_FILE
     key_file = acme_manager.KEY_FILE
 
     ssl_ctx = None

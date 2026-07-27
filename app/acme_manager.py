@@ -26,6 +26,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 CERTS_DIR = BASE_DIR / "certs"
 CHALLENGE_DIR = CERTS_DIR / ".well-known" / "acme-challenge"
 CERT_FILE = CERTS_DIR / "cert.pem"
+FULLCHAIN_FILE = CERTS_DIR / "fullchain.pem"
 KEY_FILE = CERTS_DIR / "key.pem"
 META_FILE = CERTS_DIR / "acme_meta.json"
 ACME_SH_PATH = Path.home() / ".acme.sh" / "acme.sh"
@@ -324,7 +325,7 @@ def issue_cert(target=None, email=None) -> tuple:
                         [*acme_cmd, "--install-cert", "-d", target,
                          "--cert-file", str(CERT_FILE),
                          "--key-file", str(KEY_FILE),
-                         "--fullchain-file", str(CERT_FILE)],
+                         "--fullchain-file", str(FULLCHAIN_FILE)],
                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
                     )
                     if install_proc.returncode == 0:
@@ -359,7 +360,7 @@ def issue_cert(target=None, email=None) -> tuple:
                     "-d", target,
                     "--cert-file", str(CERT_FILE),
                     "--key-file", str(KEY_FILE),
-                    "--fullchain-file", str(CERT_FILE),
+                    "--fullchain-file", str(FULLCHAIN_FILE),
                 ]
                 install_proc = subprocess.run(
                     install_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
@@ -386,7 +387,7 @@ def issue_cert(target=None, email=None) -> tuple:
                     [*acme_cmd, "--install-cert", "-d", target,
                      "--cert-file", str(CERT_FILE),
                      "--key-file", str(KEY_FILE),
-                     "--fullchain-file", str(CERT_FILE)],
+                     "--fullchain-file", str(FULLCHAIN_FILE)],
                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
                 )
                 if install_proc.returncode == 0:
