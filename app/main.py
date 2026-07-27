@@ -375,34 +375,34 @@ TEMPLATE = r"""
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            /* Surface & Background Levels */
+            /* Surface & Background Levels (Subtle Elevation) */
             --bg-page: #050807;
             --bg-surface: #08110d;
             --bg-surface-elevated: #0d1a14;
             --bg-hover: #10221a;
             --bg-input: #09150e;
 
-            /* Borders & Dividers */
-            --border-subtle: rgba(93, 255, 167, 0.08);
-            --border-default: rgba(93, 255, 167, 0.16);
-            --border-active: rgba(71, 255, 148, 0.50);
+            /* Subdued Muted Borders (20% softer glow) */
+            --border-subtle: rgba(93, 255, 167, 0.06);
+            --border-default: rgba(93, 255, 167, 0.12);
+            --border-active: rgba(71, 255, 148, 0.40);
 
             /* Text Hierarchy */
             --text-primary: #e8f3ed;
-            --text-secondary: #9db3a6;
-            --text-tertiary: #586c60;
+            --text-secondary: #8da496;
+            --text-tertiary: #52665a;
 
             /* Semantic Color Tokens */
             --accent: #36e27b;
-            --accent-soft: rgba(54, 226, 123, 0.10);
+            --accent-soft: rgba(54, 226, 123, 0.08);
             --info: #44c7e8;
-            --info-soft: rgba(68, 199, 232, 0.10);
+            --info-soft: rgba(68, 199, 232, 0.08);
             --warning: #f5b942;
-            --warning-soft: rgba(245, 185, 66, 0.10);
+            --warning-soft: rgba(245, 185, 66, 0.08);
             --danger: #f35b72;
-            --danger-soft: rgba(243, 91, 114, 0.10);
+            --danger-soft: rgba(243, 91, 114, 0.08);
             --success: #36e27b;
-            --success-soft: rgba(54, 226, 123, 0.10);
+            --success-soft: rgba(54, 226, 123, 0.08);
 
             /* Layout Tokens */
             --radius-card: 10px;
@@ -420,16 +420,16 @@ TEMPLATE = r"""
             --bg-hover: #221235;
             --bg-input: #0f071a;
 
-            --border-subtle: rgba(255, 0, 119, 0.10);
-            --border-default: rgba(255, 0, 119, 0.18);
-            --border-active: rgba(255, 0, 119, 0.55);
+            --border-subtle: rgba(255, 0, 119, 0.08);
+            --border-default: rgba(255, 0, 119, 0.14);
+            --border-active: rgba(255, 0, 119, 0.45);
 
             --text-primary: #ffe5f7;
-            --text-secondary: #aa93c4;
-            --text-tertiary: #6b5585;
+            --text-secondary: #9c84b8;
+            --text-tertiary: #614c7a;
 
             --accent: #ff0077;
-            --accent-soft: rgba(255, 0, 119, 0.12);
+            --accent-soft: rgba(255, 0, 119, 0.10);
         }
 
         [data-theme="neon"] {
@@ -439,16 +439,16 @@ TEMPLATE = r"""
             --bg-hover: #112440;
             --bg-input: #060e1b;
 
-            --border-subtle: rgba(0, 217, 255, 0.10);
-            --border-default: rgba(0, 217, 255, 0.18);
-            --border-active: rgba(0, 217, 255, 0.55);
+            --border-subtle: rgba(0, 217, 255, 0.08);
+            --border-default: rgba(0, 217, 255, 0.14);
+            --border-active: rgba(0, 217, 255, 0.45);
 
             --text-primary: #e3f4ff;
-            --text-secondary: #7fadc7;
-            --text-tertiary: #4c738c;
+            --text-secondary: #6e9cb8;
+            --text-tertiary: #43667d;
 
             --accent: #00d9ff;
-            --accent-soft: rgba(0, 217, 255, 0.12);
+            --accent-soft: rgba(0, 217, 255, 0.10);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -457,8 +457,8 @@ TEMPLATE = r"""
         body {
             display: flex; flex-direction: column; align-items: center; padding: 24px 16px;
             background-image: 
-                radial-gradient(circle at 50% 0%, rgba(54, 226, 123, 0.05), transparent 70%),
-                linear-gradient(to bottom, rgba(255,255,255,0.01) 1px, transparent 1px);
+                radial-gradient(circle at 50% 0%, rgba(54, 226, 123, 0.04), transparent 70%),
+                linear-gradient(to bottom, rgba(255,255,255,0.008) 1px, transparent 1px);
             background-size: 100% 100%, 100% 24px;
         }
 
@@ -477,39 +477,39 @@ TEMPLATE = r"""
         .header-bar {
             display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;
             background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-card);
-            padding: 14px 20px; backdrop-filter: blur(16px);
+            padding: 12px 20px; backdrop-filter: blur(16px);
         }
 
         .brand-title {
-            display: flex; align-items: center; gap: 12px; font-size: 1.15rem; font-weight: 700; color: var(--text-primary);
+            display: flex; align-items: center; gap: 12px; font-size: 1.1rem; font-weight: 700; color: var(--text-primary);
             letter-spacing: 0.5px;
         }
 
         .brand-icon {
             display: inline-flex; align-items: center; justify-content: center;
-            width: 34px; height: 34px; border-radius: var(--radius-control); background: var(--accent-soft);
+            width: 32px; height: 32px; border-radius: var(--radius-control); background: var(--accent-soft);
             border: 1px solid var(--border-default); color: var(--accent); font-family: var(--font-mono); font-weight: 700;
         }
 
         .header-status-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
         .status-pill {
-            display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px;
-            font-size: 0.75rem; font-weight: 500; font-family: var(--font-ui);
+            display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 20px;
+            font-size: 0.74rem; font-weight: 500; font-family: var(--font-ui);
             background: var(--bg-input); border: 1px solid var(--border-subtle); color: var(--text-secondary);
         }
 
-        .status-pill.status-online { background: var(--success-soft); border-color: rgba(54, 226, 123, 0.3); color: var(--success); }
-        .status-pill.status-info { background: var(--info-soft); border-color: rgba(68, 199, 232, 0.3); color: var(--info); }
+        .status-pill.status-online { background: var(--success-soft); border-color: rgba(54, 226, 123, 0.25); color: var(--success); }
+        .status-pill.status-info { background: var(--info-soft); border-color: rgba(68, 199, 232, 0.25); color: var(--info); }
 
         .pulse-dot {
-            width: 7px; height: 7px; border-radius: 50%; background: var(--success);
-            box-shadow: 0 0 8px var(--success); animation: pulse 2s infinite;
+            width: 6px; height: 6px; border-radius: 50%; background: var(--success);
+            box-shadow: 0 0 6px var(--success); animation: pulse 2s infinite;
         }
 
         @keyframes pulse {
             0% { opacity: 0.7; transform: scale(0.95); }
-            50% { opacity: 1; transform: scale(1.2); }
+            50% { opacity: 1; transform: scale(1.25); }
             100% { opacity: 0.7; transform: scale(0.95); }
         }
 
@@ -517,7 +517,7 @@ TEMPLATE = r"""
 
         .btn-ctrl, .select-input {
             background: var(--bg-input); border: 1px solid var(--border-default); color: var(--text-primary);
-            padding: 6px 12px; border-radius: var(--radius-control); font-family: var(--font-ui); font-size: 0.8rem;
+            padding: 5px 12px; border-radius: var(--radius-control); font-family: var(--font-ui); font-size: 0.78rem;
             cursor: pointer; transition: all 0.2s ease; outline: none; display: inline-flex; align-items: center; gap: 6px;
         }
 
@@ -525,9 +525,9 @@ TEMPLATE = r"""
             border-color: var(--border-active); background: var(--bg-hover);
         }
 
-        /* Tier 1: Executive Status Summary Bar (4 Cards) */
+        /* Tier 1: 3-Tier Executive Summary Bar (4 Cards with Hero Focus) */
         .summary-grid {
-            display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+            display: grid; grid-template-columns: 1.25fr 1fr 1fr 1fr; gap: 16px;
         }
 
         .summary-card {
@@ -539,25 +539,33 @@ TEMPLATE = r"""
             background: var(--bg-surface-elevated); border-color: var(--border-active);
         }
 
+        /* Hero Primary Summary Card */
+        .summary-card.hero-card {
+            background: linear-gradient(135deg, var(--bg-surface), var(--bg-surface-elevated));
+            border-color: rgba(54, 226, 123, 0.28);
+        }
+
         .summary-label {
-            font-size: 0.78rem; font-weight: 500; color: var(--text-secondary); display: flex; justify-content: space-between; align-items: center;
+            font-size: 0.76rem; font-weight: 500; color: var(--text-secondary); display: flex; justify-content: space-between; align-items: center;
         }
 
         .summary-value {
-            font-size: 1.5rem; font-weight: 700; color: var(--text-primary); line-height: 1.2;
-            display: flex; align-items: baseline; gap: 8px;
+            font-size: 2rem; font-weight: 700; color: var(--text-primary); line-height: 1.15;
+            display: flex; align-items: baseline; gap: 6px;
         }
+
+        .summary-unit { font-size: 0.9rem; font-weight: 500; color: var(--text-secondary); }
 
         .summary-desc {
             font-size: 0.74rem; color: var(--text-tertiary); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
 
         .btn-copy {
-            background: transparent; border: none; color: var(--text-secondary); cursor: pointer;
-            padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; transition: all 0.15s ease;
+            background: transparent; border: 1px solid var(--border-subtle); color: var(--text-secondary); cursor: pointer;
+            padding: 2px 8px; border-radius: 4px; font-size: 0.72rem; transition: all 0.15s ease;
         }
 
-        .btn-copy:hover { color: var(--accent); background: var(--accent-soft); }
+        .btn-copy:hover { color: var(--accent); border-color: var(--border-default); background: var(--accent-soft); }
 
         /* Tier 2: Dashboard Grid (2 Main Columns) */
         .dashboard-grid {
@@ -574,12 +582,12 @@ TEMPLATE = r"""
         .card-header {
             display: flex; justify-content: space-between; align-items: center;
             border-bottom: 1px solid var(--border-subtle); padding-bottom: 10px; font-weight: 600;
-            font-size: 0.95rem; color: var(--text-primary);
+            font-size: 0.92rem; color: var(--text-primary);
         }
 
         .card-header-left { display: flex; align-items: center; gap: 8px; }
 
-        /* System Metrics Progress Gauges */
+        /* System Metrics Gauges (Sleek Indicator Cards) */
         .metrics-triple {
             display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
         }
@@ -594,7 +602,7 @@ TEMPLATE = r"""
         }
 
         .metric-name { color: var(--text-secondary); font-weight: 500; }
-        .metric-badge { font-size: 0.7rem; font-weight: 600; padding: 1px 6px; border-radius: 4px; }
+        .metric-badge { font-size: 0.68rem; font-weight: 600; padding: 1px 6px; border-radius: 4px; }
         .badge-normal { background: var(--success-soft); color: var(--success); }
         .badge-warn { background: var(--warning-soft); color: var(--warning); }
         .badge-danger { background: var(--danger-soft); color: var(--danger); }
@@ -613,19 +621,25 @@ TEMPLATE = r"""
         .progress-fill.warn { background: var(--warning); }
         .progress-fill.danger { background: var(--danger); }
 
-        /* System Info Definition List */
+        /* System Info Sub-Groups (运行状态 / 系统参数) */
+        .info-subgroups { display: flex; flex-direction: column; gap: 12px; }
+
+        .info-subgroup-title {
+            font-size: 0.74rem; font-weight: 600; color: var(--text-tertiary); text-transform: uppercase;
+            letter-spacing: 0.5px; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;
+        }
+
         .info-list-matrix {
-            display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px 16px; font-size: 0.8rem;
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 16px; font-size: 0.78rem;
         }
 
         .info-row {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 6px 8px; border-radius: 4px; transition: background 0.15s ease;
+            padding: 5px 8px; border-radius: 4px; transition: background 0.15s ease;
         }
 
         .info-row:hover { background: var(--bg-hover); }
-        .info-row.full-span { grid-column: span 2; }
-        .info-key { color: var(--text-secondary); font-size: 0.76rem; }
+        .info-key { color: var(--text-secondary); font-size: 0.75rem; }
         .info-val { color: var(--text-primary); font-weight: 600; text-align: right; word-break: break-all; }
 
         /* TCP Ping Latency Monitor Panel */
@@ -642,7 +656,7 @@ TEMPLATE = r"""
 
         .ping-title { font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 6px; }
         .ping-meta { font-size: 0.72rem; color: var(--text-tertiary); display: flex; gap: 10px; }
-        .ping-value { font-weight: 700; font-size: 0.9rem; }
+        .ping-value { font-weight: 700; font-size: 0.88rem; }
 
         .pixel-bar-container {
             display: flex; align-items: flex-end; gap: 2px; height: 34px;
@@ -651,8 +665,8 @@ TEMPLATE = r"""
         }
 
         .pixel-bar-container::before {
-            content: ''; position: absolute; left: 4px; right: 4px; bottom: 18px;
-            border-top: 1px dashed rgba(255,255,255,0.06);
+            content: ''; position: absolute; left: 4px; right: 4px; bottom: 17px;
+            border-top: 1px dashed rgba(255,255,255,0.05);
         }
 
         .pixel-bar {
@@ -664,7 +678,7 @@ TEMPLATE = r"""
         .pixel-bar.px-yellow { background: var(--warning); }
         .pixel-bar.px-red { background: var(--danger); }
         .pixel-bar.px-timeout { background: var(--danger); min-height: 2px; }
-        .pixel-bar.px-empty { background: rgba(255,255,255,0.03); min-height: 2px; }
+        .pixel-bar.px-empty { background: rgba(255,255,255,0.02); min-height: 2px; }
 
         /* IP Quality Check & Risk HUD Panel */
         .ipcheck-card {
@@ -675,7 +689,7 @@ TEMPLATE = r"""
         .ipcheck-card:hover { border-color: var(--border-active); }
 
         .ipcheck-info-row {
-            display: grid; grid-template-columns: 1fr 1fr 1.15fr; gap: 14px;
+            display: grid; grid-template-columns: 1fr 1fr 1.25fr; gap: 14px;
         }
 
         .ipcheck-section {
@@ -684,24 +698,24 @@ TEMPLATE = r"""
         }
 
         .ipcheck-section-title {
-            font-size: 0.78rem; font-weight: 600; color: var(--text-secondary);
+            font-size: 0.76rem; font-weight: 600; color: var(--text-secondary);
             border-bottom: 1px solid var(--border-subtle); padding-bottom: 6px; margin-bottom: 2px;
             display: flex; align-items: center; gap: 6px;
         }
 
         .ipcheck-row {
             display: flex; justify-content: space-between; align-items: center;
-            font-size: 0.76rem; padding: 2px 0;
+            font-size: 0.75rem; padding: 2px 0;
         }
 
         .ipcheck-label { color: var(--text-secondary); }
         .ipcheck-val { color: var(--text-primary); font-weight: 600; text-align: right; max-width: 65%; word-break: break-all; }
 
-        /* Risk Score Meter & Segmented Bar */
+        /* Risk Score Meter & Factor Breakdown (Filling Right Whitespace) */
         .risk-score-display {
             display: flex; justify-content: space-between; align-items: baseline; margin-top: 2px;
         }
-        .risk-score-num { font-size: 1.4rem; font-weight: 700; font-family: var(--font-mono); }
+        .risk-score-num { font-size: 1.5rem; font-weight: 700; font-family: var(--font-mono); }
 
         .risk-bar-segmented {
             display: flex; gap: 3px; height: 7px; border-radius: 4px; overflow: hidden; margin-top: 4px;
@@ -713,44 +727,56 @@ TEMPLATE = r"""
         .risk-segment.active-orange { background: #f58442; }
         .risk-segment.active-red { background: var(--danger); }
 
-        .risk-breakdown-list {
-            display: flex; flex-direction: column; gap: 2px; font-size: 0.7rem; color: var(--text-tertiary); margin-top: 4px;
+        .risk-factors-container {
+            display: flex; flex-direction: column; gap: 4px; margin-top: 6px; background: rgba(0,0,0,0.2);
+            padding: 8px 10px; border-radius: 4px; border: 1px solid var(--border-subtle);
         }
-        .risk-item { display: flex; justify-content: space-between; }
 
-        /* Tag Badges */
+        .risk-factor-row {
+            display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: var(--text-secondary);
+        }
+
+        .risk-advice-box {
+            font-size: 0.7rem; color: var(--text-tertiary); line-height: 1.4; margin-top: 4px;
+            padding-top: 4px; border-top: 1px dashed var(--border-subtle);
+        }
+
+        /* Tag Badges with Red/Orange/Green Semantic Palette */
         .badge-tag {
             display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 4px;
             font-size: 0.72rem; font-weight: 600; font-family: var(--font-ui);
         }
-        .badge-tag-yes { background: var(--warning-soft); color: var(--warning); border: 1px solid rgba(245, 185, 66, 0.3); }
-        .badge-tag-no { background: var(--success-soft); color: var(--success); border: 1px solid rgba(54, 226, 123, 0.3); }
-        .badge-tag-high { background: var(--danger-soft); color: var(--danger); border: 1px solid rgba(243, 91, 114, 0.3); }
+        .badge-tag-yes { background: var(--warning-soft); color: var(--warning); border: 1px solid rgba(245, 185, 66, 0.25); }
+        .badge-tag-no { background: var(--success-soft); color: var(--success); border: 1px solid rgba(54, 226, 123, 0.25); }
+        .badge-tag-high { background: var(--danger-soft); color: var(--danger); border: 1px solid rgba(243, 91, 114, 0.25); }
 
-        /* Unlock Grid & Filter Tabs */
+        /* Unlock Grid & Segmented Control Filter Tabs */
         .unlock-header-right { display: flex; align-items: center; gap: 10px; }
 
-        .filter-tabs { display: flex; gap: 4px; background: var(--bg-input); padding: 3px; border-radius: var(--radius-control); border: 1px solid var(--border-subtle); }
+        .filter-tabs-segmented {
+            display: flex; gap: 2px; background: var(--bg-input); padding: 3px;
+            border-radius: var(--radius-control); border: 1px solid var(--border-subtle);
+        }
 
-        .tab-btn {
+        .tab-btn-seg {
             background: transparent; border: none; color: var(--text-secondary); padding: 3px 10px;
             border-radius: 4px; font-size: 0.74rem; font-weight: 500; cursor: pointer; transition: all 0.15s ease;
         }
 
-        .tab-btn:hover { color: var(--text-primary); }
-        .tab-btn.active { background: var(--bg-surface-elevated); color: var(--accent); font-weight: 600; }
+        .tab-btn-seg:hover { color: var(--text-primary); }
+        .tab-btn-seg.active { background: var(--bg-surface-elevated); color: var(--accent); font-weight: 600; box-shadow: 0 1px 4px rgba(0,0,0,0.4); }
 
         .unlock-grid {
             display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 4px;
         }
 
-        .unlock-tile {
+        .unlock-tile-capsule {
             background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-control);
             padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px;
             transition: border-color 0.2s ease, background 0.2s ease; font-size: 0.76rem;
         }
 
-        .unlock-tile:hover { border-color: var(--border-default); background: var(--bg-hover); }
+        .unlock-tile-capsule:hover { border-color: var(--border-default); background: var(--bg-hover); }
         .unlock-tile-left { display: flex; align-items: center; gap: 8px; font-weight: 500; color: var(--text-primary); }
         .unlock-tile-icon { font-size: 1rem; display: inline-flex; align-items: center; }
 
@@ -759,11 +785,11 @@ TEMPLATE = r"""
             font-size: 0.7rem; font-weight: 600; white-space: nowrap;
         }
 
-        .unlock-badge.unlocked { background: var(--success-soft); color: var(--success); border: 1px solid rgba(54, 226, 123, 0.3); }
-        .unlock-badge.blocked { background: var(--danger-soft); color: var(--danger); border: 1px solid rgba(243, 91, 114, 0.3); }
-        .unlock-badge.unknown { background: var(--warning-soft); color: var(--warning); border: 1px solid rgba(245, 185, 66, 0.3); }
+        .unlock-badge.unlocked { background: var(--success-soft); color: var(--success); border: 1px solid rgba(54, 226, 123, 0.25); }
+        .unlock-badge.blocked { background: var(--danger-soft); color: var(--danger); border: 1px solid rgba(243, 91, 114, 0.25); }
+        .unlock-badge.unknown { background: var(--warning-soft); color: var(--warning); border: 1px solid rgba(245, 185, 66, 0.25); }
 
-        /* Tier 3: Resizable Interactive Terminal Console */
+        /* Tier 3: Resizable Interactive Diagnostic Console with Two-Tier Toolbar */
         .terminal-card {
             background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-card);
             padding: 0; overflow: hidden; display: flex; flex-direction: column;
@@ -772,9 +798,17 @@ TEMPLATE = r"""
 
         .terminal-card.expanded { height: 480px; }
 
-        .terminal-header {
-            background: var(--bg-surface-elevated); border-bottom: 1px solid var(--border-subtle);
+        .terminal-toolbar-two-tier {
+            display: flex; flex-direction: column; background: var(--bg-surface-elevated);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .toolbar-top-tier {
             padding: 8px 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+        }
+
+        .toolbar-bottom-tier {
+            padding: 6px 14px; border-top: 1px dashed var(--border-subtle); display: flex; gap: 6px; flex-wrap: wrap; align-items: center; background: rgba(0,0,0,0.15);
         }
 
         .terminal-header-left { display: flex; align-items: center; gap: 12px; }
@@ -799,8 +833,6 @@ TEMPLATE = r"""
             transition: opacity 0.2s ease;
         }
         .lookup-btn-inline:hover { opacity: 0.88; }
-
-        .terminal-actions { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
 
         .chip-btn {
             background: transparent; border: 1px solid var(--border-subtle); color: var(--text-secondary);
@@ -842,7 +874,6 @@ TEMPLATE = r"""
             .summary-grid { grid-template-columns: 1fr; }
             .metrics-triple { grid-template-columns: 1fr; }
             .info-list-matrix { grid-template-columns: 1fr; }
-            .info-row.full-span { grid-column: span 1; }
             .unlock-grid { grid-template-columns: 1fr; }
         }
     </style>
@@ -854,7 +885,7 @@ TEMPLATE = r"""
             <div class="brand-title">
                 <span class="brand-icon">&gt;_</span>
                 <span>NODE SEEKER</span>
-                <span class="text-muted" style="font-size:0.78rem; font-weight:normal">| {{ hostname }}</span>
+                <span class="text-muted" style="font-size:0.76rem; font-weight:normal">| {{ hostname }}</span>
             </div>
             <div class="header-status-group">
                 <span class="status-pill status-online"><span class="pulse-dot"></span> 系统在线</span>
@@ -878,304 +909,322 @@ TEMPLATE = r"""
             </div>
         </header>
 
-        <!-- Tier 1: Executive Status Summary Bar (4 Cards) -->
+        <!-- Tier 1: Executive Status Summary Bar (Hero Focus Hierarchy) -->
         <div class="summary-grid">
-            <div class="summary-card">
+            <!-- Hero Primary Card -->
+            <div class="summary-card hero-card">
                 <div class="summary-label">
                     <span>综合网络状态</span>
                     <span id="sum_net_dot" class="pulse-dot"></span>
                 </div>
                 <div class="summary-value" id="sum_net_status">检测中...</div>
-                <div class="summary-desc" id="sum_net_desc">自动分析中...</div>
+                <div class="summary-desc" id="sum_net_desc">自动分析节点健康度...</div>
             </div>
 
+            <!-- Secondary Card 1 -->
             <div class="summary-card">
                 <div class="summary-label">
                     <span>当前出口 IP</span>
                     <button class="btn-copy" onclick="copyIP()" title="复制出口 IP">📋 复制</button>
                 </div>
-                <div class="summary-value mono" id="sum_ip_val" style="font-size:1.25rem">-</div>
+                <div class="summary-value mono" id="sum_ip_val" style="font-size:1.4rem">-</div>
                 <div class="summary-desc" id="sum_ip_desc">检测网络位置...</div>
             </div>
 
-            <div class="summary-card">
-                <div class="summary-label">
-                    <span>平均 TCP 延迟</span>
-                    <span style="font-size:0.72rem" class="text-muted">40s 均值</span>
-                </div>
-                <div class="summary-value mono" id="sum_ping_val">- ms</div>
-                <div class="summary-desc" id="sum_ping_desc">边缘节点延迟...</div>
+            <!-- Secondary Card 2 -->
+            <div class="summary-label">
+                <span>平均 TCP 延迟</span>
+                <span style="font-size:0.72rem" class="text-muted">40s 均值</span>
             </div>
-
-            <div class="summary-card">
-                <div class="summary-label">
-                    <span>IP 风险评分</span>
-                    <span style="font-size:0.72rem" class="text-muted">Scamalytics</span>
-                </div>
-                <div class="summary-value mono" id="sum_risk_val">- / 100</div>
-                <div class="summary-desc" id="sum_risk_desc">欺诈风险体检中...</div>
-            </div>
+            <div class="summary-value mono" id="sum_ping_val">- <span class="summary-unit">ms</span></div>
+            <div class="summary-desc" id="sum_ping_desc">边缘节点延迟...</div>
         </div>
 
-        <!-- Tier 2: Dashboard Cards Grid (2 Main Columns) -->
-        <div class="dashboard-grid">
-            <!-- Left Column: System Telemetry & Network Panel -->
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-header-left">
-                        <span>🖥️</span>
-                        <span>系统资源与节点网络</span>
-                    </div>
-                    <span id="load_val" class="mono text-muted" style="font-size:0.76rem">Load: -</span>
-                </div>
-
-                <!-- Triple Progress Gauges -->
-                <div class="metrics-triple">
-                    <div class="metric-box">
-                        <div class="metric-header">
-                            <span class="metric-name">CPU</span>
-                            <span class="metric-badge badge-normal" id="cpu_badge">正常</span>
-                        </div>
-                        <div class="metric-val-num mono" id="cpu_val">0.0%</div>
-                        <div class="progress-track">
-                            <div class="progress-fill" id="cpu_bar"></div>
-                        </div>
-                    </div>
-
-                    <div class="metric-box">
-                        <div class="metric-header">
-                            <span class="metric-name">内存</span>
-                            <span class="metric-badge badge-normal" id="memory_badge">正常</span>
-                        </div>
-                        <div class="metric-val-num mono" id="memory_val">0.0%</div>
-                        <div class="progress-track">
-                            <div class="progress-fill" id="memory_bar"></div>
-                        </div>
-                    </div>
-
-                    <div class="metric-box">
-                        <div class="metric-header">
-                            <span class="metric-name">磁盘</span>
-                            <span class="metric-badge badge-normal" id="disk_badge">正常</span>
-                        </div>
-                        <div class="metric-val-num mono" id="disk_val">0.0%</div>
-                        <div class="progress-track">
-                            <div class="progress-fill" id="disk_bar"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- System Info Definition List -->
-                <div class="info-list-matrix">
-                    <div class="info-row">
-                        <span class="info-key">网络速率 (上/下)</span>
-                        <span class="info-val mono text-success" id="net_io">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-key">服务器内/公 IP</span>
-                        <span class="info-val mono" id="ip_val">-</span>
-                    </div>
-
-                    <div class="info-row">
-                        <span class="info-key">客户端 IP &amp; 运营商</span>
-                        <span class="info-val mono" id="client_ip_val">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-key">ACME SSL 证书</span>
-                        <span class="info-val mono text-info" id="acme_val">-</span>
-                    </div>
-
-                    <div class="info-row">
-                        <span class="info-key">容器运行时间</span>
-                        <span class="info-val mono" id="cuptime">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-key">宿主机运行时间</span>
-                        <span class="info-val mono" id="huptime">-</span>
-                    </div>
-
-                    <div class="info-row">
-                        <span class="info-key">CPU 核心</span>
-                        <span class="info-val mono" id="cpu_cores">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-key">系统架构</span>
-                        <span class="info-val mono" id="arch_val">-</span>
-                    </div>
-
-                    <div class="info-row">
-                        <span class="info-key">磁盘读写 IO</span>
-                        <span class="info-val mono" id="disk_io">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-key">物理/总内存</span>
-                        <span class="info-val mono" id="mem_total_val">-</span>
-                    </div>
-
-                    <div class="info-row">
-                        <span class="info-key">总磁盘容量</span>
-                        <span class="info-val mono" id="disk_total_val">-</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-key">操作系统内核</span>
-                        <span class="info-val mono" id="os_val">-</span>
-                    </div>
-                </div>
+        <!-- Summary Risk Score Card -->
+        <div class="summary-card">
+            <div class="summary-label">
+                <span>IP 风险评分</span>
+                <span style="font-size:0.72rem" class="text-muted">Scamalytics</span>
             </div>
-
-            <!-- Right Column: Edge TCP Ping Latency Monitor -->
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-header-left">
-                        <span>📡</span>
-                        <span>边缘网络延迟 (TCP Ping)</span>
-                    </div>
-                    <div style="font-size:0.72rem; display:flex; gap:8px" class="mono text-muted">
-                        <span class="text-success">● &lt;80ms</span>
-                        <span class="text-warning">● &lt;160ms</span>
-                        <span class="text-danger">● &ge;160ms</span>
-                    </div>
-                </div>
-
-                <div class="ping-grid">
-                    <div class="ping-item" id="client_ping_item">
-                        <div class="ping-item-header">
-                            <span class="ping-title">📍 本地 Client 延迟</span>
-                            <div class="ping-value mono" id="client_ping_val">-</div>
-                        </div>
-                        <div class="ping-meta mono">
-                            <span id="client_ping_stat">均值: - | 抖动: -</span>
-                            <span id="client_ping_trend" class="text-muted">~ 稳定</span>
-                        </div>
-                        <div class="pixel-bar-container" id="client_ping_bars"></div>
-                    </div>
-
-                    <div class="ping-item">
-                        <div class="ping-item-header">
-                            <span class="ping-title">🟢 浙江联通 Ping</span>
-                            <div class="ping-value mono" id="ping_cu_val">-</div>
-                        </div>
-                        <div class="ping-meta mono">
-                            <span id="ping_cu_stat">均值: - | 抖动: -</span>
-                            <span id="ping_cu_trend" class="text-muted">~ 稳定</span>
-                        </div>
-                        <div class="pixel-bar-container" id="ping_cu_bars"></div>
-                    </div>
-
-                    <div class="ping-item">
-                        <div class="ping-item-header">
-                            <span class="ping-title">🔵 浙江移动 Ping</span>
-                            <div class="ping-value mono" id="ping_cm_val">-</div>
-                        </div>
-                        <div class="ping-meta mono">
-                            <span id="ping_cm_stat">均值: - | 抖动: -</span>
-                            <span id="ping_cm_trend" class="text-muted">~ 稳定</span>
-                        </div>
-                        <div class="pixel-bar-container" id="ping_cm_bars"></div>
-                    </div>
-
-                    <div class="ping-item">
-                        <div class="ping-item-header">
-                            <span class="ping-title">🟡 浙江电信 Ping</span>
-                            <div class="ping-value mono" id="ping_ct_val">-</div>
-                        </div>
-                        <div class="ping-meta mono">
-                            <span id="ping_ct_stat">均值: - | 抖动: -</span>
-                            <span id="ping_ct_trend" class="text-muted">~ 稳定</span>
-                        </div>
-                        <div class="pixel-bar-container" id="ping_ct_bars"></div>
-                    </div>
-                </div>
-            </div>
+            <div class="summary-value mono" id="sum_risk_val">- <span class="summary-unit">/ 100</span></div>
+            <div class="summary-desc" id="sum_risk_desc">欺诈风险体检中...</div>
         </div>
+    </div>
 
-        <!-- Tier 2: IP Quality Check & Risk HUD Panel -->
-        <div class="ipcheck-card" id="ipcheck_card">
-            <div class="card-header">
-                <div class="card-header-left">
-                    <span>📊</span>
-                    <span>IP 质量体检与欺诈风控</span>
-                </div>
-                <span class="text-muted mono" style="font-size:0.75rem" id="ipc_time">更新时间: -</span>
-            </div>
-
-            <div class="ipcheck-info-row">
-                <!-- Column 1: Basic Info -->
-                <div class="ipcheck-section">
-                    <div class="ipcheck-section-title">🌍 基础网络信息</div>
-                    <div class="ipcheck-row"><span class="ipcheck-label">IP 地址</span><span class="ipcheck-val mono" id="ipc_ip">-</span></div>
-                    <div class="ipcheck-row"><span class="ipcheck-label">ASN 编号</span><span class="ipcheck-val mono" id="ipc_asn">-</span></div>
-                    <div class="ipcheck-row"><span class="ipcheck-label">所属组织</span><span class="ipcheck-val" id="ipc_org">-</span></div>
-                    <div class="ipcheck-row"><span class="ipcheck-label">ISP 运营商</span><span class="ipcheck-val" id="ipc_isp">-</span></div>
-                    <div class="ipcheck-row"><span class="ipcheck-label">国家/地区</span><span class="ipcheck-val" id="ipc_country">-</span></div>
-                    <div class="ipcheck-row"><span class="ipcheck-label">城市</span><span class="ipcheck-val" id="ipc_city">-</span></div>
-                    <div class="ipcheck-row"><span class="ipcheck-label">时区</span><span class="ipcheck-val mono" id="ipc_tz">-</span></div>
-                </div>
-
-                <!-- Column 2: IP Attributes -->
-                <div class="ipcheck-section">
-                    <div class="ipcheck-section-title">🏷️ IP 属性与风控标记</div>
-                    <div class="ipcheck-row"><span class="ipcheck-label">IP 类型</span><span class="ipcheck-val" id="ipc_type">-</span></div>
-                    <div class="ipcheck-row"><span class="ipcheck-label">代理 Proxy</span><span class="ipcheck-val" id="ipc_proxy">-</span></div>
-                    <div class="ipcheck-row"><span class="ipcheck-label">VPN 节点</span><span class="ipcheck-val" id="ipc_vpn">-</span></div>
-                    <div class="ipcheck-row"><span class="ipcheck-label">Tor 节点</span><span class="ipcheck-val" id="ipc_tor">-</span></div>
-                    <div class="ipcheck-row"><span class="ipcheck-label">IDC 机房</span><span class="ipcheck-val" id="ipc_hosting">-</span></div>
-                    <div class="ipcheck-row"><span class="ipcheck-label">蜂窝移动</span><span class="ipcheck-val" id="ipc_mobile">-</span></div>
-                </div>
-
-                <!-- Column 3: Risk Score Breakdown -->
-                <div class="ipcheck-section">
-                    <div class="ipcheck-section-title">⚠️ 欺诈风险评分</div>
-                    <div class="risk-score-display">
-                        <span class="risk-score-num" id="ipc_risk_score">-</span>
-                        <span class="badge-tag" id="ipc_risk_label">待体检</span>
-                    </div>
-
-                    <!-- 4 Segmented Score Ribbon -->
-                    <div class="risk-bar-segmented">
-                        <div class="risk-segment" id="rseg_1"></div>
-                        <div class="risk-segment" id="rseg_2"></div>
-                        <div class="risk-segment" id="rseg_3"></div>
-                        <div class="risk-segment" id="rseg_4"></div>
-                    </div>
-
-                    <div class="risk-breakdown-list" id="risk_breakdown">
-                        <div class="risk-item"><span>数据来源:</span><span>Scamalytics API</span></div>
-                        <div class="risk-item"><span>风险构成:</span><span id="risk_factors_desc">规则判定中...</span></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Tier 2: Streaming & AI Unlock Grid with Filtering Tabs -->
+    <!-- Tier 2: Dashboard Grid (2 Main Columns) -->
+    <div class="dashboard-grid">
+        <!-- Left Column: System Telemetry Panel -->
         <div class="card">
             <div class="card-header">
                 <div class="card-header-left">
-                    <span>🎬</span>
-                    <span>流媒体 &amp; AI 服务解锁检测</span>
+                    <span>🖥️</span>
+                    <span>系统资源与节点网络</span>
                 </div>
-                <div class="unlock-header-right">
-                    <div class="filter-tabs">
-                        <button class="tab-btn active" onclick="filterUnlockTiles('all', this)">全部</button>
-                        <button class="tab-btn" onclick="filterUnlockTiles('unlocked', this)">已解锁</button>
-                        <button class="tab-btn" onclick="filterUnlockTiles('blocked', this)">未解锁</button>
-                        <button class="tab-btn" onclick="filterUnlockTiles('unknown', this)">异常</button>
+                <span id="load_val" class="mono text-muted" style="font-size:0.76rem">Load: -</span>
+            </div>
+
+            <!-- Triple Indicator Gauges -->
+            <div class="metrics-triple">
+                <div class="metric-box">
+                    <div class="metric-header">
+                        <span class="metric-name">CPU</span>
+                        <span class="metric-badge badge-normal" id="cpu_badge">正常</span>
                     </div>
-                    <button class="btn-ctrl" id="ipcheck_btn" onclick="fetchIPCheck(true)" style="background:var(--accent); color:#000; font-weight:600">
-                        <span id="ipcheck_spinner" style="display:none">🔄</span>
-                        <span id="ipcheck_btn_text">重新体检</span>
-                    </button>
+                    <div class="metric-val-num mono" id="cpu_val">0.0%</div>
+                    <div class="progress-track">
+                        <div class="progress-fill" id="cpu_bar"></div>
+                    </div>
+                </div>
+
+                <div class="metric-box">
+                    <div class="metric-header">
+                        <span class="metric-name">内存</span>
+                        <span class="metric-badge badge-normal" id="memory_badge">正常</span>
+                    </div>
+                    <div class="metric-val-num mono" id="memory_val">0.0%</div>
+                    <div class="progress-track">
+                        <div class="progress-fill" id="memory_bar"></div>
+                    </div>
+                </div>
+
+                <div class="metric-box">
+                    <div class="metric-header">
+                        <span class="metric-name">磁盘</span>
+                        <span class="metric-badge badge-normal" id="disk_badge">正常</span>
+                    </div>
+                    <div class="metric-val-num mono" id="disk_val">0.0%</div>
+                    <div class="progress-track">
+                        <div class="progress-fill" id="disk_bar"></div>
+                    </div>
                 </div>
             </div>
 
-            <div class="unlock-grid" id="unlock_grid">
-                <!-- Populated by JS -->
+            <!-- Sub-Grouped System Info Matrix (运行状态 / 系统参数) -->
+            <div class="info-subgroups">
+                <div>
+                    <div class="info-subgroup-title">⚡ 运行状态</div>
+                    <div class="info-list-matrix">
+                        <div class="info-row">
+                            <span class="info-key">网络速率 (上/下)</span>
+                            <span class="info-val mono text-success" id="net_io">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-key">服务器内/公 IP</span>
+                            <span class="info-val mono" id="ip_val">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-key">客户端 IP &amp; 运营商</span>
+                            <span class="info-val mono" id="client_ip_val">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-key">ACME SSL 证书</span>
+                            <span class="info-val mono text-info" id="acme_val">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-key">容器运行时间</span>
+                            <span class="info-val mono" id="cuptime">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-key">宿主机运行时间</span>
+                            <span class="info-val mono" id="huptime">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="info-subgroup-title">⚙️ 系统参数</div>
+                    <div class="info-list-matrix">
+                        <div class="info-row">
+                            <span class="info-key">CPU 核心</span>
+                            <span class="info-val mono" id="cpu_cores">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-key">系统架构</span>
+                            <span class="info-val mono" id="arch_val">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-key">磁盘读写 IO</span>
+                            <span class="info-val mono" id="disk_io">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-key">物理/总内存</span>
+                            <span class="info-val mono" id="mem_total_val">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-key">总磁盘容量</span>
+                            <span class="info-val mono" id="disk_total_val">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-key">操作系统内核</span>
+                            <span class="info-val mono" id="os_val">-</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Tier 3: Resizable Interactive Diagnostic Terminal Console -->
-        <div class="terminal-card" id="terminal_box">
-            <div class="terminal-header">
+        <!-- Right Column: Edge TCP Ping Latency Monitor Panel -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-header-left">
+                    <span>📡</span>
+                    <span>边缘网络延迟 (TCP Ping)</span>
+                </div>
+                <div style="font-size:0.72rem; display:flex; gap:8px" class="mono text-muted">
+                    <span class="text-success">● &lt;80ms</span>
+                    <span class="text-warning">● &lt;160ms</span>
+                    <span class="text-danger">● &ge;160ms</span>
+                </div>
+            </div>
+
+            <div class="ping-grid">
+                <div class="ping-item" id="client_ping_item">
+                    <div class="ping-item-header">
+                        <span class="ping-title">📍 本地 Client 延迟</span>
+                        <div class="ping-value mono" id="client_ping_val">-</div>
+                    </div>
+                    <div class="ping-meta mono">
+                        <span id="client_ping_stat">均值: - | 抖动: -</span>
+                        <span id="client_ping_trend" class="text-muted">~ 稳定</span>
+                    </div>
+                    <div class="pixel-bar-container" id="client_ping_bars"></div>
+                </div>
+
+                <div class="ping-item">
+                    <div class="ping-item-header">
+                        <span class="ping-title">🟢 浙江联通 Ping</span>
+                        <div class="ping-value mono" id="ping_cu_val">-</div>
+                    </div>
+                    <div class="ping-meta mono">
+                        <span id="ping_cu_stat">均值: - | 抖动: -</span>
+                        <span id="ping_cu_trend" class="text-muted">~ 稳定</span>
+                    </div>
+                    <div class="pixel-bar-container" id="ping_cu_bars"></div>
+                </div>
+
+                <div class="ping-item">
+                    <div class="ping-item-header">
+                        <span class="ping-title">🔵 浙江移动 Ping</span>
+                        <div class="ping-value mono" id="ping_cm_val">-</div>
+                    </div>
+                    <div class="ping-meta mono">
+                        <span id="ping_cm_stat">均值: - | 抖动: -</span>
+                        <span id="ping_cm_trend" class="text-muted">~ 稳定</span>
+                    </div>
+                    <div class="pixel-bar-container" id="ping_cm_bars"></div>
+                </div>
+
+                <div class="ping-item">
+                    <div class="ping-item-header">
+                        <span class="ping-title">🟡 浙江电信 Ping</span>
+                        <div class="ping-value mono" id="ping_ct_val">-</div>
+                    </div>
+                    <div class="ping-meta mono">
+                        <span id="ping_ct_stat">均值: - | 抖动: -</span>
+                        <span id="ping_ct_trend" class="text-muted">~ 稳定</span>
+                    </div>
+                    <div class="pixel-bar-container" id="ping_ct_bars"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tier 2: IP Quality Check & Risk Score Breakdown Matrix -->
+    <div class="ipcheck-card" id="ipcheck_card">
+        <div class="card-header">
+            <div class="card-header-left">
+                <span>📊</span>
+                <span>IP 质量体检与欺诈风控</span>
+            </div>
+            <span class="text-muted mono" style="font-size:0.74rem" id="ipc_time">更新时间: 刚刚</span>
+        </div>
+
+        <div class="ipcheck-info-row">
+            <!-- Column 1: Basic Info -->
+            <div class="ipcheck-section">
+                <div class="ipcheck-section-title">🌍 基础网络信息</div>
+                <div class="ipcheck-row"><span class="ipcheck-label">IP 地址</span><span class="ipcheck-val mono" id="ipc_ip">-</span></div>
+                <div class="ipcheck-row"><span class="ipcheck-label">ASN 编号</span><span class="ipcheck-val mono" id="ipc_asn">-</span></div>
+                <div class="ipcheck-row"><span class="ipcheck-label">所属组织</span><span class="ipcheck-val" id="ipc_org">-</span></div>
+                <div class="ipcheck-row"><span class="ipcheck-label">ISP 运营商</span><span class="ipcheck-val" id="ipc_isp">-</span></div>
+                <div class="ipcheck-row"><span class="ipcheck-label">国家/地区</span><span class="ipcheck-val" id="ipc_country">-</span></div>
+                <div class="ipcheck-row"><span class="ipcheck-label">城市</span><span class="ipcheck-val" id="ipc_city">-</span></div>
+                <div class="ipcheck-row"><span class="ipcheck-label">时区</span><span class="ipcheck-val mono" id="ipc_tz">-</span></div>
+            </div>
+
+            <!-- Column 2: IP Attributes -->
+            <div class="ipcheck-section">
+                <div class="ipcheck-section-title">🏷️ IP 属性与风控标记</div>
+                <div class="ipcheck-row"><span class="ipcheck-label">IP 类型</span><span class="ipcheck-val" id="ipc_type">-</span></div>
+                <div class="ipcheck-row"><span class="ipcheck-label">代理 Proxy</span><span class="ipcheck-val" id="ipc_proxy">-</span></div>
+                <div class="ipcheck-row"><span class="ipcheck-label">VPN 节点</span><span class="ipcheck-val" id="ipc_vpn">-</span></div>
+                <div class="ipcheck-row"><span class="ipcheck-label">Tor 节点</span><span class="ipcheck-val" id="ipc_tor">-</span></div>
+                <div class="ipcheck-row"><span class="ipcheck-label">IDC 机房</span><span class="ipcheck-val" id="ipc_hosting">-</span></div>
+                <div class="ipcheck-row"><span class="ipcheck-label">蜂窝移动</span><span class="ipcheck-val" id="ipc_mobile">-</span></div>
+            </div>
+
+            <!-- Column 3: Risk Score Breakdown (Filling Right Side Whitespace) -->
+            <div class="ipcheck-section">
+                <div class="ipcheck-section-title">⚠️ 欺诈风险评分拆解</div>
+                <div class="risk-score-display">
+                    <span class="risk-score-num" id="ipc_risk_score">-</span>
+                    <span class="badge-tag" id="ipc_risk_label">待体检</span>
+                </div>
+
+                <!-- 4 Segmented Score Ribbon -->
+                <div class="risk-bar-segmented">
+                    <div class="risk-segment" id="rseg_1"></div>
+                    <div class="risk-segment" id="rseg_2"></div>
+                    <div class="risk-segment" id="rseg_3"></div>
+                    <div class="risk-segment" id="rseg_4"></div>
+                </div>
+
+                <!-- Factor Breakdown List -->
+                <div class="risk-factors-container">
+                    <div class="risk-factor-row"><span>IDC 机房特征:</span><span id="rf_hosting" class="mono">-</span></div>
+                    <div class="risk-factor-row"><span>代理节点标记:</span><span id="rf_proxy" class="mono">-</span></div>
+                    <div class="risk-factor-row"><span>VPN / 节点:</span><span id="rf_vpn" class="mono">-</span></div>
+                    <div class="risk-factor-row"><span>Tor 出口特征:</span><span id="rf_tor" class="mono">-</span></div>
+                </div>
+
+                <div class="risk-advice-box" id="risk_advice_text">
+                    系统建议: 正在分析该 IP 的综合风控系数与场景适用度...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tier 2: Streaming & AI Unlock Grid with Segmented Control -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-header-left">
+                <span>🎬</span>
+                <span>流媒体 &amp; AI 服务解锁检测</span>
+            </div>
+            <div class="unlock-header-right">
+                <div class="filter-tabs-segmented">
+                    <button class="tab-btn-seg active" onclick="filterUnlockTiles('all', this)">全部</button>
+                    <button class="tab-btn-seg" onclick="filterUnlockTiles('unlocked', this)">已解锁</button>
+                    <button class="tab-btn-seg" onclick="filterUnlockTiles('blocked', this)">未解锁</button>
+                    <button class="tab-btn-seg" onclick="filterUnlockTiles('unknown', this)">异常</button>
+                </div>
+                <button class="btn-ctrl" id="ipcheck_btn" onclick="fetchIPCheck(true)" style="background:var(--accent); color:#000; font-weight:600">
+                    <span id="ipcheck_spinner" style="display:none">🔄</span>
+                    <span id="ipcheck_btn_text">重新体检</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="unlock-grid" id="unlock_grid">
+            <!-- Populated by JS -->
+        </div>
+    </div>
+
+    <!-- Tier 3: Diagnostic Console with Two-Tier Toolbar -->
+    <div class="terminal-card" id="terminal_box">
+        <div class="terminal-toolbar-two-tier">
+            <!-- Tier 1 Toolbar -->
+            <div class="toolbar-top-tier">
                 <div class="terminal-header-left">
                     <div class="terminal-dots">
                         <div class="win-dot win-red"></div>
@@ -1185,34 +1234,37 @@ TEMPLATE = r"""
                     <span style="font-size:0.8rem; font-weight:600; color:var(--text-secondary)">Diagnostic Console</span>
                 </div>
 
-                <!-- Inline Quick Diagnostic Input -->
                 <div class="terminal-lookup-bar">
                     <input type="text" id="lookup_input" class="lookup-input-inline" placeholder="输入域名或 IP (如 github.com)..." />
                     <button id="lookup_btn" class="lookup-btn-inline">诊断</button>
                 </div>
 
-                <div class="terminal-actions">
-                    <button class="chip-btn" onclick="quickRun('ipcheck')">IP 质量</button>
-                    <button class="chip-btn" onclick="quickRun('acme status')">ACME 状态</button>
-                    <button class="chip-btn" onclick="quickRun('acme issue')">申请证书</button>
-                    <button class="chip-btn" onclick="quickRun('ping zj-cu-v4.ip.zstaticcdn.com')">Ping 联通</button>
-                    <button class="chip-btn" onclick="quickRun('mtr 1.1.1.1')">MTR</button>
-                    <button class="chip-btn" onclick="quickRun('clear')">清屏</button>
-                    <button class="chip-btn" onclick="toggleTerminalExpand()" title="展开/收起终端">⤢ 缩放</button>
-                </div>
+                <button class="chip-btn" onclick="toggleTerminalExpand()" title="展开/收起终端">⤢ 缩放</button>
             </div>
 
-            <div class="terminal-body" id="terminal_body">
-                <pre id="cmd_output">System initialized. Type 'help' for available commands.
+            <!-- Tier 2 Toolbar -->
+            <div class="toolbar-bottom-tier">
+                <span style="font-size:0.72rem; color:var(--text-tertiary); margin-right:4px">快捷指令:</span>
+                <button class="chip-btn" onclick="quickRun('ipcheck')">IP 质量体检</button>
+                <button class="chip-btn" onclick="quickRun('acme status')">ACME 状态</button>
+                <button class="chip-btn" onclick="quickRun('acme issue')">申请 IP 证书</button>
+                <button class="chip-btn" onclick="quickRun('ping zj-cu-v4.ip.zstaticcdn.com')">Ping 联通</button>
+                <button class="chip-btn" onclick="quickRun('mtr 1.1.1.1')">MTR 路由</button>
+                <button class="chip-btn" onclick="quickRun('clear')">清屏</button>
+            </div>
+        </div>
+
+        <div class="terminal-body" id="terminal_body">
+            <pre id="cmd_output">System initialized. Type 'help' for available commands.
 Try typing 'acme status' or 'acme issue' or 'ping 8.8.8.8'
 </pre>
-                <div class="terminal-input-line">
-                    <span class="prompt-text">root@{{ short_isp }}:~$</span>
-                    <input type="text" id="cmd_input" class="terminal-input" placeholder="输入命令..." autofocus autocomplete="off" />
-                </div>
+            <div class="terminal-input-line">
+                <span class="prompt-text">root@{{ short_isp }}:~$</span>
+                <input type="text" id="cmd_input" class="terminal-input" placeholder="输入域名、IP 或命令开始诊断 (例如: ping 8.8.8.8 或 acme status)..." autofocus autocomplete="off" />
             </div>
         </div>
     </div>
+</div>
 
     <script>
     // Safe DOM Text & HTML Helpers
@@ -1470,19 +1522,19 @@ Try typing 'acme status' or 'acme issue' or 'ping 8.8.8.8'
             const pings = [data.ping_cu, data.ping_cm, data.ping_ct].filter(v => v !== null && v !== undefined);
             if (pings.length) {
                 const avgPing = pings.reduce((a,b)=>a+b,0) / pings.length;
-                setElText('sum_ping_val', `${avgPing.toFixed(0)} ms`);
+                setElHTML('sum_ping_val', `${avgPing.toFixed(0)} <span class="summary-unit">ms</span>`);
 
                 const statusEl = document.getElementById('sum_net_status');
                 const descEl = document.getElementById('sum_net_desc');
                 if (avgPing < 150) {
                     if (statusEl) { statusEl.textContent = '健康'; statusEl.className = 'summary-value text-success'; }
-                    if (descEl) descEl.textContent = `平均延迟 ${avgPing.toFixed(0)}ms · 线路良好`;
+                    if (descEl) descEl.textContent = `平均延迟 ${avgPing.toFixed(0)}ms · 线路优异`;
                 } else if (avgPing < 250) {
                     if (statusEl) { statusEl.textContent = '良好'; statusEl.className = 'summary-value text-warning'; }
                     if (descEl) descEl.textContent = `平均延迟 ${avgPing.toFixed(0)}ms · 抖动正常`;
                 } else {
-                    if (statusEl) { statusEl.textContent = '较高'; statusEl.className = 'summary-value text-danger'; }
-                    if (descEl) descEl.textContent = `平均延迟 ${avgPing.toFixed(0)}ms · 建议检测网络`;
+                    if (statusEl) { statusEl.textContent = '较慢'; statusEl.className = 'summary-value text-danger'; }
+                    if (descEl) descEl.textContent = `平均延迟 ${avgPing.toFixed(0)}ms · 建议检测`;
                 }
             }
         } catch (e) {
@@ -1698,7 +1750,7 @@ Try typing 'acme status' or 'acme issue' or 'ping 8.8.8.8'
     function filterUnlockTiles(filter, btnEl) {
         currentUnlockFilter = filter;
         if (btnEl) {
-            document.querySelectorAll('.filter-tabs .tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.filter-tabs-segmented .tab-btn-seg').forEach(b => b.classList.remove('active'));
             btnEl.classList.add('active');
         }
         renderUnlockGrid(cachedMediaData);
@@ -1718,7 +1770,7 @@ Try typing 'acme status' or 'acme issue' or 'ping 8.8.8.8'
         });
 
         if (!filtered.length) {
-            grid.innerHTML = `<div style="grid-column:span 4; text-align:center; padding:12px; color:var(--text-tertiary); font-size:0.78rem">无匹配的服务解锁记录</div>`;
+            grid.innerHTML = `<div style="grid-column:span 4; text-align:center; padding:14px; color:var(--text-tertiary); font-size:0.78rem">无匹配的服务解锁记录</div>`;
             return;
         }
 
@@ -1731,7 +1783,7 @@ Try typing 'acme status' or 'acme issue' or 'ping 8.8.8.8'
             const regionText = m.region ? ` (${m.region})` : '';
 
             grid.innerHTML += `
-                <div class="unlock-tile">
+                <div class="unlock-tile-capsule">
                     <div class="unlock-tile-left">
                         <span class="unlock-tile-icon">${icon}</span>
                         <span class="unlock-tile-name">${m.name}</span>
@@ -1755,31 +1807,37 @@ Try typing 'acme status' or 'acme issue' or 'ping 8.8.8.8'
         setElText('ipc_city', b.city || 'N/A');
         setElText('ipc_tz', b.timezone || 'N/A');
 
-        // IP type badge
+        // IP type badge (Fine-tuned semantic badges)
         const typeLabel = r.ip_type_label || '原生 ISP';
-        const typeClass = r.is_hosting ? 'badge-tag-yes' : 'badge-tag-no';
+        let typeClass = 'badge-tag-no';
+        if (r.is_tor || (r.risk_score && r.risk_score > 80)) typeClass = 'badge-tag-high';
+        else if (r.is_hosting || r.is_vpn || r.is_proxy) typeClass = 'badge-tag-yes';
         setElHTML('ipc_type', `<span class="badge-tag ${typeClass}">${typeLabel}</span>`);
 
-        // Risk factors
-        const factorHTML = (val) => val ? '<span class="badge-tag badge-tag-yes">是</span>' : '<span class="badge-tag badge-tag-no">否</span>';
+        // Risk factors badges
+        const factorHTML = (val, highRisk=false) => {
+            if (!val) return '<span class="badge-tag badge-tag-no">否</span>';
+            return highRisk ? '<span class="badge-tag badge-tag-high">是 (高危)</span>' : '<span class="badge-tag badge-tag-yes">是</span>';
+        };
+
         setElHTML('ipc_proxy', factorHTML(r.is_proxy));
         setElHTML('ipc_vpn', factorHTML(r.is_vpn));
-        setElHTML('ipc_tor', factorHTML(r.is_tor));
+        setElHTML('ipc_tor', factorHTML(r.is_tor, true));
         setElHTML('ipc_hosting', factorHTML(r.is_hosting));
         setElHTML('ipc_mobile', factorHTML(r.is_mobile));
 
-        // Risk Score Meter & 4 Segmented Ribbon
+        // Risk Score & 4 Segment Ribbon
         const score = r.risk_score || 0;
         setElText('ipc_risk_score', score);
 
-        // Update Summary Card 4: Risk Score
+        // Summary Card 4 update
         const sumRiskVal = document.getElementById('sum_risk_val');
         const sumRiskDesc = document.getElementById('sum_risk_desc');
         if (sumRiskVal) {
-            sumRiskVal.textContent = `${score} / 100`;
+            sumRiskVal.innerHTML = `${score} <span class="summary-unit">/ 100</span>`;
             if (score <= 30) sumRiskVal.className = 'summary-value text-success mono';
             else if (score <= 60) sumRiskVal.className = 'summary-value text-warning mono';
-            else if (score <= 80) sumRiskVal.className = 'summary-value mono'; // Orange
+            else if (score <= 80) sumRiskVal.className = 'summary-value mono';
             else sumRiskVal.className = 'summary-value text-danger mono';
         }
         if (sumRiskDesc) sumRiskDesc.textContent = `${r.risk_label || '低风险'} · ${b.isp || '原生网络'}`;
@@ -1804,15 +1862,17 @@ Try typing 'acme status' or 'acme issue' or 'ping 8.8.8.8'
             s4.className = 'risk-segment' + (score > 80 ? ' active-red' : '');
         }
 
-        // Risk breakdown explanation
-        const breakdownEl = document.getElementById('risk_factors_desc');
-        if (breakdownEl) {
-            const factors = [];
-            if (r.is_proxy) factors.push('代理特征');
-            if (r.is_vpn) factors.push('VPN节点');
-            if (r.is_hosting) factors.push('IDC机房IP');
-            if (r.is_tor) factors.push('Tor出口');
-            breakdownEl.textContent = factors.length ? factors.join(' + ') : '洁净住宅 IP';
+        // Risk Factor Breakdown Items (Filling Whitespace)
+        setElText('rf_hosting', r.is_hosting ? '已触发 (+18分 IDC机房)' : '未触发 (0分)');
+        setElText('rf_proxy', r.is_proxy ? '已触发 (+20分 Proxy代理)' : '未触发 (0分)');
+        setElText('rf_vpn', r.is_vpn ? '已触发 (+16分 VPN节点)' : '未触发 (0分)');
+        setElText('rf_tor', r.is_tor ? '已触发 (+35分 Tor高危)' : '未触发 (0分)');
+
+        const adviceEl = document.getElementById('risk_advice_text');
+        if (adviceEl) {
+            if (score <= 30) adviceEl.textContent = '系统建议: 洁净原生 IP，具备良好信誉，推荐用于各类高风控业务及流媒体解封。';
+            else if (score <= 60) adviceEl.textContent = '系统建议: 具备 IDC/代理特征，推荐用于常规网页浏览与音视频流媒体，敏感场景需留意。';
+            else adviceEl.textContent = '系统建议: 具备高风险代理或机房节点特征，不建议用于强风控账号注册与支付交互。';
         }
 
         setElText('ipc_time', data.timestamp ? `更新时间: ${data.timestamp}` : '更新时间: 刚刚');
@@ -1825,9 +1885,9 @@ Try typing 'acme status' or 'acme issue' or 'ping 8.8.8.8'
         const btn = document.getElementById('ipcheck_btn');
         const spinner = document.getElementById('ipcheck_spinner');
         const btnText = document.getElementById('ipcheck_btn_text');
-        btn.disabled = true;
-        spinner.style.display = 'inline-block';
-        btnText.textContent = '检测中...';
+        if (btn) btn.disabled = true;
+        if (spinner) spinner.style.display = 'inline-block';
+        if (btnText) btnText.textContent = '检测中...';
         try {
             const url = force ? '/ipcheck?force=1' : '/ipcheck';
             const res = await fetch(url);
@@ -1853,6 +1913,21 @@ Try typing 'acme status' or 'acme issue' or 'ping 8.8.8.8'
 </body>
 </html>
 """
+
+@app.route("/.well-known/acme-challenge/<path:filename>")
+def acme_challenge_file(filename):
+    try:
+        challenge_dir = acme_manager.CHALLENGE_DIR
+        target_file = challenge_dir / filename
+        if target_file.exists() and target_file.is_file():
+            content = target_file.read_text(encoding="utf-8", errors="ignore")
+            logger.info("Serving ACME HTTP-01 challenge file for %s", filename)
+            return Response(content, mimetype="text/plain")
+        logger.warning("ACME challenge file not found: %s (path: %s)", filename, target_file)
+    except Exception as e:
+        logger.exception("Error serving ACME challenge file: %s", e)
+    return "Challenge file not found", 404
+
 
 @app.route("/")
 def index():
