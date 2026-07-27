@@ -372,98 +372,106 @@ TEMPLATE = r"""
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg-color: #080c0a;
-            --card-bg: rgba(12, 22, 16, 0.75);
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;600;700&display=swap" rel="s        :root {
+            --bg-color: #050a07;
+            --card-bg: rgba(9, 18, 14, 0.85);
             --card-border: #00ff6644;
             --card-border-glow: rgba(0, 255, 102, 0.25);
             --text-primary: #00ff66;
-            --text-muted: #66cc99;
-            --text-white: #e0ffe0;
+            --text-muted: #52b380;
+            --text-white: #e3ffe9;
             --accent-green: #00ff66;
             --accent-yellow: #ffcc00;
             --accent-red: #ff3366;
             --accent-blue: #00ccff;
-            --terminal-bg: #050a07;
-            --input-bg: #0d1a12;
-            --bar-bg: #11261a;
+            --terminal-bg: #030805;
+            --input-bg: #0a140e;
+            --bar-bg: #0d1e15;
             --font-mono: 'JetBrains Mono', 'Consolas', monospace;
             --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
         }
 
         [data-theme="cyberpunk"] {
-            --bg-color: #0b0714;
-            --card-bg: rgba(22, 12, 34, 0.75);
+            --bg-color: #07040e;
+            --card-bg: rgba(18, 9, 28, 0.85);
             --card-border: #ff007755;
             --card-border-glow: rgba(255, 0, 119, 0.3);
             --text-primary: #ff0077;
-            --text-muted: #b566ff;
-            --text-white: #ffe0fa;
+            --text-muted: #aa66ff;
+            --text-white: #ffe5f7;
             --accent-green: #00ffcc;
             --accent-yellow: #ffdd00;
             --accent-red: #ff0055;
             --accent-blue: #00aaff;
-            --terminal-bg: #090412;
-            --input-bg: #1a0a2a;
-            --bar-bg: #261138;
+            --terminal-bg: #05020a;
+            --input-bg: #12071f;
+            --bar-bg: #1f0b30;
         }
 
         [data-theme="neon"] {
-            --bg-color: #060e18;
-            --card-bg: rgba(10, 24, 42, 0.75);
+            --bg-color: #040912;
+            --card-bg: rgba(8, 18, 32, 0.85);
             --card-border: #00d9ff44;
             --card-border-glow: rgba(0, 217, 255, 0.25);
             --text-primary: #00d9ff;
-            --text-muted: #66b5ff;
-            --text-white: #e0f4ff;
+            --text-muted: #509ce8;
+            --text-white: #e3f4ff;
             --accent-green: #00ffaa;
             --accent-yellow: #ffaa00;
             --accent-red: #ff4466;
             --accent-blue: #0088ff;
-            --terminal-bg: #040912;
-            --input-bg: #0e1e33;
-            --bar-bg: #122842;
+            --terminal-bg: #02050a;
+            --input-bg: #0a1424;
+            --bar-bg: #0f223d;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { min-height: 100%; background: var(--bg-color); color: var(--text-primary); font-family: var(--font-mono); }
-        
+
         body {
-            display: flex; flex-direction: column; align-items: center; padding: 16px;
+            display: flex; flex-direction: column; align-items: center; padding: 20px 16px;
             background-image: 
-                radial-gradient(circle at 50% 0%, var(--card-border-glow), transparent 70%),
-                linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px);
-            background-size: 100% 100%, 100% 24px;
+                linear-gradient(rgba(0, 0, 0, 0.2) 50%, rgba(0, 0, 0, 0.35) 50%),
+                radial-gradient(circle at 50% 0%, var(--card-border-glow), transparent 75%),
+                linear-gradient(to bottom, rgba(255,255,255,0.015) 1px, transparent 1px);
+            background-size: 100% 4px, 100% 100%, 100% 20px;
         }
 
         .container {
-            width: 100%; max-width: 1200px; display: flex; flex-direction: column; gap: 20px;
+            width: 100%; max-width: 1280px; display: flex; flex-direction: column; gap: 16px;
         }
 
-        /* Top Header Bar */
+        /* Top Sci-Fi Header Bar */
         .header-bar {
-            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
-            background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px;
-            padding: 16px 24px; backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;
+            background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px;
+            padding: 14px 22px; backdrop-filter: blur(16px); box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+            position: relative; overflow: hidden;
+        }
+
+        .header-bar::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--text-primary), transparent);
         }
 
         .brand-title {
-            display: flex; align-items: center; gap: 12px; font-size: 1.25rem; font-weight: 700; color: var(--text-white);
-            letter-spacing: 0.5px;
+            display: flex; align-items: center; gap: 14px; font-size: 1.2rem; font-weight: 700; color: var(--text-white);
+            letter-spacing: 1px;
         }
 
         .brand-icon {
             display: inline-flex; align-items: center; justify-content: center;
-            width: 36px; height: 36px; border-radius: 8px; background: rgba(0,255,102,0.1);
-            border: 1px solid var(--text-primary); color: var(--text-primary); font-weight: 900;
+            width: 38px; height: 38px; border-radius: 6px; background: rgba(0,255,102,0.12);
+            border: 1px solid var(--text-primary); color: var(--text-primary); font-weight: 900; font-size: 1.1rem;
+            box-shadow: 0 0 10px var(--card-border-glow);
         }
 
+        .hud-status-group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
         .status-badge {
-            display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px;
-            font-size: 0.8rem; font-weight: 600; background: rgba(0, 255, 102, 0.15); border: 1px solid var(--accent-green);
-            color: var(--accent-green);
+            display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 6px;
+            font-size: 0.78rem; font-weight: 700; background: rgba(0, 255, 102, 0.12); border: 1px solid var(--accent-green);
+            color: var(--accent-green); letter-spacing: 0.5px;
         }
 
         .pulse-dot {
@@ -477,36 +485,38 @@ TEMPLATE = r"""
             100% { transform: scale(0.95); opacity: 0.8; }
         }
 
-        .controls-group {
-            display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-        }
+        .controls-group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 
         .btn-toggle, .select-input {
             background: var(--input-bg); border: 1px solid var(--card-border); color: var(--text-white);
-            padding: 6px 14px; border-radius: 8px; font-family: var(--font-mono); font-size: 0.85rem;
-            cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 6px;
+            padding: 6px 12px; border-radius: 6px; font-family: var(--font-mono); font-size: 0.82rem;
+            cursor: pointer; transition: all 0.2s ease; outline: none;
         }
 
         .btn-toggle:hover, .select-input:hover {
             border-color: var(--text-primary); box-shadow: 0 0 12px var(--card-border-glow);
         }
 
-        /* Banner Art */
-        .ascii-banner {
-            background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px;
-            padding: 16px 20px; font-size: 0.72rem; line-height: 1.15; overflow-x: auto; color: var(--text-primary);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3); text-shadow: 0 0 5px var(--card-border-glow);
-        }
-
-        /* Grid Layout */
+        /* High-Density Dashboard Grid (2 Main Columns) */
         .dashboard-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px;
+            display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px;
         }
 
         .card {
-            background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px;
-            padding: 20px; backdrop-filter: blur(10px); box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-            display: flex; flex-direction: column; gap: 16px; transition: transform 0.2s ease, border-color 0.2s ease;
+            position: relative; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px;
+            padding: 16px 20px; backdrop-filter: blur(16px); box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            display: flex; flex-direction: column; gap: 14px; transition: border-color 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        /* Sci-Fi Corner Brackets */
+        .card::before {
+            content: ''; position: absolute; top: -1px; left: -1px; width: 10px; height: 10px;
+            border-top: 2px solid var(--text-primary); border-left: 2px solid var(--text-primary); border-top-left-radius: 10px;
+        }
+
+        .card::after {
+            content: ''; position: absolute; bottom: -1px; right: -1px; width: 10px; height: 10px;
+            border-bottom: 2px solid var(--text-primary); border-right: 2px solid var(--text-primary); border-bottom-right-radius: 10px;
         }
 
         .card:hover {
@@ -515,91 +525,94 @@ TEMPLATE = r"""
 
         .card-header {
             display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px dashed var(--card-border); padding-bottom: 10px; font-weight: 700;
-            font-size: 1rem; color: var(--text-white);
+            border-bottom: 1px dashed var(--card-border); padding-bottom: 8px; font-weight: 700;
+            font-size: 0.95rem; color: var(--text-white); letter-spacing: 0.5px;
         }
 
-        .card-header-icon { color: var(--text-primary); margin-right: 8px; }
+        .card-header-icon { color: var(--text-primary); margin-right: 6px; }
 
         /* Metric Rows & Progress Bars */
+        .metrics-triple {
+            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;
+        }
+
         .metric-row {
-            display: flex; flex-direction: column; gap: 6px;
+            display: flex; flex-direction: column; gap: 4px; background: var(--input-bg);
+            padding: 10px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.04);
         }
 
         .metric-label-val {
-            display: flex; justify-content: space-between; font-size: 0.85rem;
+            display: flex; justify-content: space-between; font-size: 0.78rem;
         }
 
         .metric-name { color: var(--text-muted); }
-        .metric-val { color: var(--text-white); font-weight: 600; }
+        .metric-val { color: var(--text-white); font-weight: 700; }
 
         .progress-track {
-            height: 10px; background: var(--bar-bg); border-radius: 6px; overflow: hidden;
-            border: 1px solid rgba(255,255,255,0.05); position: relative;
+            height: 8px; background: var(--bar-bg); border-radius: 4px; overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.05); position: relative; margin-top: 2px;
         }
 
         .progress-fill {
             height: 100%; width: 0%; background: linear-gradient(90deg, var(--text-primary), var(--accent-green));
-            border-radius: 6px; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 4px; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             box-shadow: 0 0 10px var(--text-primary);
         }
 
         .progress-fill.warn { background: linear-gradient(90deg, var(--accent-yellow), #ffaa00); box-shadow: 0 0 10px var(--accent-yellow); }
         .progress-fill.danger { background: linear-gradient(90deg, var(--accent-red), #ff0033); box-shadow: 0 0 10px var(--accent-red); }
 
-        /* Info List */
-        .info-grid {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.82rem;
+        /* High-Density Info Matrix (Packed 4 Columns) */
+        .info-grid-matrix {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; font-size: 0.78rem;
         }
 
         .info-item {
             display: flex; flex-direction: column; gap: 2px; background: var(--input-bg);
-            padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.03);
+            padding: 7px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.03);
+            transition: border-color 0.15s ease;
         }
 
-        .info-item.full-width { grid-column: span 2; }
-        .info-key { color: var(--text-muted); font-size: 0.75rem; }
-        .info-value { color: var(--text-white); font-weight: 600; word-break: break-all; }
+        .info-item:hover { border-color: var(--card-border); }
+        .info-item.double-width { grid-column: span 2; }
+        .info-item.full-width { grid-column: span 4; }
+        .info-key { color: var(--text-muted); font-size: 0.72rem; font-weight: 600; }
+        .info-value { color: var(--text-white); font-weight: 700; word-break: break-all; }
 
         /* Latency Ping Monitor with Digital LED Dot Matrix */
         .ping-grid {
-            display: flex; flex-direction: column; gap: 14px;
+            display: flex; flex-direction: column; gap: 10px;
         }
 
         .ping-item {
-            display: flex; flex-direction: column; gap: 8px; background: var(--input-bg);
-            padding: 12px 14px; border-radius: 8px; border: 1px solid var(--card-border);
+            display: flex; flex-direction: column; gap: 6px; background: var(--input-bg);
+            padding: 10px 12px; border-radius: 6px; border: 1px solid var(--card-border);
         }
 
         .ping-header {
-            display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;
+            display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem;
         }
 
         .ping-title { color: var(--text-white); font-weight: 600; display: flex; align-items: center; gap: 6px; }
         .ping-value-group { display: flex; align-items: center; gap: 8px; }
-        .ping-value { font-weight: 700; }
+        .ping-value { font-weight: 700; font-size: 0.85rem; }
         .ping-trend-badge {
-            font-size: 0.72rem; padding: 1px 6px; border-radius: 4px; font-weight: 600; font-family: var(--font-mono);
+            font-size: 0.7rem; padding: 1px 6px; border-radius: 4px; font-weight: 600; font-family: var(--font-mono);
             background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.05);
         }
-        .ping-trend-badge.trend-down { color: var(--accent-green); background: rgba(0,255,102,0.1); border-color: rgba(0,255,102,0.2); }
-        .ping-trend-badge.trend-up { color: var(--accent-red); background: rgba(255,51,102,0.1); border-color: rgba(255,51,102,0.2); }
+        .ping-trend-badge.trend-down { color: var(--accent-green); background: rgba(0,255,102,0.12); border-color: rgba(0,255,102,0.25); }
+        .ping-trend-badge.trend-up { color: var(--accent-red); background: rgba(255,51,102,0.12); border-color: rgba(255,51,102,0.25); }
 
         /* Pixel Art Latency Bar Chart */
         .pixel-bar-container {
-            display: flex; align-items: flex-end; gap: 2px; height: 44px; margin-top: 4px;
-            padding: 4px 6px; background: rgba(0,0,0,0.5); border-radius: 6px;
+            display: flex; align-items: flex-end; gap: 2px; height: 38px; margin-top: 2px;
+            padding: 3px 6px; background: rgba(0,0,0,0.6); border-radius: 4px;
             border: 1px solid var(--card-border); overflow: hidden; position: relative;
         }
 
         .pixel-bar-container::before {
-            content: ''; position: absolute; left: 6px; right: 6px; bottom: 26px;
+            content: ''; position: absolute; left: 6px; right: 6px; bottom: 22px;
             border-top: 1px dashed rgba(255,255,255,0.06);
-        }
-
-        .pixel-bar-container::after {
-            content: ''; position: absolute; left: 6px; right: 6px; bottom: 14px;
-            border-top: 1px dashed rgba(255,255,255,0.04);
         }
 
         .pixel-bar {
@@ -610,119 +623,47 @@ TEMPLATE = r"""
 
         .pixel-bar.px-green {
             background: var(--accent-green);
-            box-shadow: 0 0 4px var(--accent-green), 0 -2px 6px rgba(0,255,102,0.3);
+            box-shadow: 0 0 4px var(--accent-green);
         }
 
         .pixel-bar.px-yellow {
             background: var(--accent-yellow);
-            box-shadow: 0 0 4px var(--accent-yellow), 0 -2px 6px rgba(255,204,0,0.3);
+            box-shadow: 0 0 4px var(--accent-yellow);
         }
 
         .pixel-bar.px-red {
             background: var(--accent-red);
-            box-shadow: 0 0 4px var(--accent-red), 0 -2px 6px rgba(255,51,102,0.3);
+            box-shadow: 0 0 4px var(--accent-red);
         }
 
-        .pixel-bar.px-timeout {
-            background: #ff0033; min-height: 3px;
-            box-shadow: 0 0 4px #ff0033;
-        }
-
-        .pixel-bar.px-empty {
-            background: rgba(255,255,255,0.04); min-height: 2px;
-        }
+        .pixel-bar.px-timeout { background: #ff0033; min-height: 3px; box-shadow: 0 0 4px #ff0033; }
+        .pixel-bar.px-empty { background: rgba(255,255,255,0.04); min-height: 2px; }
 
         .timeline-ticks {
-            display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--text-muted);
-            margin-top: 2px; padding: 0 4px; font-family: var(--font-mono); opacity: 0.7;
+            display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--text-muted);
+            margin-top: 1px; padding: 0 4px; font-family: var(--font-mono); opacity: 0.7;
         }
 
         .ping-legend {
-            display: flex; gap: 12px; justify-content: flex-end; font-size: 0.75rem; margin-top: 4px;
+            display: flex; gap: 10px; justify-content: flex-end; font-size: 0.72rem;
         }
 
-        /* Quick Lookup Card */
-        .lookup-form {
-            display: flex; gap: 8px; margin-top: 4px;
-        }
-
-        .lookup-input {
-            flex: 1; background: var(--input-bg); border: 1px solid var(--card-border);
-            color: var(--text-white); padding: 8px 12px; border-radius: 8px; font-family: var(--font-mono);
-            font-size: 0.85rem; outline: none;
-        }
-
-        .lookup-input:focus { border-color: var(--text-primary); box-shadow: 0 0 10px var(--card-border-glow); }
-
-        .lookup-btn {
-            background: var(--text-primary); color: #000; border: none; padding: 8px 16px;
-            border-radius: 8px; font-weight: 700; font-family: var(--font-mono); cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .lookup-btn:hover { opacity: 0.9; transform: translateY(-1px); }
-
-        .lookup-result {
-            display: none; flex-direction: column; gap: 8px; background: var(--input-bg);
-            padding: 12px; border-radius: 8px; border: 1px dashed var(--text-primary); font-size: 0.85rem;
-        }
-
-        /* Terminal Window */
-        .terminal-card {
-            background: var(--terminal-bg); border: 1px solid var(--card-border); border-radius: 12px;
-            padding: 0; overflow: hidden; box-shadow: 0 12px 40px rgba(0,0,0,0.6);
-            display: flex; flex-direction: column; height: 380px;
-        }
-
-        .terminal-header {
-            background: rgba(255,255,255,0.03); border-bottom: 1px solid var(--card-border);
-            padding: 10px 16px; display: flex; justify-content: space-between; align-items: center;
-        }
-
-        .terminal-buttons { display: flex; gap: 8px; }
-        .win-dot { width: 12px; height: 12px; border-radius: 50%; }
-        .win-red { background: #ff5f56; }
-        .win-yellow { background: #ffbd2e; }
-        .win-green { background: #27c93f; }
-
-        .terminal-quick-actions {
-            display: flex; gap: 8px; flex-wrap: wrap;
-        }
-
-        .action-chip {
-            background: rgba(255,255,255,0.05); border: 1px solid var(--card-border); color: var(--text-muted);
-            padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; transition: all 0.15s ease;
-        }
-
-        .action-chip:hover { color: var(--text-white); border-color: var(--text-primary); background: rgba(0,255,102,0.1); }
-
-        .terminal-body {
-            flex: 1; padding: 14px 16px; overflow-y: auto; font-size: 0.88rem; line-height: 1.5;
-            display: flex; flex-direction: column; gap: 8px; word-break: break-word;
-        }
-
-        #cmd_output {
-            white-space: pre-wrap; font-family: var(--font-mono); color: var(--text-white);
-        }
-
-        .terminal-input-line {
-            display: flex; align-items: center; gap: 8px; margin-top: 4px;
-        }
-
-        .prompt-text { color: var(--text-primary); font-weight: 700; white-space: nowrap; }
-
-        .terminal-input {
-            flex: 1; background: transparent; border: none; outline: none; color: var(--text-white);
-            font-family: var(--font-mono); font-size: 0.88rem; caret-color: var(--text-primary);
-        }
-
-        /* IP Quality Check Card - Compact Edition */
+        /* IP Quality Check HUD Card */
         .ipcheck-card {
-            background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px;
-            padding: 14px 18px; backdrop-filter: blur(10px); box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-            display: flex; flex-direction: column; gap: 10px; transition: transform 0.2s ease, border-color 0.2s ease;
+            position: relative; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px;
+            padding: 16px 20px; backdrop-filter: blur(16px); box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            display: flex; flex-direction: column; gap: 12px; transition: border-color 0.25s ease;
         }
-        .ipcheck-card:hover { border-color: var(--text-primary); box-shadow: 0 8px 32px var(--card-border-glow); }
+
+        .ipcheck-card::before {
+            content: ''; position: absolute; top: -1px; left: -1px; width: 10px; height: 10px;
+            border-top: 2px solid var(--text-primary); border-left: 2px solid var(--text-primary); border-top-left-radius: 10px;
+        }
+
+        .ipcheck-card::after {
+            content: ''; position: absolute; bottom: -1px; right: -1px; width: 10px; height: 10px;
+            border-bottom: 2px solid var(--text-primary); border-right: 2px solid var(--text-primary); border-bottom-right-radius: 10px;
+        }
 
         .ipcheck-header {
             display: flex; justify-content: space-between; align-items: center;
@@ -730,11 +671,11 @@ TEMPLATE = r"""
         }
         .ipcheck-header-left { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.95rem; color: var(--text-white); }
         .ipcheck-btn {
-            background: var(--text-primary); color: #000; border: none; padding: 4px 12px;
+            background: var(--text-primary); color: #000; border: none; padding: 5px 14px;
             border-radius: 6px; font-weight: 700; font-family: var(--font-mono); font-size: 0.78rem;
             cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 6px;
         }
-        .ipcheck-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+        .ipcheck-btn:hover { opacity: 0.88; transform: translateY(-1px); }
         .ipcheck-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
         .ipcheck-btn .spinner {
             width: 12px; height: 12px; border: 2px solid rgba(0,0,0,0.3); border-top-color: #000;
@@ -742,31 +683,31 @@ TEMPLATE = r"""
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        .ipcheck-body { display: flex; flex-direction: column; gap: 10px; }
+        .ipcheck-body { display: flex; flex-direction: column; gap: 12px; }
 
         /* Compact Three-column info row */
         .ipcheck-info-row {
-            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;
+            display: grid; grid-template-columns: 1fr 1fr 1.1fr; gap: 12px;
         }
         .ipcheck-section {
-            background: var(--input-bg); border: 1px solid var(--card-border); border-radius: 8px;
-            padding: 8px 12px; display: flex; flex-direction: column; gap: 4px;
+            background: var(--input-bg); border: 1px solid var(--card-border); border-radius: 6px;
+            padding: 10px 12px; display: flex; flex-direction: column; gap: 4px;
         }
         .ipcheck-section-title {
             font-size: 0.78rem; font-weight: 700; color: var(--text-primary);
-            border-bottom: 1px dashed rgba(255,255,255,0.08); padding-bottom: 4px; margin-bottom: 2px;
+            border-bottom: 1px dashed rgba(255,255,255,0.08); padding-bottom: 4px; margin-bottom: 4px;
             display: flex; align-items: center; gap: 6px;
         }
         .ipcheck-row {
             display: flex; justify-content: space-between; align-items: center;
-            font-size: 0.75rem; padding: 1px 0;
+            font-size: 0.75rem; padding: 2px 0;
         }
         .ipcheck-label { color: var(--text-muted); }
         .ipcheck-val { color: var(--text-white); font-weight: 600; text-align: right; max-width: 65%; word-break: break-all; }
 
         /* Compact Risk score bar */
         .risk-bar-track {
-            height: 6px; background: var(--bar-bg); border-radius: 4px; overflow: hidden;
+            height: 7px; background: var(--bar-bg); border-radius: 4px; overflow: hidden;
             border: 1px solid rgba(255,255,255,0.05); position: relative; margin-top: 2px;
         }
         .risk-bar-fill {
@@ -802,31 +743,92 @@ TEMPLATE = r"""
             display: flex; align-items: center; gap: 6px; margin-top: 2px;
         }
         .unlock-grid {
-            display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 4px;
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 4px;
         }
         .unlock-tile {
             background: var(--input-bg); border: 1px solid var(--card-border); border-radius: 6px;
-            padding: 6px 10px; display: flex; align-items: center; justify-content: space-between; gap: 6px;
-            transition: all 0.2s ease; font-size: 0.74rem;
+            padding: 7px 12px; display: flex; align-items: center; justify-content: space-between; gap: 6px;
+            transition: all 0.2s ease; font-size: 0.76rem;
         }
-        .unlock-tile:hover { border-color: var(--text-primary); box-shadow: 0 0 8px var(--card-border-glow); }
-        .unlock-tile-left { display: flex; align-items: center; gap: 6px; font-weight: 600; color: var(--text-white); }
-        .unlock-tile-icon { font-size: 1rem; }
+        .unlock-tile:hover { border-color: var(--text-primary); box-shadow: 0 0 10px var(--card-border-glow); }
+        .unlock-tile-left { display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--text-white); }
+        .unlock-tile-icon { font-size: 1rem; display: inline-flex; align-items: center; }
         .unlock-tile-name { color: var(--text-white); font-weight: 600; white-space: nowrap; }
         .unlock-tile-status {
-            display: inline-flex; align-items: center; gap: 3px; padding: 1px 6px; border-radius: 8px;
-            font-size: 0.68rem; font-weight: 700; white-space: nowrap;
+            display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px; border-radius: 4px;
+            font-size: 0.7rem; font-weight: 700; white-space: nowrap;
         }
         .unlock-yes { background: rgba(0,255,102,0.15); color: var(--accent-green); border: 1px solid rgba(0,255,102,0.3); }
         .unlock-no { background: rgba(255,51,102,0.15); color: var(--accent-red); border: 1px solid rgba(255,51,102,0.3); }
         .unlock-fail { background: rgba(255,204,0,0.1); color: var(--accent-yellow); border: 1px solid rgba(255,204,0,0.2); }
 
-        /* Skeleton loading */
-        .skeleton-line {
-            height: 12px; background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%);
-            background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 4px; margin: 4px 0;
+        /* Unified Terminal Console Hub */
+        .terminal-card {
+            position: relative; background: var(--terminal-bg); border: 1px solid var(--card-border); border-radius: 10px;
+            padding: 0; overflow: hidden; box-shadow: 0 12px 40px rgba(0,0,0,0.7);
+            display: flex; flex-direction: column; height: 420px;
         }
-        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+        .terminal-card::before {
+            content: ''; position: absolute; top: -1px; left: -1px; width: 10px; height: 10px;
+            border-top: 2px solid var(--text-primary); border-left: 2px solid var(--text-primary); border-top-left-radius: 10px;
+        }
+
+        .terminal-header {
+            background: rgba(255,255,255,0.03); border-bottom: 1px solid var(--card-border);
+            padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+        }
+
+        .terminal-buttons { display: flex; gap: 6px; }
+        .win-dot { width: 10px; height: 10px; border-radius: 50%; }
+        .win-red { background: #ff5f56; }
+        .win-yellow { background: #ffbd2e; }
+        .win-green { background: #27c93f; }
+
+        .terminal-lookup-bar {
+            display: flex; align-items: center; gap: 8px; flex: 1; max-width: 420px; margin: 0 10px;
+        }
+
+        .lookup-input-inline {
+            flex: 1; background: var(--input-bg); border: 1px solid var(--card-border); color: var(--text-white);
+            padding: 4px 10px; border-radius: 6px; font-family: var(--font-mono); font-size: 0.78rem; outline: none;
+        }
+
+        .lookup-btn-inline {
+            background: var(--text-primary); color: #000; border: none; padding: 4px 10px;
+            border-radius: 6px; font-weight: 700; font-family: var(--font-mono); font-size: 0.75rem; cursor: pointer;
+            white-space: nowrap; transition: opacity 0.2s ease;
+        }
+        .lookup-btn-inline:hover { opacity: 0.88; }
+
+        .terminal-quick-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+        .action-chip {
+            background: rgba(255,255,255,0.05); border: 1px solid var(--card-border); color: var(--text-muted);
+            padding: 2px 8px; border-radius: 4px; font-size: 0.72rem; cursor: pointer; transition: all 0.15s ease;
+        }
+
+        .action-chip:hover { color: var(--text-white); border-color: var(--text-primary); background: rgba(0,255,102,0.12); }
+
+        .terminal-body {
+            flex: 1; padding: 14px 16px; overflow-y: auto; font-size: 0.85rem; line-height: 1.5;
+            display: flex; flex-direction: column; gap: 8px; word-break: break-word;
+        }
+
+        #cmd_output {
+            white-space: pre-wrap; font-family: var(--font-mono); color: var(--text-white);
+        }
+
+        .terminal-input-line {
+            display: flex; align-items: center; gap: 8px; margin-top: 4px;
+        }
+
+        .prompt-text { color: var(--text-primary); font-weight: 700; white-space: nowrap; }
+
+        .terminal-input {
+            flex: 1; background: transparent; border: none; outline: none; color: var(--text-white);
+            font-family: var(--font-mono); font-size: 0.85rem; caret-color: var(--text-primary);
+        }
 
         /* Scrollbars */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -834,13 +836,13 @@ TEMPLATE = r"""
         ::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: var(--text-primary); }
 
-        @media (max-width: 768px) {
+        @media (max-width: 900px) {
             body { padding: 10px; }
             .header-bar { padding: 12px 16px; }
             .dashboard-grid { grid-template-columns: 1fr; }
-            .info-grid { grid-template-columns: 1fr; }
-            .info-item.full-width { grid-column: span 1; }
-            .ascii-banner { font-size: 0.55rem; }
+            .metrics-triple { grid-template-columns: 1fr; }
+            .info-grid-matrix { grid-template-columns: repeat(2, 1fr); }
+            .info-item.double-width, .info-item.full-width { grid-column: span 2; }
             .ipcheck-info-row { grid-template-columns: 1fr; }
             .unlock-grid { grid-template-columns: repeat(2, 1fr); }
         }
@@ -848,19 +850,22 @@ TEMPLATE = r"""
 </head>
 <body>
     <div class="container">
-        <!-- Header Bar -->
+        <!-- Top Sci-Fi Header Bar -->
         <header class="header-bar">
             <div class="brand-title">
                 <span class="brand-icon">&gt;_</span>
-                <span>{{ hostname }}</span>
-                <span class="status-badge"><span class="pulse-dot"></span> ONLINE</span>
-                <span id="acme_badge" class="status-badge" style="background:rgba(0,204,255,0.1); border-color:var(--accent-blue); color:var(--accent-blue);">🔒 SSL 智能检测中...</span>
+                <span>NODE SEEKER</span>
+                <span style="font-size:0.75rem; color:var(--text-muted); font-weight:normal">| {{ hostname }}</span>
+            </div>
+            <div class="hud-status-group">
+                <span class="status-badge"><span class="pulse-dot"></span> TELEMETRY ONLINE</span>
+                <span id="acme_badge" class="status-badge" style="background:rgba(0,204,255,0.12); border-color:var(--accent-blue); color:var(--accent-blue);">🔒 SSL 智能检测中...</span>
             </div>
             <div class="controls-group">
                 <select id="theme_select" class="select-input">
-                    <option value="matrix">🟢 Matrix Classic</option>
+                    <option value="matrix">🟢 Matrix Cyber</option>
                     <option value="cyberpunk">🟣 Cyberpunk Neon</option>
-                    <option value="neon">🔵 Tech Blue</option>
+                    <option value="neon">🔵 Sci-Fi Blue</option>
                 </select>
                 <select id="interval_select" class="select-input">
                     <option value="1000">⚡ 1s 刷新</option>
@@ -871,57 +876,68 @@ TEMPLATE = r"""
             </div>
         </header>
 
-        <!-- ASCII Banner Header -->
-        <pre class="ascii-banner">
-    _   ______  ____  ______   _____ ______________ __ __________
-   / | / / __ \/ __ \/ ____/  / ___// ____/ ____/ //_// ____/ __ \
-  /  |/ / / / / / / / __/     \__ \/ __/ / __/ / ,&lt;  / __/ / /_/ /
- / /|  / /_/ / /_/ / /___    ___/ / /___/ /___/ /| |/ /___/ _, _/
-/_/ |_|\____/_____/_/____/   /____/_____/_____/_/ |_|_/____/_/ |_|
-
-Welcome to Console-Web Cyber Edition 🚀 | System Status &amp; Realtime Network Monitor
-        </pre>
-
-        <!-- Dashboard Cards Grid -->
+        <!-- Dashboard Cards Grid (2 Main Columns) -->
         <div class="dashboard-grid">
-            <!-- Card 1: System Performance -->
+            <!-- Left Super Panel: System & Network Telemetry -->
             <div class="card">
                 <div class="card-header">
-                    <span><span class="card-header-icon">⚡</span> 核心系统性能</span>
+                    <span><span class="card-header-icon">🖥️</span> 系统资源 &amp; 节点网络</span>
                     <span id="load_val" style="font-size:0.75rem; color:var(--text-muted)">Load: -</span>
                 </div>
 
-                <div class="metric-row">
-                    <div class="metric-label-val">
-                        <span class="metric-name">CPU 使用率</span>
-                        <span class="metric-val" id="cpu_val">0.0%</span>
+                <!-- Triple Progress Gauges -->
+                <div class="metrics-triple">
+                    <div class="metric-row">
+                        <div class="metric-label-val">
+                            <span class="metric-name">CPU</span>
+                            <span class="metric-val" id="cpu_val">0.0%</span>
+                        </div>
+                        <div class="progress-track">
+                            <div class="progress-fill" id="cpu_bar"></div>
+                        </div>
                     </div>
-                    <div class="progress-track">
-                        <div class="progress-fill" id="cpu_bar"></div>
+
+                    <div class="metric-row">
+                        <div class="metric-label-val">
+                            <span class="metric-name">内存</span>
+                            <span class="metric-val" id="memory_val">0.0%</span>
+                        </div>
+                        <div class="progress-track">
+                            <div class="progress-fill" id="memory_bar"></div>
+                        </div>
+                    </div>
+
+                    <div class="metric-row">
+                        <div class="metric-label-val">
+                            <span class="metric-name">磁盘</span>
+                            <span class="metric-val" id="disk_val">0.0%</span>
+                        </div>
+                        <div class="progress-track">
+                            <div class="progress-fill" id="disk_bar"></div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="metric-row">
-                    <div class="metric-label-val">
-                        <span class="metric-name">内存 使用率</span>
-                        <span class="metric-val" id="memory_val">0.0%</span>
+                <!-- High-Density Telemetry Matrix (4 Columns) -->
+                <div class="info-grid-matrix">
+                    <div class="info-item double-width">
+                        <span class="info-key">网络速率 (上传/下载)</span>
+                        <span class="info-value" id="net_io" style="color:var(--accent-green)">-</span>
                     </div>
-                    <div class="progress-track">
-                        <div class="progress-fill" id="memory_bar"></div>
+                    <div class="info-item double-width">
+                        <span class="info-key">服务器 IP (内网/公网)</span>
+                        <span class="info-value" id="ip_val">-</span>
                     </div>
-                </div>
 
-                <div class="metric-row">
-                    <div class="metric-label-val">
-                        <span class="metric-name">磁盘 使用率</span>
-                        <span class="metric-val" id="disk_val">0.0%</span>
+                    <div class="info-item double-width">
+                        <span class="info-key">客户端 IP &amp; 运营商</span>
+                        <span class="info-value" id="client_ip_val">-</span>
                     </div>
-                    <div class="progress-track">
-                        <div class="progress-fill" id="disk_bar"></div>
+                    <div class="info-item double-width">
+                        <span class="info-key">ACME SSL 证书</span>
+                        <span class="info-value" id="acme_val" style="color:var(--accent-blue)">-</span>
                     </div>
-                </div>
 
-                <div class="info-grid">
                     <div class="info-item">
                         <span class="info-key">容器运行时间</span>
                         <span class="info-value" id="cuptime">-</span>
@@ -931,49 +947,17 @@ Welcome to Console-Web Cyber Edition 🚀 | System Status &amp; Realtime Network
                         <span class="info-value" id="huptime">-</span>
                     </div>
                     <div class="info-item">
-                        <span class="info-key">CPU 核心 / 逻辑</span>
+                        <span class="info-key">CPU 核心</span>
                         <span class="info-value" id="cpu_cores">-</span>
                     </div>
                     <div class="info-item">
-                        <span class="info-key">系统架构 / 体系</span>
+                        <span class="info-key">系统架构</span>
                         <span class="info-value" id="arch_val">-</span>
                     </div>
-                    <div class="info-item full-width">
-                        <span class="info-key">磁盘 IO (累计读/写)</span>
+
+                    <div class="info-item double-width">
+                        <span class="info-key">磁盘读写 IO</span>
                         <span class="info-value" id="disk_io">-</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Card 2: Network & Connectivity -->
-            <div class="card">
-                <div class="card-header">
-                    <span><span class="card-header-icon">🌐</span> 网络流量与节点</span>
-                </div>
-
-                <div class="info-grid">
-                    <div class="info-item full-width">
-                        <span class="info-key">网络实时速率 (上传/下载)</span>
-                        <span class="info-value" id="net_io" style="color:var(--accent-green)">-</span>
-                    </div>
-                    <div class="info-item full-width">
-                        <span class="info-key">服务器 IP (内网/公网)</span>
-                        <span class="info-value" id="ip_val">-</span>
-                    </div>
-                    <div class="info-item full-width">
-                        <span class="info-key">您的 客户端 IP &amp; 运营商</span>
-                        <span class="info-value" id="client_ip_val">-</span>
-                    </div>
-                </div>
-
-                <div class="info-grid">
-                    <div class="info-item">
-                        <span class="info-key">ACME SSL 证书状态</span>
-                        <span class="info-value" id="acme_val" style="color:var(--accent-blue)">-</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-key">操作系统</span>
-                        <span class="info-value" id="os_val">-</span>
                     </div>
                     <div class="info-item">
                         <span class="info-key">物理/总内存</span>
@@ -983,13 +967,17 @@ Welcome to Console-Web Cyber Edition 🚀 | System Status &amp; Realtime Network
                         <span class="info-key">总磁盘容量</span>
                         <span class="info-value" id="disk_total_val">-</span>
                     </div>
+                    <div class="info-item double-width">
+                        <span class="info-key">操作系统内核</span>
+                        <span class="info-value" id="os_val">-</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- Card 3: Ping & Latency Dashboard (Pure Digital Dot Matrix Bar) -->
+            <!-- Right Panel: Latency Matrix -->
             <div class="card">
                 <div class="card-header">
-                    <span><span class="card-header-icon">📡</span> 网络延迟 (TCP Ping)</span>
+                    <span><span class="card-header-icon">📡</span> 边缘网络延迟 (TCP Ping)</span>
                     <div class="ping-legend">
                         <span style="color:var(--accent-green)">● &lt;80ms</span>
                         <span style="color:var(--accent-yellow)">● &lt;160ms</span>
@@ -1049,16 +1037,16 @@ Welcome to Console-Web Cyber Edition 🚀 | System Status &amp; Realtime Network
             </div>
         </div>
 
-        <!-- Card 4: IP Quality Check & Streaming/AI Unlock Detection -->
+        <!-- IP Quality Check & Unlock Detection HUD -->
         <div class="ipcheck-card" id="ipcheck_card">
             <div class="ipcheck-header">
                 <div class="ipcheck-header-left">
                     <span class="card-header-icon">📊</span>
-                    <span>IP 质量体检 & 解锁检测</span>
+                    <span>IP 质量体检 &amp; 流媒体 AI 解锁检测</span>
                 </div>
-                <button class="ipcheck-btn" id="ipcheck_btn" onclick="fetchIPCheck()">
+                <button class="ipcheck-btn" id="ipcheck_btn" onclick="fetchIPCheck(true)">
                     <span class="spinner" id="ipcheck_spinner"></span>
-                    <span id="ipcheck_btn_text">开始检测</span>
+                    <span id="ipcheck_btn_text">重新体检</span>
                 </button>
             </div>
 
@@ -1067,32 +1055,31 @@ Welcome to Console-Web Cyber Edition 🚀 | System Status &amp; Realtime Network
                 <div class="ipcheck-info-row">
                     <!-- Basic Info -->
                     <div class="ipcheck-section">
-                        <div class="ipcheck-section-title">🌍 基础信息</div>
+                        <div class="ipcheck-section-title">🌍 基础网络信息</div>
                         <div class="ipcheck-row"><span class="ipcheck-label">IP 地址</span><span class="ipcheck-val" id="ipc_ip">-</span></div>
-                        <div class="ipcheck-row"><span class="ipcheck-label">ASN</span><span class="ipcheck-val" id="ipc_asn">-</span></div>
-                        <div class="ipcheck-row"><span class="ipcheck-label">组织</span><span class="ipcheck-val" id="ipc_org">-</span></div>
-                        <div class="ipcheck-row"><span class="ipcheck-label">ISP</span><span class="ipcheck-val" id="ipc_isp">-</span></div>
-                        <div class="ipcheck-row"><span class="ipcheck-label">国家</span><span class="ipcheck-val" id="ipc_country">-</span></div>
-                        <div class="ipcheck-row"><span class="ipcheck-label">城市</span><span class="ipcheck-val" id="ipc_city">-</span></div>
-                        <div class="ipcheck-row"><span class="ipcheck-label">时区</span><span class="ipcheck-val" id="ipc_tz">-</span></div>
+                        <div class="ipcheck-row"><span class="ipcheck-label">ASN 编号</span><span class="ipcheck-val" id="ipc_asn">-</span></div>
+                        <div class="ipcheck-row"><span class="ipcheck-label">所属组织</span><span class="ipcheck-val" id="ipc_org">-</span></div>
+                        <div class="ipcheck-row"><span class="ipcheck-label">ISP 运营商</span><span class="ipcheck-val" id="ipc_isp">-</span></div>
+                        <div class="ipcheck-row"><span class="ipcheck-label">国家/地区</span><span class="ipcheck-val" id="ipc_country">-</span></div>
+                        <div class="ipcheck-row"><span class="ipcheck-label">城市 / 时区</span><span class="ipcheck-val" id="ipc_city">-</span></div>
                     </div>
 
                     <!-- IP Type -->
                     <div class="ipcheck-section">
-                        <div class="ipcheck-section-title">🏷️ IP 类型属性</div>
+                        <div class="ipcheck-section-title">🏷️ IP 属性 &amp; 风险标记</div>
                         <div class="ipcheck-row"><span class="ipcheck-label">IP 类型</span><span class="ipcheck-val" id="ipc_type">-</span></div>
                         <div class="ipcheck-row"><span class="ipcheck-label">代理 Proxy</span><span class="ipcheck-val" id="ipc_proxy">-</span></div>
-                        <div class="ipcheck-row"><span class="ipcheck-label">VPN</span><span class="ipcheck-val" id="ipc_vpn">-</span></div>
-                        <div class="ipcheck-row"><span class="ipcheck-label">Tor</span><span class="ipcheck-val" id="ipc_tor">-</span></div>
-                        <div class="ipcheck-row"><span class="ipcheck-label">机房 Hosting</span><span class="ipcheck-val" id="ipc_hosting">-</span></div>
-                        <div class="ipcheck-row"><span class="ipcheck-label">手机网络</span><span class="ipcheck-val" id="ipc_mobile">-</span></div>
+                        <div class="ipcheck-row"><span class="ipcheck-label">VPN 节点</span><span class="ipcheck-val" id="ipc_vpn">-</span></div>
+                        <div class="ipcheck-row"><span class="ipcheck-label">Tor 节点</span><span class="ipcheck-val" id="ipc_tor">-</span></div>
+                        <div class="ipcheck-row"><span class="ipcheck-label">IDC 机房</span><span class="ipcheck-val" id="ipc_hosting">-</span></div>
+                        <div class="ipcheck-row"><span class="ipcheck-label">蜂窝移动</span><span class="ipcheck-val" id="ipc_mobile">-</span></div>
                     </div>
 
                     <!-- Risk Score -->
                     <div class="ipcheck-section">
-                        <div class="ipcheck-section-title">⚠️ 风险评分</div>
+                        <div class="ipcheck-section-title">⚠️ 欺诈风险风控评分</div>
                         <div class="ipcheck-row">
-                            <span class="ipcheck-label">风险评分</span>
+                            <span class="ipcheck-label">风控得分</span>
                             <span class="ipcheck-val" id="ipc_risk_score" style="font-size:1.1rem">-</span>
                         </div>
                         <div class="risk-bar-track">
@@ -1102,46 +1089,29 @@ Welcome to Console-Web Cyber Edition 🚀 | System Status &amp; Realtime Network
                             <span class="ipcheck-label">风险等级</span>
                             <span class="ipcheck-val" id="ipc_risk_label">-</span>
                         </div>
-                        <div style="margin-top:6px; font-size:0.68rem; color:var(--text-muted); text-align:center;">
+                        <div style="margin-top:4px; font-size:0.65rem; color:var(--text-muted); text-align:center;">
                             <span style="color:var(--accent-green)">■ 极低</span>&nbsp;
                             <span style="color:var(--accent-green)">■ 低</span>&nbsp;
                             <span style="color:var(--accent-yellow)">■ 中等</span>&nbsp;
                             <span style="color:var(--accent-red)">■ 高</span>&nbsp;
                             <span style="color:#ff0033">■ 极高</span>
                         </div>
-                        <div class="ipcheck-row" style="margin-top:4px">
-                            <span class="ipcheck-label">检测时间</span>
-                            <span class="ipcheck-val" id="ipc_time" style="font-size:0.7rem">-</span>
+                        <div class="ipcheck-row" style="margin-top:2px">
+                            <span class="ipcheck-label">更新时间</span>
+                            <span class="ipcheck-val" id="ipc_time" style="font-size:0.68rem">-</span>
                         </div>
                     </div>
                 </div>
 
                 <!-- Media & AI Unlock Detection -->
-                <div class="unlock-section-title">🎬 流媒体 & AI 服务解锁检测</div>
+                <div class="unlock-section-title">🎬 流媒体 &amp; AI 服务解锁检测</div>
                 <div class="unlock-grid" id="unlock_grid">
                     <!-- Tiles populated by JS -->
                 </div>
             </div>
         </div>
 
-        <!-- Quick Lookup Tool Widget -->
-        <div class="card">
-            <div class="card-header">
-                <span><span class="card-header-icon">🔍</span> 快速域名/IP 诊断工具</span>
-            </div>
-            <div class="lookup-form">
-                <input type="text" id="lookup_input" class="lookup-input" placeholder="输入域名或 IP (例如: github.com 或 8.8.8.8)" />
-                <button id="lookup_btn" class="lookup-btn">开始查询</button>
-            </div>
-            <div id="lookup_result" class="lookup-result">
-                <div><strong>目标:</strong> <span id="res_target">-</span></div>
-                <div><strong>解析 IP:</strong> <span id="res_ip" style="color:var(--accent-green)">-</span></div>
-                <div><strong>运营商 / 位置:</strong> <span id="res_isp">-</span></div>
-                <div><strong>TCP 响应延迟:</strong> <span id="res_ping" style="color:var(--text-white)">-</span></div>
-            </div>
-        </div>
-
-        <!-- Terminal Console Section -->
+        <!-- Terminal Console Section with Inline Diagnostic Bar -->
         <div class="terminal-card" id="terminal_box">
             <div class="terminal-header">
                 <div class="terminal-buttons">
@@ -1149,16 +1119,22 @@ Welcome to Console-Web Cyber Edition 🚀 | System Status &amp; Realtime Network
                     <div class="win-dot win-yellow"></div>
                     <div class="win-dot win-green"></div>
                 </div>
+
+                <!-- Inline Quick Lookup Tool -->
+                <div class="terminal-lookup-bar">
+                    <input type="text" id="lookup_input" class="lookup-input-inline" placeholder="🔍 快速诊断域名/IP (如 github.com 或 8.8.8.8)..." />
+                    <button id="lookup_btn" class="lookup-btn-inline">诊断</button>
+                </div>
+
                 <div class="terminal-quick-actions">
-                    <span class="action-chip" onclick="quickRun('ipcheck')">IP 质量体检</span>
-                    <span class="action-chip" onclick="quickRun('acme status')">ACME 证书状态</span>
+                    <span class="action-chip" onclick="quickRun('ipcheck')">IP 质量</span>
+                    <span class="action-chip" onclick="quickRun('acme status')">ACME 状态</span>
                     <span class="action-chip" onclick="quickRun('acme issue')">申请 IP 证书</span>
                     <span class="action-chip" onclick="quickRun('ping zj-cu-v4.ip.zstaticcdn.com')">Ping 联通</span>
                     <span class="action-chip" onclick="quickRun('ping zj-cm-v4.ip.zstaticcdn.com')">Ping 移动</span>
                     <span class="action-chip" onclick="quickRun('ping zj-ct-v4.ip.zstaticcdn.com')">Ping 电信</span>
                     <span class="action-chip" onclick="quickRun('mtr 1.1.1.1')">MTR 1.1.1.1</span>
                     <span class="action-chip" onclick="quickRun('clear')">清屏</span>
-                    <span class="action-chip" onclick="quickRun('help')">帮助</span>
                 </div>
             </div>
             <div class="terminal-body" id="terminal_body">
