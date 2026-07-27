@@ -61,7 +61,7 @@ deploy() {
     $PORT_MAP \
     -v console-web-certs:/app/certs \
     --memory=128m --memory-swap=128m \
-    "$IMAGE_NAME" /bin/sh /app/entrypoint.sh
+    "$IMAGE_NAME"
 
   echo "⏳ 等待容器服务初始化 (3 秒)..."
   sleep 3
