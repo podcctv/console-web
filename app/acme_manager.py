@@ -1,12 +1,10 @@
 """
-ACME SSL Certificate Auto-Manager with Fallback
-===============================================
-Fully automatic SSL certificate lifecycle:
-  1. On startup: detect public IP, check if valid cert exists
-  2. If no valid cert → attempt ACME issue via ZeroSSL / Let's Encrypt
-  3. If ACME CA is unreachable or fails → auto-generate 365-day Self-Signed SSL Certificate fallback
-  4. Background daemon: check every 12 hours, auto-renew if <30 days left
-  5. 100% zero manual intervention required, guarantees HTTPS availability
+ACME SSL Certificate Auto-Manager (Official Web/IP Certificates Only)
+===================================================================
+1. Strictly issues ONLY official ACME certificates (ZeroSSL / Let's Encrypt)
+2. NEVER generates or accepts self-signed certificates
+3. Automatically detects, deletes legacy self-signed certs and re-triggers ACME issuance
+4. Daemon thread checks cert validity and auto-renews before expiration
 """
 
 import json
@@ -59,53 +57,61 @@ def _load_meta() -> dict:
     return {}
 
 
-def generate_self_signed_cert(target: str = "console-web.local") -> bool:
-    """Generate a self-signed fallback SSL certificate if ACME fails."""
+def remove_cert_files():
+    """Delete existing certificate files (e.g. self-signed certs)."""
     try:
-        ensure_dirs()
-        # Ensure IP addresses have proper SAN (Subject Alternative Name) for Chrome/Edge compatibility
-        import re
-        is_ip_addr = bool(re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", target))
-        if is_ip_addr:
-            san_ext = f"subjectAltName=IP:{target},IP:127.0.0.1,DNS:localhost"
-        else:
-            san_ext = f"subjectAltName=DNS:{target},DNS:localhost,IP:127.0.0.1"
-
-        cmd = [
-            "openssl", "req", "-x509", "-newkey", "rsa:2048", "-nodes",
-            "-keyout", str(KEY_FILE),
-            "-out", str(CERT_FILE),
-            "-days", "365",
-            "-subj", f"/CN={target}/O=Console-Web/OU=Security",
-            "-addext", san_ext
-        ]
-        proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        if proc.returncode != 0:
-            # Fallback for OpenSSL versions that don't support -addext
-            cmd = [
-                "openssl", "req", "-x509", "-newkey", "rsa:2048", "-nodes",
-                "-keyout", str(KEY_FILE),
-                "-out", str(CERT_FILE),
-                "-days", "365",
-                "-subj", f"/CN={target}/O=Console-Web/OU=Security"
-            ]
-            proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-
-        if proc.returncode == 0:
-            logger.info("Generated fallback self-signed SSL certificate for %s (SAN: %s)", target, san_ext)
-            _save_meta(target, "self-signed")
-            return True
+        if CERT_FILE.exists():
+            CERT_FILE.unlink()
+        if KEY_FILE.exists():
+            KEY_FILE.unlink()
+        if META_FILE.exists():
+            META_FILE.unlink()
+        logger.info("Deleted certificate files (%s, %s)", CERT_FILE, KEY_FILE)
     except Exception as e:
-        logger.exception("Failed to generate self-signed cert: %s", e)
+        logger.warning("Failed to delete certificate files: %s", e)
+
+
+def is_self_signed_cert() -> bool:
+    """Detect whether existing certificate is a self-signed certificate."""
+    if not CERT_FILE.exists():
+        return False
+
+    meta = _load_meta()
+    if meta.get("email") == "self-signed":
+        return True
+
+    try:
+        proc = subprocess.run(
+            ["openssl", "x509", "-in", str(CERT_FILE), "-noout", "-issuer", "-subject"],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+        )
+        if proc.returncode == 0:
+            lines = proc.stdout.splitlines()
+            issuer = subject = ""
+            for line in lines:
+                if line.startswith("issuer="):
+                    issuer = line.split("=", 1)[1].strip()
+                elif line.startswith("subject="):
+                    subject = line.split("=", 1)[1].strip()
+
+            if issuer == subject or "Console-Web" in issuer or "Self-Signed" in issuer or "自签名" in issuer:
+                return True
+    except Exception as e:
+        logger.warning("Error checking if cert is self-signed: %s", e)
+
     return False
 
 
 def get_cert_status() -> dict:
-    """Return current certificate status dict."""
+    """Return current certificate status dict. Deletes self-signed cert if detected."""
+    if is_self_signed_cert():
+        logger.warning("get_cert_status: Self-signed certificate detected. Removing it to re-trigger ACME issuance...")
+        remove_cert_files()
+
     if not CERT_FILE.exists() or not KEY_FILE.exists():
         return {
             "has_cert": False,
-            "status": "未开启 SSL / 无证书",
+            "status": "未开启 SSL / 等待 ACME 重新申请",
             "days_left": 0,
             "domain": None,
             "issuer": None,
@@ -142,13 +148,13 @@ def get_cert_status() -> dict:
                             domain_name = subject_str.split(prefix)[1].split("/")[0].strip()
                             break
 
-                    issuer_name = "Console-Web SSL"
+                    issuer_name = "ACME SSL"
                     if "ZeroSSL" in issuer_str:
                         issuer_name = "ZeroSSL"
                     elif "Let's Encrypt" in issuer_str:
                         issuer_name = "Let's Encrypt"
-                    elif "Console-Web" in issuer_str:
-                        issuer_name = "自签名 (Self-Signed)"
+                    else:
+                        issuer_name = issuer_str or "ACME CA"
 
                     return {
                         "has_cert": True,
@@ -166,15 +172,17 @@ def get_cert_status() -> dict:
     return {
         "has_cert": True,
         "status": "已安装 (有效)",
-        "days_left": 365,
+        "days_left": 90,
         "domain": "公网 IP / 域名",
-        "issuer": "Console-Web SSL",
+        "issuer": "ACME CA",
         "expires_on": "未知",
     }
 
 
 def _cert_is_valid(min_days: int = 7) -> bool:
-    """Return True if a valid cert exists with at least `min_days` remaining."""
+    """Return True if a valid ACME cert exists with at least `min_days` remaining."""
+    if is_self_signed_cert():
+        return False
     status = get_cert_status()
     return status["has_cert"] and status["days_left"] > min_days
 
@@ -224,75 +232,108 @@ def _detect_public_ip() -> str:
 
 
 def issue_cert(target=None, email=None) -> tuple:
-    """Issue a new ACME certificate, with automatic self-signed fallback."""
+    """Issue a new ACME certificate via acme.sh (ZeroSSL / Let's Encrypt). Strictly NO self-signed fallback."""
     with _acme_lock:
         ensure_dirs()
+        if is_self_signed_cert():
+            logger.warning("issue_cert: Deleting legacy self-signed cert before issuing ACME cert...")
+            remove_cert_files()
+
         if not target:
             target = _detect_public_ip()
 
         email = email or f"admin@{target}"
-        logger.info("ACME issue: target=%s, email=%s", target, email)
+        logger.info("ACME issue starting for target=%s, email=%s", target, email)
 
         acme_cmd = get_acme_cmd()
         if not acme_cmd:
             ensure_acme_sh()
             acme_cmd = get_acme_cmd()
 
-        if acme_cmd:
-            try:
-                # 1. Register account
-                subprocess.run(
-                    [*acme_cmd, "--register-account", "-m", email, "--server", "zerossl"],
-                    stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                )
+        if not acme_cmd:
+            return False, "未能安装或找到 acme.sh 工具，请检查系统环境"
 
-                # 2. Issue via standalone HTTP-01
-                issue_args = [
-                    *acme_cmd, "--issue",
+        try:
+            # 1. Register account with ZeroSSL
+            subprocess.run(
+                [*acme_cmd, "--register-account", "-m", email, "--server", "zerossl"],
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            )
+
+            # 2. Issue via standalone / webroot HTTP-01
+            issue_args = [
+                *acme_cmd, "--issue",
+                "-d", target,
+                "-w", str(CERTS_DIR),
+                "--server", "zerossl",
+                "--force",
+            ]
+            proc = subprocess.run(
+                issue_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+            )
+            logger.info("acme.sh issue output: %s", proc.stdout)
+
+            if proc.returncode == 0:
+                # 3. Install cert files
+                install_args = [
+                    *acme_cmd, "--install-cert",
                     "-d", target,
-                    "-w", str(CERTS_DIR),
-                    "--server", "zerossl",
-                    "--force",
+                    "--cert-file", str(CERT_FILE),
+                    "--key-file", str(KEY_FILE),
+                    "--fullchain-file", str(CERT_FILE),
                 ]
-                proc = subprocess.run(
-                    issue_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+                install_proc = subprocess.run(
+                    install_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
                 )
-                if proc.returncode == 0:
-                    # 3. Install cert files
-                    install_args = [
-                        *acme_cmd, "--install-cert",
-                        "-d", target,
-                        "--cert-file", str(CERT_FILE),
-                        "--key-file", str(KEY_FILE),
-                        "--fullchain-file", str(CERT_FILE),
-                    ]
-                    install_proc = subprocess.run(
-                        install_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
-                    )
-                    if install_proc.returncode == 0:
-                        _save_meta(target, email)
-                        logger.info("ACME ZeroSSL certificate issued successfully for %s", target)
-                        return True, f"成功为 {target} 签发并安装 ACME SSL 证书！"
-            except Exception as e:
-                logger.warning("ACME CA issuance failed: %s", e)
+                if install_proc.returncode == 0:
+                    _save_meta(target, email)
+                    logger.info("ACME ZeroSSL certificate issued successfully for %s", target)
+                    return True, f"成功为 {target} 签发并安装官方 ACME SSL 证书！"
 
-        # Fallback to self-signed cert if ACME fails or unavailable
-        logger.info("Generating fallback self-signed SSL cert for %s", target)
-        if generate_self_signed_cert(target):
-            return True, f"已自动配置 {target} 高强度 SSL 安全证书！"
+            # If ZeroSSL fails, attempt backup via Let's Encrypt ACME server
+            logger.info("ZeroSSL issue returned %d, attempting backup via Let's Encrypt...", proc.returncode)
+            le_args = [
+                *acme_cmd, "--issue",
+                "-d", target,
+                "-w", str(CERTS_DIR),
+                "--server", "letsencrypt",
+                "--force",
+            ]
+            le_proc = subprocess.run(
+                le_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+            )
+            if le_proc.returncode == 0:
+                install_proc = subprocess.run(
+                    [*acme_cmd, "--install-cert", "-d", target,
+                     "--cert-file", str(CERT_FILE),
+                     "--key-file", str(KEY_FILE),
+                     "--fullchain-file", str(CERT_FILE)],
+                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+                )
+                if install_proc.returncode == 0:
+                    _save_meta(target, email)
+                    logger.info("ACME Let's Encrypt certificate issued successfully for %s", target)
+                    return True, f"成功为 {target} 签发 Let's Encrypt ACME 证书！"
 
-        return False, "证书自动生成失败，请检查 openssl/acme.sh 环境"
+            return False, f"ACME 官方证书签发失败，请确认域名/公网 IP ({target}) 的 80 端口可被外网访问"
+        except Exception as e:
+            logger.exception("ACME issuance exception: %s", e)
+            return False, f"ACME 证书签发发生错误: {e}"
 
 
 def renew_cert() -> tuple:
-    """Renew existing certificate."""
+    """Renew existing ACME certificate."""
     with _acme_lock:
+        if is_self_signed_cert():
+            remove_cert_files()
+            return issue_cert()
+
         acme_cmd = get_acme_cmd()
         meta = _load_meta()
-        target = meta.get("target")
+        target = meta.get("target") or _detect_public_ip()
 
         if acme_cmd and target:
-            logger.info("Renewing certificate for %s ...", target)
+            logger.info("Renewing ACME certificate for %s ...", target)
             proc = subprocess.run(
                 [*acme_cmd, "--renew", "-d", target, "--force"],
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
@@ -306,29 +347,28 @@ def renew_cert() -> tuple:
                     stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                 )
                 logger.info("ACME certificate renewed successfully")
-                return True, "SSL 证书自动续期成功！"
+                return True, "ACME 官方 SSL 证书自动续期成功！"
 
-        # Regenerate self-signed cert if renew fails
-        target = target or _detect_public_ip()
-        if generate_self_signed_cert(target):
-            return True, "SSL 证书已更新！"
-
-        return False, "续期未完成"
+        return issue_cert(target=target)
 
 
 def _auto_init():
-    """Startup check."""
+    """Startup check: clean self-signed certs and request official ACME cert."""
     logger.info("ACME auto-init: checking existing certificate...")
+
+    if is_self_signed_cert():
+        logger.warning("Detected self-signed cert on startup. Deleting it to re-trigger ACME issuance...")
+        remove_cert_files()
 
     if _cert_is_valid(min_days=7):
         status = get_cert_status()
         logger.info(
-            "ACME auto-init: valid certificate found for %s (%s days left). Keeping existing cert.",
+            "ACME auto-init: valid ACME certificate found for %s (%s days left).",
             status.get("domain"), status.get("days_left"),
         )
         return
 
-    logger.info("ACME auto-init: no valid certificate found. Initiating auto-issuance...")
+    logger.info("ACME auto-init: no valid ACME certificate found. Initiating auto-issuance...")
     try:
         ok, msg = issue_cert()
         logger.info("ACME auto-init result: %s", msg)
@@ -364,16 +404,21 @@ def start_daemon():
 if __name__ == "__main__":
     import sys
     print("==================================================")
-    print("🔒 ACME SSL 证书检测与申请管理")
+    print("🔒 ACME 官方 SSL 证书检测与申请管理 (只申请官方证书)")
     print("==================================================")
+
+    if is_self_signed_cert():
+        print("⚠️ 检测到本地残留的自签名证书，正在自动清理并重新发起 ACME 官方证书申请...")
+        remove_cert_files()
+
     status = get_cert_status()
     if not status.get("has_cert") or status.get("days_left", 0) <= 7:
-        print("🔍 未检测到有效 SSL 证书，正在自动触发 ACME / ZeroSSL 证书申请...")
+        print("🔍 未检测到有效官方 ACME 证书，正在自动触发 ACME / ZeroSSL 证书申请...")
         ok, msg = issue_cert()
         print(f"👉 结果: {msg}")
         status = get_cert_status()
     else:
-        print("✅ 检测到有效 SSL 证书，状态良好。")
+        print("✅ 检测到有效官方 ACME SSL 证书，状态良好。")
 
     print("\n--- ACME / SSL 证书运行状态 ---")
     print(f"域名 / IP:  {status.get('domain', 'N/A')}")
@@ -387,4 +432,3 @@ if __name__ == "__main__":
         sys.exit(0)
     else:
         sys.exit(1)
-
