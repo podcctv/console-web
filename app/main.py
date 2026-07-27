@@ -2141,35 +2141,19 @@ if __name__ == "__main__":
     cert_file = acme_manager.CERT_FILE
     key_file = acme_manager.KEY_FILE
 
-    ssl_ctx = None
-    if cert_file.exists() and key_file.exists():
-        ssl_ctx = (str(cert_file), str(key_file))
-        logger.info("SSL cert & key files detected: %s", cert_file)
+    has_ssl = cert_file.exists() and key_file.exists()
 
-    # Always start HTTP server on port 8080 in background thread (for ACME challenges & HTTP fallback)
-    def start_http():
+    if has_ssl:
+        logger.info("SSL Certificate detected (%s)! Starting HTTPS server on 0.0.0.0:8080...", cert_file)
         try:
-            http_server = make_server("0.0.0.0", 8080, app, threaded=True)
-            http_server.serve_forever()
+            ssl_ctx = (str(cert_file), str(key_file))
+            app.run(host="0.0.0.0", port=8080, ssl_context=ssl_ctx, threaded=True)
         except Exception as e:
-            logger.warning("HTTP server error: %s", e)
-
-    http_thread = threading.Thread(target=start_http, daemon=True)
-    http_thread.start()
-    logger.info("Started HTTP Server on 0.0.0.0:8080 (ACME Challenge & HTTP fallback)")
-
-    # If SSL is configured, run HTTPS server on port 8443 in main thread
-    if ssl_ctx:
-        logger.info("Started HTTPS Server on 0.0.0.0:8443 (SSL Enabled)")
-        try:
-            https_server = make_server("0.0.0.0", 8443, app, threaded=True, ssl_context=ssl_ctx)
-            https_server.serve_forever()
-        except Exception as e:
-            logger.warning("HTTPS server error: %s", e)
-            http_thread.join()
+            logger.warning("Failed to start HTTPS server, falling back to HTTP: %s", e)
+            app.run(host="0.0.0.0", port=8080, threaded=True)
     else:
-        logger.info("SSL cert not ready yet. Running in HTTP mode on 0.0.0.0:8080")
-        http_thread.join()
+        logger.info("No SSL Certificate found yet. Starting HTTP server on 0.0.0.0:8080...")
+        app.run(host="0.0.0.0", port=8080, threaded=True)
 
 
 

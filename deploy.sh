@@ -45,12 +45,12 @@ deploy() {
   echo "🔍 检查宿主机 80 端口状态..."
   if netstat -tlpn 2>/dev/null | grep -q ":80 " || ss -tlpn 2>/dev/null | grep -q ":80 " || lsof -i:80 >/dev/null 2>&1; then
     echo "⚠️ 检测到宿主机 80 端口已被其他服务 (如 Nginx/Apache) 占用。"
-    echo "   若需 ACME 自动签发证书，请配置 Web 反向代理将 /.well-known/acme-challenge/ 转发至 http://127.0.0.1:8080"
-    PORT_MAP="-p ${PORT}:8443 -p 8080:8080"
+    echo "   若需 ACME 自动签发证书，请配置 Web 反向代理将 /.well-known/acme-challenge/ 转发至 http://127.0.0.1:${PORT}"
+    PORT_MAP="-p ${PORT}:8080"
   else
     echo "✅ 宿主机 80 端口空闲，自动绑定映射 -p 80:8080 供 ACME HTTP-01 验证。"
     PORT80_MAPPED=1
-    PORT_MAP="-p 80:8080 -p ${PORT}:8443 -p 8080:8080"
+    PORT_MAP="-p 80:8080 -p ${PORT}:8080"
   fi
 
   echo ""
