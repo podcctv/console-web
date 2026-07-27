@@ -2153,10 +2153,9 @@ if __name__ == "__main__":
             ssl_ctx = None
 
     if ssl_ctx:
-        logger.info("Starting HTTPS Werkzeug Server on 0.0.0.0:8080 (SSL Enabled)")
+        logger.info("Starting HTTPS Flask Server on 0.0.0.0:8080 (SSL Enabled)")
         try:
-            server = make_server("0.0.0.0", 8080, app, threaded=True, ssl_context=ssl_ctx)
-            server.serve_forever()
+            app.run(host="0.0.0.0", port=8080, ssl_context=ssl_ctx, threaded=True)
         except Exception as e:
             logger.warning("Failed to start HTTPS server, falling back to HTTP: %s", e)
             app.run(host="0.0.0.0", port=8080, threaded=True)
