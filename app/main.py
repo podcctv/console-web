@@ -1904,19 +1904,56 @@ def host():
         total_disk=humanize_bytes(du.total) if du else None,
     )
 
+from werkzeug.serving import ThreadedWSGIServer, make_server
+
+
+class DualHTTPSServer(ThreadedWSGIServer):
+    """
+    A WSGI Server that automatically handles both HTTPS and HTTP on the same port.
+    - If incoming socket sends TLS ClientHello (first byte 0x16), it wraps with SSLContext.
+    - If incoming socket sends plain HTTP, it serves plain HTTP.
+    Eliminates ERR_SSL_PROTOCOL_ERROR completely.
+    """
+    def __init__(self, host, port, app, ssl_context=None, **kwargs):
+        super().__init__(host, port, app, **kwargs)
+        self.custom_ssl_context = ssl_context
+
+    def finish_request(self, request, client_address):
+        if self.custom_ssl_context:
+            try:
+                first_byte = request.recv(1, socket.MSG_PEEK)
+                if first_byte and first_byte[0] == 0x16:  # TLS Handshake (22)
+                    request = self.custom_ssl_context.wrap_socket(request, server_side=True)
+            except Exception as e:
+                logger.debug("SSL auto-wrap failed for %s: %s", client_address, e)
+        super().finish_request(request, client_address)
+
+
 if __name__ == "__main__":
     acme_manager._auto_init()
     cert_file = acme_manager.CERT_FILE
     key_file = acme_manager.KEY_FILE
 
+    ssl_ctx = None
     if cert_file.exists() and key_file.exists():
-        logger.info("Starting Flask server with SSL context (%s, %s)", cert_file, key_file)
         try:
-            app.run(host="0.0.0.0", port=8080, ssl_context=(str(cert_file), str(key_file)))
+            ssl_ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+            ssl_ctx.load_cert_chain(certfile=str(cert_file), keyfile=str(key_file))
+            logger.info("Loaded SSL certificate chain: %s", cert_file)
         except Exception as e:
-            logger.warning("Failed to start server with SSL context, falling back to HTTP: %s", e)
+            logger.warning("Failed to load SSL cert chain: %s", e)
+            ssl_ctx = None
+
+    if ssl_ctx:
+        logger.info("Starting Dual HTTP/HTTPS Server on 0.0.0.0:8080 (SSL enabled)")
+        try:
+            server = make_server("0.0.0.0", 8080, app, threaded=True, server_cls=DualHTTPSServer, ssl_context=ssl_ctx)
+            server.serve_forever()
+        except Exception as e:
+            logger.warning("Failed to start DualHTTPSServer, falling back to app.run: %s", e)
             app.run(host="0.0.0.0", port=8080)
     else:
         logger.info("Starting Flask server in HTTP mode on port 8080")
         app.run(host="0.0.0.0", port=8080)
+
 
