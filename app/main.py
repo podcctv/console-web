@@ -501,14 +501,12 @@ TEMPLATE = r"""
         /* Grid Layout */
         .dashboard-grid {
             display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px;
-            align-items: stretch;
         }
 
         .card {
             background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px;
             padding: 20px; backdrop-filter: blur(10px); box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-            display: flex; flex-direction: column; justify-content: space-between; gap: 14px; height: 100%;
-            transition: transform 0.2s ease, border-color 0.2s ease;
+            display: flex; flex-direction: column; gap: 16px; transition: transform 0.2s ease, border-color 0.2s ease;
         }
 
         .card:hover {
@@ -937,7 +935,11 @@ Welcome to Console-Web Cyber Edition 🚀 | System Status &amp; Realtime Network
                         <span class="info-value" id="cpu_cores">-</span>
                     </div>
                     <div class="info-item">
-                        <span class="info-key">磁盘 IO (读/写)</span>
+                        <span class="info-key">系统架构 / 体系</span>
+                        <span class="info-value" id="arch_val">-</span>
+                    </div>
+                    <div class="info-item full-width">
+                        <span class="info-key">磁盘 IO (累计读/写)</span>
                         <span class="info-value" id="disk_io">-</span>
                     </div>
                 </div>
@@ -1219,6 +1221,12 @@ Try typing 'acme status' or 'acme issue' or 'ping 8.8.8.8'
         }
     }
 
+    // Safe DOM Text Setter
+    function setElText(id, text) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = (text !== null && text !== undefined) ? text : '-';
+    }
+
     // Fetch ACME SSL Status
     async function fetchAcmeStatus() {
         try {
@@ -1232,14 +1240,14 @@ Try typing 'acme status' or 'acme issue' or 'ping 8.8.8.8'
                     badge.style.color = 'var(--accent-green)';
                     badge.textContent = `🔒 SSL 已开启 (${data.days_left}天)`;
                 }
-                if (valEl) valEl.textContent = `${data.domain} (${data.days_left}天后到期)`;
+                setElText('acme_val', `${data.domain} (${data.days_left}天后到期)`);
             } else {
                 if (badge) {
                     badge.style.borderColor = 'var(--text-muted)';
                     badge.style.color = 'var(--text-muted)';
                     badge.textContent = `🔓 HTTP 运行中`;
                 }
-                if (valEl) valEl.textContent = `未安装 (可运行 'acme issue' 自动申请)`;
+                setElText('acme_val', `未安装 (可运行 'acme issue' 自动申请)`);
             }
         } catch(e) {}
     }
@@ -1252,17 +1260,17 @@ Try typing 'acme status' or 'acme issue' or 'ping 8.8.8.8'
             if (data.cpu !== null) updateProgress('cpu', data.cpu);
             if (data.memory !== null) updateProgress('memory', data.memory);
             if (data.disk !== null) updateProgress('disk', data.disk);
-            
-            document.getElementById('cuptime').textContent = data.container_uptime || '-';
-            document.getElementById('huptime').textContent = data.host_uptime || '-';
-            document.getElementById('cpu_cores').textContent = data.cores ? `${data.cores} 核` : '-';
-            document.getElementById('load_val').textContent = `Load: ${data.load || 'N/A'}`;
-            document.getElementById('disk_io').textContent = data.disk_io || '-';
-            document.getElementById('net_io').textContent = data.net_io || '-';
-            document.getElementById('ip_val').textContent = data.ip || '-';
-            
+
+            setElText('cuptime', data.container_uptime);
+            setElText('huptime', data.host_uptime);
+            setElText('cpu_cores', data.cores ? `${data.cores} 核` : '-');
+            setElText('load_val', `Load: ${data.load || 'N/A'}`);
+            setElText('disk_io', data.disk_io);
+            setElText('net_io', data.net_io);
+            setElText('ip_val', data.ip);
+
             const cip = data.client_ip ? `${data.client_ip} [${data.client_isp || '未知'}]` : '局域网';
-            document.getElementById('client_ip_val').textContent = cip;
+            setElText('client_ip_val', cip);
 
             fetchAcmeStatus();
         } catch (e) {
@@ -1275,10 +1283,10 @@ Try typing 'acme status' or 'acme issue' or 'ping 8.8.8.8'
         try {
             const res = await fetch('/host');
             const data = await res.json();
-            document.getElementById('os_val').textContent = data.system ? `${data.system} ${data.release || ''}` : '-';
-            document.getElementById('arch_val').textContent = data.machine || '-';
-            document.getElementById('mem_total_val').textContent = data.total_memory || '-';
-            document.getElementById('disk_total_val').textContent = data.total_disk || '-';
+            setElText('os_val', data.system ? `${data.system} ${data.release || ''}` : '-');
+            setElText('arch_val', data.machine);
+            setElText('mem_total_val', data.total_memory);
+            setElText('disk_total_val', data.total_disk);
         } catch(e) {}
     }
 
@@ -1904,30 +1912,7 @@ def host():
         total_disk=humanize_bytes(du.total) if du else None,
     )
 
-from werkzeug.serving import ThreadedWSGIServer, make_server
-
-
-class DualHTTPSServer(ThreadedWSGIServer):
-    """
-    A WSGI Server that automatically handles both HTTPS and HTTP on the same port.
-    - If incoming socket sends TLS ClientHello (first byte 0x16), it wraps with SSLContext.
-    - If incoming socket sends plain HTTP, it serves plain HTTP.
-    Eliminates ERR_SSL_PROTOCOL_ERROR completely.
-    """
-    def __init__(self, host, port, app, ssl_context=None, **kwargs):
-        super().__init__(host, port, app, **kwargs)
-        self.custom_ssl_context = ssl_context
-
-    def finish_request(self, request, client_address):
-        if self.custom_ssl_context:
-            try:
-                first_byte = request.recv(1, socket.MSG_PEEK)
-                if first_byte and first_byte[0] == 0x16:  # TLS Handshake (22)
-                    request = self.custom_ssl_context.wrap_socket(request, server_side=True)
-            except Exception as e:
-                logger.debug("SSL auto-wrap failed for %s: %s", client_address, e)
-        super().finish_request(request, client_address)
-
+from werkzeug.serving import make_server
 
 if __name__ == "__main__":
     acme_manager._auto_init()
@@ -1945,15 +1930,16 @@ if __name__ == "__main__":
             ssl_ctx = None
 
     if ssl_ctx:
-        logger.info("Starting Dual HTTP/HTTPS Server on 0.0.0.0:8080 (SSL enabled)")
+        logger.info("Starting HTTPS Werkzeug Server on 0.0.0.0:8080 (SSL enabled)")
         try:
-            server = make_server("0.0.0.0", 8080, app, threaded=True, server_cls=DualHTTPSServer, ssl_context=ssl_ctx)
+            server = make_server("0.0.0.0", 8080, app, threaded=True, ssl_context=ssl_ctx)
             server.serve_forever()
         except Exception as e:
-            logger.warning("Failed to start DualHTTPSServer, falling back to app.run: %s", e)
+            logger.warning("Failed to start HTTPS server, falling back to HTTP: %s", e)
             app.run(host="0.0.0.0", port=8080)
     else:
-        logger.info("Starting Flask server in HTTP mode on port 8080")
+        logger.info("Starting HTTP Werkzeug Server on 0.0.0.0:8080")
         app.run(host="0.0.0.0", port=8080)
+
 
 
