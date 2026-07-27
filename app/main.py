@@ -2146,22 +2146,35 @@ if __name__ == "__main__":
         try:
             ssl_ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
             ssl_ctx.load_cert_chain(certfile=str(cert_file), keyfile=str(key_file))
-            logger.info("Loaded SSL certificate chain: %s", cert_file)
+            logger.info("Loaded SSL certificate chain from: %s", cert_file)
         except Exception as e:
             logger.warning("Failed to load SSL cert chain: %s", e)
             ssl_ctx = None
 
-    if ssl_ctx:
-        logger.info("Starting HTTPS Werkzeug Server on 0.0.0.0:8080 (SSL enabled)")
+    # Always start HTTP server on port 8080 in background thread (for ACME challenges & HTTP fallback)
+    def start_http():
         try:
-            server = make_server("0.0.0.0", 8080, app, threaded=True, ssl_context=ssl_ctx)
-            server.serve_forever()
+            http_server = make_server("0.0.0.0", 8080, app, threaded=True)
+            http_server.serve_forever()
         except Exception as e:
-            logger.warning("Failed to start HTTPS server, falling back to HTTP: %s", e)
-            app.run(host="0.0.0.0", port=8080)
+            logger.warning("HTTP server error: %s", e)
+
+    http_thread = threading.Thread(target=start_http, daemon=True)
+    http_thread.start()
+    logger.info("Started HTTP Server on 0.0.0.0:8080 (ACME Challenge & HTTP fallback)")
+
+    # If SSL is configured, run HTTPS server on port 8443 in main thread
+    if ssl_ctx:
+        logger.info("Started HTTPS Server on 0.0.0.0:8443 (SSL Enabled)")
+        try:
+            https_server = make_server("0.0.0.0", 8443, app, threaded=True, ssl_context=ssl_ctx)
+            https_server.serve_forever()
+        except Exception as e:
+            logger.warning("HTTPS server error: %s", e)
+            http_thread.join()
     else:
-        logger.info("Starting HTTP Werkzeug Server on 0.0.0.0:8080")
-        app.run(host="0.0.0.0", port=8080)
+        logger.info("SSL cert not ready yet. Running in HTTP mode on 0.0.0.0:8080")
+        http_thread.join()
 
 
 
