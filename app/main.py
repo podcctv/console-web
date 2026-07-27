@@ -512,8 +512,8 @@ TEMPLATE = r"""
         }
 
         .ping-item {
-            display: flex; flex-direction: column; gap: 6px; background: var(--input-bg);
-            padding: 10px 14px; border-radius: 8px; border: 1px solid var(--card-border);
+            display: flex; flex-direction: column; gap: 8px; background: var(--input-bg);
+            padding: 12px 14px; border-radius: 8px; border: 1px solid var(--card-border);
         }
 
         .ping-header {
@@ -522,13 +522,13 @@ TEMPLATE = r"""
 
         .ping-title { color: var(--text-white); font-weight: 600; display: flex; align-items: center; gap: 6px; }
         .ping-value { font-weight: 700; }
-        
+
         .ping-chart-container {
-            width: 100%; height: 36px; margin-top: 4px;
+            width: 100%; height: 32px; margin-top: 4px; display: flex; align-items: center; position: relative;
         }
 
         canvas.ping-chart {
-            width: 100%; height: 100%; display: block;
+            width: 100%; height: 32px; display: block; border-radius: 4px; background: rgba(0,0,0,0.3);
         }
 
         .ping-legend {
@@ -778,7 +778,9 @@ Welcome to Console-Web Cyber Edition 🚀 | System Status &amp; Realtime Network
                             <span class="ping-title">📍 本地/Client 延迟</span>
                             <span class="ping-value" id="client_ping_val">-</span>
                         </div>
-                        <div class="ping-chart-container"><canvas id="client_ping_chart"></canvas></div>
+                        <div class="ping-chart-container">
+                            <canvas id="client_ping_chart" class="ping-chart" width="300" height="32"></canvas>
+                        </div>
                     </div>
 
                     <div class="ping-item">
@@ -786,7 +788,9 @@ Welcome to Console-Web Cyber Edition 🚀 | System Status &amp; Realtime Network
                             <span class="ping-title">🟢 浙江联通 Ping</span>
                             <span class="ping-value" id="ping_cu_val">-</span>
                         </div>
-                        <div class="ping-chart-container"><canvas id="ping_cu_chart"></canvas></div>
+                        <div class="ping-chart-container">
+                            <canvas id="ping_cu_chart" class="ping-chart" width="300" height="32"></canvas>
+                        </div>
                     </div>
 
                     <div class="ping-item">
@@ -794,7 +798,9 @@ Welcome to Console-Web Cyber Edition 🚀 | System Status &amp; Realtime Network
                             <span class="ping-title">🔵 浙江移动 Ping</span>
                             <span class="ping-value" id="ping_cm_val">-</span>
                         </div>
-                        <div class="ping-chart-container"><canvas id="ping_cm_chart"></canvas></div>
+                        <div class="ping-chart-container">
+                            <canvas id="ping_cm_chart" class="ping-chart" width="300" height="32"></canvas>
+                        </div>
                     </div>
 
                     <div class="ping-item">
@@ -802,7 +808,9 @@ Welcome to Console-Web Cyber Edition 🚀 | System Status &amp; Realtime Network
                             <span class="ping-title">🟡 浙江电信 Ping</span>
                             <span class="ping-value" id="ping_ct_val">-</span>
                         </div>
-                        <div class="ping-chart-container"><canvas id="ping_ct_chart"></canvas></div>
+                        <div class="ping-chart-container">
+                            <canvas id="ping_ct_chart" class="ping-chart" width="300" height="32"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -952,50 +960,48 @@ Try typing 'ping 8.8.8.8' or 'mtr 1.1.1.1' or 'lookup google.com'
         const canvas = document.getElementById(canvasId);
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
         const dpr = window.devicePixelRatio || 1;
         const rect = canvas.getBoundingClientRect();
-        
-        canvas.width = rect.width * dpr;
-        canvas.height = rect.height * dpr;
+        const width = rect.width > 0 ? rect.width : (canvas.offsetWidth || 300);
+        const height = rect.height > 0 ? rect.height : (canvas.offsetHeight || 32);
+
+        if (width <= 0 || height <= 0) return;
+
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
         ctx.scale(dpr, dpr);
 
-        const width = rect.width;
-        const height = rect.height;
         ctx.clearRect(0, 0, width, height);
 
-        if (historyData.length === 0) return;
+        if (!historyData || historyData.length === 0) {
+            // Draw placeholder grid bars before initial ping returns
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+            for (let i = 0; i < width; i += 6) {
+                ctx.fillRect(i, height - 4, 4, 4);
+            }
+            return;
+        }
 
-        const maxPing = Math.max(...historyData.map(v => v || 0), 100);
-        const step = width / Math.max(historyData.length - 1, 1);
+        const validPings = historyData.filter(v => v !== null && v !== undefined);
+        const maxPing = validPings.length > 0 ? Math.max(...validPings, 100) : 100;
+        const maxBars = 45;
+        const dataToDraw = historyData.slice(-maxBars);
+        const barGap = 2;
+        const barWidth = Math.max(2, Math.floor((width - (dataToDraw.length - 1) * barGap) / dataToDraw.length));
 
-        // Draw grid lines
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(0, height / 2); ctx.lineTo(width, height / 2);
-        ctx.stroke();
-
-        // Draw area graph
-        ctx.beginPath();
-        historyData.forEach((val, i) => {
-            const displayVal = val === null ? maxPing : val;
-            const x = i * step;
-            const y = height - (Math.min(displayVal, maxPing) / maxPing) * (height - 4);
-            if (i === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
+        dataToDraw.forEach((val, i) => {
+            const x = i * (barWidth + barGap);
+            if (val === null || val === undefined) {
+                ctx.fillStyle = '#ff3366';
+                ctx.fillRect(x, 0, barWidth, 4);
+            } else {
+                const h = Math.max(3, Math.round((Math.min(val, maxPing) / maxPing) * height));
+                ctx.fillStyle = getPingColor(val);
+                ctx.fillRect(x, height - h, barWidth, h);
+            }
         });
-
-        const lastVal = historyData[historyData.length - 1];
-        ctx.strokeStyle = getPingColor(lastVal);
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        // Fill background glow
-        ctx.lineTo(width, height);
-        ctx.lineTo(0, height);
-        ctx.closePath();
-        ctx.fillStyle = lastVal === null ? 'rgba(255,51,102,0.1)' : 'rgba(0,255,102,0.08)';
-        ctx.fill();
     }
 
     function updatePingUI(key, ms) {
