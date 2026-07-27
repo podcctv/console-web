@@ -2143,13 +2143,8 @@ if __name__ == "__main__":
 
     ssl_ctx = None
     if cert_file.exists() and key_file.exists():
-        try:
-            ssl_ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-            ssl_ctx.load_cert_chain(certfile=str(cert_file), keyfile=str(key_file))
-            logger.info("Loaded SSL certificate chain from: %s", cert_file)
-        except Exception as e:
-            logger.warning("Failed to load SSL cert chain: %s", e)
-            ssl_ctx = None
+        ssl_ctx = (str(cert_file), str(key_file))
+        logger.info("SSL cert & key files detected: %s", cert_file)
 
     # Always start HTTP server on port 8080 in background thread (for ACME challenges & HTTP fallback)
     def start_http():
