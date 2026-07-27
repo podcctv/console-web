@@ -368,500 +368,498 @@ TEMPLATE = r"""
 <html lang="zh-CN" data-theme="matrix">
 <head>
     <meta charset="UTF-8">
-    <title>{{ hostname }} - Cyber Status Console</title>
+    <title>{{ hostname }} - Cyber Operations Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #050a07;
-            --card-bg: rgba(9, 18, 14, 0.85);
-            --card-border: #00ff6644;
-            --card-border-glow: rgba(0, 255, 102, 0.25);
-            --text-primary: #00ff66;
-            --text-muted: #52b380;
-            --text-white: #e3ffe9;
-            --accent-green: #00ff66;
-            --accent-yellow: #ffcc00;
-            --accent-red: #ff3366;
-            --accent-blue: #00ccff;
-            --terminal-bg: #030805;
-            --input-bg: #0a140e;
-            --bar-bg: #0d1e15;
-            --font-mono: 'JetBrains Mono', 'Consolas', monospace;
-            --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+            /* Surface & Background Levels */
+            --bg-page: #050807;
+            --bg-surface: #08110d;
+            --bg-surface-elevated: #0d1a14;
+            --bg-hover: #10221a;
+            --bg-input: #09150e;
+
+            /* Borders & Dividers */
+            --border-subtle: rgba(93, 255, 167, 0.08);
+            --border-default: rgba(93, 255, 167, 0.16);
+            --border-active: rgba(71, 255, 148, 0.50);
+
+            /* Text Hierarchy */
+            --text-primary: #e8f3ed;
+            --text-secondary: #9db3a6;
+            --text-tertiary: #586c60;
+
+            /* Semantic Color Tokens */
+            --accent: #36e27b;
+            --accent-soft: rgba(54, 226, 123, 0.10);
+            --info: #44c7e8;
+            --info-soft: rgba(68, 199, 232, 0.10);
+            --warning: #f5b942;
+            --warning-soft: rgba(245, 185, 66, 0.10);
+            --danger: #f35b72;
+            --danger-soft: rgba(243, 91, 114, 0.10);
+            --success: #36e27b;
+            --success-soft: rgba(54, 226, 123, 0.10);
+
+            /* Layout Tokens */
+            --radius-card: 10px;
+            --radius-control: 6px;
+
+            /* Dual Typography System */
+            --font-ui: "MiSans", "HarmonyOS Sans SC", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono: "JetBrains Mono", "IBM Plex Mono", "Consolas", monospace;
         }
 
         [data-theme="cyberpunk"] {
-            --bg-color: #07040e;
-            --card-bg: rgba(18, 9, 28, 0.85);
-            --card-border: #ff007755;
-            --card-border-glow: rgba(255, 0, 119, 0.3);
-            --text-primary: #ff0077;
-            --text-muted: #aa66ff;
-            --text-white: #ffe5f7;
-            --accent-green: #00ffcc;
-            --accent-yellow: #ffdd00;
-            --accent-red: #ff0055;
-            --accent-blue: #00aaff;
-            --terminal-bg: #05020a;
-            --input-bg: #12071f;
-            --bar-bg: #1f0b30;
+            --bg-page: #07040e;
+            --bg-surface: #12091c;
+            --bg-surface-elevated: #1a0d28;
+            --bg-hover: #221235;
+            --bg-input: #0f071a;
+
+            --border-subtle: rgba(255, 0, 119, 0.10);
+            --border-default: rgba(255, 0, 119, 0.18);
+            --border-active: rgba(255, 0, 119, 0.55);
+
+            --text-primary: #ffe5f7;
+            --text-secondary: #aa93c4;
+            --text-tertiary: #6b5585;
+
+            --accent: #ff0077;
+            --accent-soft: rgba(255, 0, 119, 0.12);
         }
 
         [data-theme="neon"] {
-            --bg-color: #040912;
-            --card-bg: rgba(8, 18, 32, 0.85);
-            --card-border: #00d9ff44;
-            --card-border-glow: rgba(0, 217, 255, 0.25);
-            --text-primary: #00d9ff;
-            --text-muted: #509ce8;
-            --text-white: #e3f4ff;
-            --accent-green: #00ffaa;
-            --accent-yellow: #ffaa00;
-            --accent-red: #ff4466;
-            --accent-blue: #0088ff;
-            --terminal-bg: #02050a;
-            --input-bg: #0a1424;
-            --bar-bg: #0f223d;
+            --bg-page: #040912;
+            --bg-surface: #081220;
+            --bg-surface-elevated: #0d1b30;
+            --bg-hover: #112440;
+            --bg-input: #060e1b;
+
+            --border-subtle: rgba(0, 217, 255, 0.10);
+            --border-default: rgba(0, 217, 255, 0.18);
+            --border-active: rgba(0, 217, 255, 0.55);
+
+            --text-primary: #e3f4ff;
+            --text-secondary: #7fadc7;
+            --text-tertiary: #4c738c;
+
+            --accent: #00d9ff;
+            --accent-soft: rgba(0, 217, 255, 0.12);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { min-height: 100%; background: var(--bg-color); color: var(--text-primary); font-family: var(--font-mono); }
+        html, body { min-height: 100%; background: var(--bg-page); color: var(--text-primary); font-family: var(--font-ui); -webkit-font-smoothing: antialiased; }
 
         body {
-            display: flex; flex-direction: column; align-items: center; padding: 20px 16px;
+            display: flex; flex-direction: column; align-items: center; padding: 24px 16px;
             background-image: 
-                linear-gradient(rgba(0, 0, 0, 0.2) 50%, rgba(0, 0, 0, 0.35) 50%),
-                radial-gradient(circle at 50% 0%, var(--card-border-glow), transparent 75%),
-                linear-gradient(to bottom, rgba(255,255,255,0.015) 1px, transparent 1px);
-            background-size: 100% 4px, 100% 100%, 100% 20px;
+                radial-gradient(circle at 50% 0%, rgba(54, 226, 123, 0.05), transparent 70%),
+                linear-gradient(to bottom, rgba(255,255,255,0.01) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 24px;
         }
 
         .container {
-            width: 100%; max-width: 1280px; display: flex; flex-direction: column; gap: 16px;
+            width: 100%; max-width: 1360px; display: flex; flex-direction: column; gap: 16px;
         }
 
-        /* Top Sci-Fi Header Bar */
+        .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+        .text-success { color: var(--success); }
+        .text-warning { color: var(--warning); }
+        .text-danger { color: var(--danger); }
+        .text-info { color: var(--info); }
+        .text-muted { color: var(--text-secondary); }
+
+        /* Top Navigation Bar */
         .header-bar {
-            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;
-            background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px;
-            padding: 14px 22px; backdrop-filter: blur(16px); box-shadow: 0 8px 32px rgba(0,0,0,0.6);
-            position: relative; overflow: hidden;
-        }
-
-        .header-bar::before {
-            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
-            background: linear-gradient(90deg, transparent, var(--text-primary), transparent);
+            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;
+            background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-card);
+            padding: 14px 20px; backdrop-filter: blur(16px);
         }
 
         .brand-title {
-            display: flex; align-items: center; gap: 14px; font-size: 1.2rem; font-weight: 700; color: var(--text-white);
-            letter-spacing: 1px;
+            display: flex; align-items: center; gap: 12px; font-size: 1.15rem; font-weight: 700; color: var(--text-primary);
+            letter-spacing: 0.5px;
         }
 
         .brand-icon {
             display: inline-flex; align-items: center; justify-content: center;
-            width: 38px; height: 38px; border-radius: 6px; background: rgba(0,255,102,0.12);
-            border: 1px solid var(--text-primary); color: var(--text-primary); font-weight: 900; font-size: 1.1rem;
-            box-shadow: 0 0 10px var(--card-border-glow);
+            width: 34px; height: 34px; border-radius: var(--radius-control); background: var(--accent-soft);
+            border: 1px solid var(--border-default); color: var(--accent); font-family: var(--font-mono); font-weight: 700;
         }
 
-        .hud-status-group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .header-status-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
-        .status-badge {
-            display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 6px;
-            font-size: 0.78rem; font-weight: 700; background: rgba(0, 255, 102, 0.12); border: 1px solid var(--accent-green);
-            color: var(--accent-green); letter-spacing: 0.5px;
+        .status-pill {
+            display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px;
+            font-size: 0.75rem; font-weight: 500; font-family: var(--font-ui);
+            background: var(--bg-input); border: 1px solid var(--border-subtle); color: var(--text-secondary);
         }
+
+        .status-pill.status-online { background: var(--success-soft); border-color: rgba(54, 226, 123, 0.3); color: var(--success); }
+        .status-pill.status-info { background: var(--info-soft); border-color: rgba(68, 199, 232, 0.3); color: var(--info); }
 
         .pulse-dot {
-            width: 8px; height: 8px; border-radius: 50%; background: var(--accent-green);
-            box-shadow: 0 0 10px var(--accent-green); animation: pulse 1.5s infinite;
+            width: 7px; height: 7px; border-radius: 50%; background: var(--success);
+            box-shadow: 0 0 8px var(--success); animation: pulse 2s infinite;
         }
 
         @keyframes pulse {
-            0% { transform: scale(0.95); opacity: 0.8; }
-            50% { transform: scale(1.3); opacity: 1; }
-            100% { transform: scale(0.95); opacity: 0.8; }
+            0% { opacity: 0.7; transform: scale(0.95); }
+            50% { opacity: 1; transform: scale(1.2); }
+            100% { opacity: 0.7; transform: scale(0.95); }
         }
 
-        .controls-group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .controls-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
-        .btn-toggle, .select-input {
-            background: var(--input-bg); border: 1px solid var(--card-border); color: var(--text-white);
-            padding: 6px 12px; border-radius: 6px; font-family: var(--font-mono); font-size: 0.82rem;
-            cursor: pointer; transition: all 0.2s ease; outline: none;
+        .btn-ctrl, .select-input {
+            background: var(--bg-input); border: 1px solid var(--border-default); color: var(--text-primary);
+            padding: 6px 12px; border-radius: var(--radius-control); font-family: var(--font-ui); font-size: 0.8rem;
+            cursor: pointer; transition: all 0.2s ease; outline: none; display: inline-flex; align-items: center; gap: 6px;
         }
 
-        .btn-toggle:hover, .select-input:hover {
-            border-color: var(--text-primary); box-shadow: 0 0 12px var(--card-border-glow);
+        .btn-ctrl:hover, .select-input:hover {
+            border-color: var(--border-active); background: var(--bg-hover);
         }
 
-        /* High-Density Dashboard Grid (2 Main Columns) */
+        /* Tier 1: Executive Status Summary Bar (4 Cards) */
+        .summary-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+        }
+
+        .summary-card {
+            background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-card);
+            padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; transition: background 0.2s ease, border-color 0.2s ease;
+        }
+
+        .summary-card:hover {
+            background: var(--bg-surface-elevated); border-color: var(--border-active);
+        }
+
+        .summary-label {
+            font-size: 0.78rem; font-weight: 500; color: var(--text-secondary); display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .summary-value {
+            font-size: 1.5rem; font-weight: 700; color: var(--text-primary); line-height: 1.2;
+            display: flex; align-items: baseline; gap: 8px;
+        }
+
+        .summary-desc {
+            font-size: 0.74rem; color: var(--text-tertiary); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+
+        .btn-copy {
+            background: transparent; border: none; color: var(--text-secondary); cursor: pointer;
+            padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; transition: all 0.15s ease;
+        }
+
+        .btn-copy:hover { color: var(--accent); background: var(--accent-soft); }
+
+        /* Tier 2: Dashboard Grid (2 Main Columns) */
         .dashboard-grid {
-            display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px;
+            display: grid; grid-template-columns: 1.25fr 1fr; gap: 16px;
         }
 
         .card {
-            position: relative; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px;
-            padding: 16px 20px; backdrop-filter: blur(16px); box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-            display: flex; flex-direction: column; gap: 14px; transition: border-color 0.25s ease, box-shadow 0.25s ease;
+            background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-card);
+            padding: 18px 20px; display: flex; flex-direction: column; gap: 16px; transition: border-color 0.2s ease;
         }
 
-        /* Sci-Fi Corner Brackets */
-        .card::before {
-            content: ''; position: absolute; top: -1px; left: -1px; width: 10px; height: 10px;
-            border-top: 2px solid var(--text-primary); border-left: 2px solid var(--text-primary); border-top-left-radius: 10px;
-        }
-
-        .card::after {
-            content: ''; position: absolute; bottom: -1px; right: -1px; width: 10px; height: 10px;
-            border-bottom: 2px solid var(--text-primary); border-right: 2px solid var(--text-primary); border-bottom-right-radius: 10px;
-        }
-
-        .card:hover {
-            border-color: var(--text-primary); box-shadow: 0 8px 32px var(--card-border-glow);
-        }
+        .card:hover { border-color: var(--border-active); }
 
         .card-header {
             display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px dashed var(--card-border); padding-bottom: 8px; font-weight: 700;
-            font-size: 0.95rem; color: var(--text-white); letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border-subtle); padding-bottom: 10px; font-weight: 600;
+            font-size: 0.95rem; color: var(--text-primary);
         }
 
-        .card-header-icon { color: var(--text-primary); margin-right: 6px; }
+        .card-header-left { display: flex; align-items: center; gap: 8px; }
 
-        /* Metric Rows & Progress Bars */
+        /* System Metrics Progress Gauges */
         .metrics-triple {
-            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
         }
 
-        .metric-row {
-            display: flex; flex-direction: column; gap: 4px; background: var(--input-bg);
-            padding: 10px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.04);
+        .metric-box {
+            background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-control);
+            padding: 10px 12px; display: flex; flex-direction: column; gap: 6px;
         }
 
-        .metric-label-val {
-            display: flex; justify-content: space-between; font-size: 0.78rem;
+        .metric-header {
+            display: flex; justify-content: space-between; align-items: center; font-size: 0.76rem;
         }
 
-        .metric-name { color: var(--text-muted); }
-        .metric-val { color: var(--text-white); font-weight: 700; }
+        .metric-name { color: var(--text-secondary); font-weight: 500; }
+        .metric-badge { font-size: 0.7rem; font-weight: 600; padding: 1px 6px; border-radius: 4px; }
+        .badge-normal { background: var(--success-soft); color: var(--success); }
+        .badge-warn { background: var(--warning-soft); color: var(--warning); }
+        .badge-danger { background: var(--danger-soft); color: var(--danger); }
+
+        .metric-val-num { font-size: 1.1rem; font-weight: 700; color: var(--text-primary); }
 
         .progress-track {
-            height: 8px; background: var(--bar-bg); border-radius: 4px; overflow: hidden;
-            border: 1px solid rgba(255,255,255,0.05); position: relative; margin-top: 2px;
+            height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden; position: relative; margin-top: 2px;
         }
 
         .progress-fill {
-            height: 100%; width: 0%; background: linear-gradient(90deg, var(--text-primary), var(--accent-green));
-            border-radius: 4px; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 0 10px var(--text-primary);
+            height: 100%; width: 0%; background: var(--accent); border-radius: 3px;
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .progress-fill.warn { background: linear-gradient(90deg, var(--accent-yellow), #ffaa00); box-shadow: 0 0 10px var(--accent-yellow); }
-        .progress-fill.danger { background: linear-gradient(90deg, var(--accent-red), #ff0033); box-shadow: 0 0 10px var(--accent-red); }
+        .progress-fill.warn { background: var(--warning); }
+        .progress-fill.danger { background: var(--danger); }
 
-        /* High-Density Info Matrix (Packed 4 Columns) */
-        .info-grid-matrix {
-            display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; font-size: 0.78rem;
+        /* System Info Definition List */
+        .info-list-matrix {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px 16px; font-size: 0.8rem;
         }
 
-        .info-item {
-            display: flex; flex-direction: column; gap: 2px; background: var(--input-bg);
-            padding: 7px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.03);
-            transition: border-color 0.15s ease;
+        .info-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 6px 8px; border-radius: 4px; transition: background 0.15s ease;
         }
 
-        .info-item:hover { border-color: var(--card-border); }
-        .info-item.double-width { grid-column: span 2; }
-        .info-item.full-width { grid-column: span 4; }
-        .info-key { color: var(--text-muted); font-size: 0.72rem; font-weight: 600; }
-        .info-value { color: var(--text-white); font-weight: 700; word-break: break-all; }
+        .info-row:hover { background: var(--bg-hover); }
+        .info-row.full-span { grid-column: span 2; }
+        .info-key { color: var(--text-secondary); font-size: 0.76rem; }
+        .info-val { color: var(--text-primary); font-weight: 600; text-align: right; word-break: break-all; }
 
-        /* Latency Ping Monitor with Digital LED Dot Matrix */
-        .ping-grid {
-            display: flex; flex-direction: column; gap: 10px;
-        }
+        /* TCP Ping Latency Monitor Panel */
+        .ping-grid { display: flex; flex-direction: column; gap: 10px; }
 
         .ping-item {
-            display: flex; flex-direction: column; gap: 6px; background: var(--input-bg);
-            padding: 10px 12px; border-radius: 6px; border: 1px solid var(--card-border);
+            background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-control);
+            padding: 10px 12px; display: flex; flex-direction: column; gap: 6px;
         }
 
-        .ping-header {
+        .ping-item-header {
             display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem;
         }
 
-        .ping-title { color: var(--text-white); font-weight: 600; display: flex; align-items: center; gap: 6px; }
-        .ping-value-group { display: flex; align-items: center; gap: 8px; }
-        .ping-value { font-weight: 700; font-size: 0.85rem; }
-        .ping-trend-badge {
-            font-size: 0.7rem; padding: 1px 6px; border-radius: 4px; font-weight: 600; font-family: var(--font-mono);
-            background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.05);
-        }
-        .ping-trend-badge.trend-down { color: var(--accent-green); background: rgba(0,255,102,0.12); border-color: rgba(0,255,102,0.25); }
-        .ping-trend-badge.trend-up { color: var(--accent-red); background: rgba(255,51,102,0.12); border-color: rgba(255,51,102,0.25); }
+        .ping-title { font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 6px; }
+        .ping-meta { font-size: 0.72rem; color: var(--text-tertiary); display: flex; gap: 10px; }
+        .ping-value { font-weight: 700; font-size: 0.9rem; }
 
-        /* Pixel Art Latency Bar Chart */
         .pixel-bar-container {
-            display: flex; align-items: flex-end; gap: 2px; height: 38px; margin-top: 2px;
-            padding: 3px 6px; background: rgba(0,0,0,0.6); border-radius: 4px;
-            border: 1px solid var(--card-border); overflow: hidden; position: relative;
+            display: flex; align-items: flex-end; gap: 2px; height: 34px;
+            padding: 2px 4px; background: rgba(0,0,0,0.3); border-radius: 4px;
+            border: 1px solid var(--border-subtle); overflow: hidden; position: relative;
         }
 
         .pixel-bar-container::before {
-            content: ''; position: absolute; left: 6px; right: 6px; bottom: 22px;
+            content: ''; position: absolute; left: 4px; right: 4px; bottom: 18px;
             border-top: 1px dashed rgba(255,255,255,0.06);
         }
 
         .pixel-bar {
             flex: 1; min-width: 4px; max-width: 8px; border-radius: 1px 1px 0 0;
-            transition: height 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
-            image-rendering: pixelated;
+            transition: height 0.2s ease, background 0.2s ease;
         }
 
-        .pixel-bar.px-green {
-            background: var(--accent-green);
-            box-shadow: 0 0 4px var(--accent-green);
-        }
+        .pixel-bar.px-green { background: var(--success); }
+        .pixel-bar.px-yellow { background: var(--warning); }
+        .pixel-bar.px-red { background: var(--danger); }
+        .pixel-bar.px-timeout { background: var(--danger); min-height: 2px; }
+        .pixel-bar.px-empty { background: rgba(255,255,255,0.03); min-height: 2px; }
 
-        .pixel-bar.px-yellow {
-            background: var(--accent-yellow);
-            box-shadow: 0 0 4px var(--accent-yellow);
-        }
-
-        .pixel-bar.px-red {
-            background: var(--accent-red);
-            box-shadow: 0 0 4px var(--accent-red);
-        }
-
-        .pixel-bar.px-timeout { background: #ff0033; min-height: 3px; box-shadow: 0 0 4px #ff0033; }
-        .pixel-bar.px-empty { background: rgba(255,255,255,0.04); min-height: 2px; }
-
-        .timeline-ticks {
-            display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--text-muted);
-            margin-top: 1px; padding: 0 4px; font-family: var(--font-mono); opacity: 0.7;
-        }
-
-        .ping-legend {
-            display: flex; gap: 10px; justify-content: flex-end; font-size: 0.72rem;
-        }
-
-        /* IP Quality Check HUD Card */
+        /* IP Quality Check & Risk HUD Panel */
         .ipcheck-card {
-            position: relative; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px;
-            padding: 16px 20px; backdrop-filter: blur(16px); box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-            display: flex; flex-direction: column; gap: 12px; transition: border-color 0.25s ease;
+            background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-card);
+            padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; transition: border-color 0.2s ease;
         }
 
-        .ipcheck-card::before {
-            content: ''; position: absolute; top: -1px; left: -1px; width: 10px; height: 10px;
-            border-top: 2px solid var(--text-primary); border-left: 2px solid var(--text-primary); border-top-left-radius: 10px;
-        }
+        .ipcheck-card:hover { border-color: var(--border-active); }
 
-        .ipcheck-card::after {
-            content: ''; position: absolute; bottom: -1px; right: -1px; width: 10px; height: 10px;
-            border-bottom: 2px solid var(--text-primary); border-right: 2px solid var(--text-primary); border-bottom-right-radius: 10px;
-        }
-
-        .ipcheck-header {
-            display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px dashed var(--card-border); padding-bottom: 8px;
-        }
-        .ipcheck-header-left { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.95rem; color: var(--text-white); }
-        .ipcheck-btn {
-            background: var(--text-primary); color: #000; border: none; padding: 5px 14px;
-            border-radius: 6px; font-weight: 700; font-family: var(--font-mono); font-size: 0.78rem;
-            cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 6px;
-        }
-        .ipcheck-btn:hover { opacity: 0.88; transform: translateY(-1px); }
-        .ipcheck-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-        .ipcheck-btn .spinner {
-            width: 12px; height: 12px; border: 2px solid rgba(0,0,0,0.3); border-top-color: #000;
-            border-radius: 50%; animation: spin 0.6s linear infinite; display: none;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        .ipcheck-body { display: flex; flex-direction: column; gap: 12px; }
-
-        /* Compact Three-column info row */
         .ipcheck-info-row {
-            display: grid; grid-template-columns: 1fr 1fr 1.1fr; gap: 12px;
+            display: grid; grid-template-columns: 1fr 1fr 1.15fr; gap: 14px;
         }
+
         .ipcheck-section {
-            background: var(--input-bg); border: 1px solid var(--card-border); border-radius: 6px;
-            padding: 10px 12px; display: flex; flex-direction: column; gap: 4px;
+            background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-control);
+            padding: 12px 14px; display: flex; flex-direction: column; gap: 6px;
         }
+
         .ipcheck-section-title {
-            font-size: 0.78rem; font-weight: 700; color: var(--text-primary);
-            border-bottom: 1px dashed rgba(255,255,255,0.08); padding-bottom: 4px; margin-bottom: 4px;
+            font-size: 0.78rem; font-weight: 600; color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-subtle); padding-bottom: 6px; margin-bottom: 2px;
             display: flex; align-items: center; gap: 6px;
         }
+
         .ipcheck-row {
             display: flex; justify-content: space-between; align-items: center;
-            font-size: 0.75rem; padding: 2px 0;
+            font-size: 0.76rem; padding: 2px 0;
         }
-        .ipcheck-label { color: var(--text-muted); }
-        .ipcheck-val { color: var(--text-white); font-weight: 600; text-align: right; max-width: 65%; word-break: break-all; }
 
-        /* Compact Risk score bar */
-        .risk-bar-track {
-            height: 7px; background: var(--bar-bg); border-radius: 4px; overflow: hidden;
-            border: 1px solid rgba(255,255,255,0.05); position: relative; margin-top: 2px;
-        }
-        .risk-bar-fill {
-            height: 100%; width: 0%; border-radius: 4px; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .risk-bar-fill.risk-vlow { background: linear-gradient(90deg, #00ff66, #00cc55); box-shadow: 0 0 8px rgba(0,255,102,0.5); }
-        .risk-bar-fill.risk-low { background: linear-gradient(90deg, #00ff66, #66ff99); box-shadow: 0 0 8px rgba(0,255,102,0.4); }
-        .risk-bar-fill.risk-med { background: linear-gradient(90deg, #ffcc00, #ffaa00); box-shadow: 0 0 8px rgba(255,204,0,0.5); }
-        .risk-bar-fill.risk-high { background: linear-gradient(90deg, #ff6633, #ff3366); box-shadow: 0 0 8px rgba(255,51,102,0.5); }
-        .risk-bar-fill.risk-vhigh { background: linear-gradient(90deg, #ff0033, #cc0022); box-shadow: 0 0 8px rgba(255,0,51,0.6); }
+        .ipcheck-label { color: var(--text-secondary); }
+        .ipcheck-val { color: var(--text-primary); font-weight: 600; text-align: right; max-width: 65%; word-break: break-all; }
 
-        /* IP Type Badge */
-        .ip-type-badge {
+        /* Risk Score Meter & Segmented Bar */
+        .risk-score-display {
+            display: flex; justify-content: space-between; align-items: baseline; margin-top: 2px;
+        }
+        .risk-score-num { font-size: 1.4rem; font-weight: 700; font-family: var(--font-mono); }
+
+        .risk-bar-segmented {
+            display: flex; gap: 3px; height: 7px; border-radius: 4px; overflow: hidden; margin-top: 4px;
+        }
+
+        .risk-segment { flex: 1; height: 100%; background: rgba(255,255,255,0.06); transition: background 0.3s ease; }
+        .risk-segment.active-green { background: var(--success); }
+        .risk-segment.active-yellow { background: var(--warning); }
+        .risk-segment.active-orange { background: #f58442; }
+        .risk-segment.active-red { background: var(--danger); }
+
+        .risk-breakdown-list {
+            display: flex; flex-direction: column; gap: 2px; font-size: 0.7rem; color: var(--text-tertiary); margin-top: 4px;
+        }
+        .risk-item { display: flex; justify-content: space-between; }
+
+        /* Tag Badges */
+        .badge-tag {
             display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 4px;
-            font-size: 0.72rem; font-weight: 700; letter-spacing: 0.3px;
+            font-size: 0.72rem; font-weight: 600; font-family: var(--font-ui);
         }
-        .ip-type-isp { background: rgba(0,255,102,0.15); color: var(--accent-green); border: 1px solid var(--accent-green); }
-        .ip-type-hosting { background: rgba(255,51,102,0.15); color: var(--accent-red); border: 1px solid var(--accent-red); }
-        .ip-type-business { background: rgba(255,204,0,0.15); color: var(--accent-yellow); border: 1px solid var(--accent-yellow); }
-        .ip-type-mobile { background: rgba(0,204,255,0.15); color: var(--accent-blue); border: 1px solid var(--accent-blue); }
-        .ip-type-proxy { background: rgba(255,51,102,0.15); color: var(--accent-red); border: 1px solid var(--accent-red); }
-        .ip-type-vpn { background: rgba(255,204,0,0.15); color: var(--accent-yellow); border: 1px solid var(--accent-yellow); }
-        .ip-type-tor { background: rgba(255,0,51,0.2); color: #ff4466; border: 1px solid #ff4466; }
+        .badge-tag-yes { background: var(--warning-soft); color: var(--warning); border: 1px solid rgba(245, 185, 66, 0.3); }
+        .badge-tag-no { background: var(--success-soft); color: var(--success); border: 1px solid rgba(54, 226, 123, 0.3); }
+        .badge-tag-high { background: var(--danger-soft); color: var(--danger); border: 1px solid rgba(243, 91, 114, 0.3); }
 
-        /* Risk factor badges */
-        .factor-yes { color: var(--accent-red); font-weight: 700; }
-        .factor-no { color: var(--accent-green); font-weight: 700; }
+        /* Unlock Grid & Filter Tabs */
+        .unlock-header-right { display: flex; align-items: center; gap: 10px; }
 
-        /* Compact Media/AI unlock grid (chips layout) */
-        .unlock-section-title {
-            font-size: 0.78rem; font-weight: 700; color: var(--text-primary);
-            border-bottom: 1px dashed rgba(255,255,255,0.08); padding-bottom: 4px;
-            display: flex; align-items: center; gap: 6px; margin-top: 2px;
+        .filter-tabs { display: flex; gap: 4px; background: var(--bg-input); padding: 3px; border-radius: var(--radius-control); border: 1px solid var(--border-subtle); }
+
+        .tab-btn {
+            background: transparent; border: none; color: var(--text-secondary); padding: 3px 10px;
+            border-radius: 4px; font-size: 0.74rem; font-weight: 500; cursor: pointer; transition: all 0.15s ease;
         }
+
+        .tab-btn:hover { color: var(--text-primary); }
+        .tab-btn.active { background: var(--bg-surface-elevated); color: var(--accent); font-weight: 600; }
+
         .unlock-grid {
             display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 4px;
         }
+
         .unlock-tile {
-            background: var(--input-bg); border: 1px solid var(--card-border); border-radius: 6px;
-            padding: 7px 12px; display: flex; align-items: center; justify-content: space-between; gap: 6px;
-            transition: all 0.2s ease; font-size: 0.76rem;
+            background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-control);
+            padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+            transition: border-color 0.2s ease, background 0.2s ease; font-size: 0.76rem;
         }
-        .unlock-tile:hover { border-color: var(--text-primary); box-shadow: 0 0 10px var(--card-border-glow); }
-        .unlock-tile-left { display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--text-white); }
+
+        .unlock-tile:hover { border-color: var(--border-default); background: var(--bg-hover); }
+        .unlock-tile-left { display: flex; align-items: center; gap: 8px; font-weight: 500; color: var(--text-primary); }
         .unlock-tile-icon { font-size: 1rem; display: inline-flex; align-items: center; }
-        .unlock-tile-name { color: var(--text-white); font-weight: 600; white-space: nowrap; }
-        .unlock-tile-status {
+
+        .unlock-badge {
             display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px; border-radius: 4px;
-            font-size: 0.7rem; font-weight: 700; white-space: nowrap;
+            font-size: 0.7rem; font-weight: 600; white-space: nowrap;
         }
-        .unlock-yes { background: rgba(0,255,102,0.15); color: var(--accent-green); border: 1px solid rgba(0,255,102,0.3); }
-        .unlock-no { background: rgba(255,51,102,0.15); color: var(--accent-red); border: 1px solid rgba(255,51,102,0.3); }
-        .unlock-fail { background: rgba(255,204,0,0.1); color: var(--accent-yellow); border: 1px solid rgba(255,204,0,0.2); }
 
-        /* Unified Terminal Console Hub */
+        .unlock-badge.unlocked { background: var(--success-soft); color: var(--success); border: 1px solid rgba(54, 226, 123, 0.3); }
+        .unlock-badge.blocked { background: var(--danger-soft); color: var(--danger); border: 1px solid rgba(243, 91, 114, 0.3); }
+        .unlock-badge.unknown { background: var(--warning-soft); color: var(--warning); border: 1px solid rgba(245, 185, 66, 0.3); }
+
+        /* Tier 3: Resizable Interactive Terminal Console */
         .terminal-card {
-            position: relative; background: var(--terminal-bg); border: 1px solid var(--card-border); border-radius: 10px;
-            padding: 0; overflow: hidden; box-shadow: 0 12px 40px rgba(0,0,0,0.7);
-            display: flex; flex-direction: column; height: 420px;
+            background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-card);
+            padding: 0; overflow: hidden; display: flex; flex-direction: column;
+            height: 280px; min-height: 200px; max-height: 600px; transition: height 0.2s ease;
         }
 
-        .terminal-card::before {
-            content: ''; position: absolute; top: -1px; left: -1px; width: 10px; height: 10px;
-            border-top: 2px solid var(--text-primary); border-left: 2px solid var(--text-primary); border-top-left-radius: 10px;
-        }
+        .terminal-card.expanded { height: 480px; }
 
         .terminal-header {
-            background: rgba(255,255,255,0.03); border-bottom: 1px solid var(--card-border);
-            padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+            background: var(--bg-surface-elevated); border-bottom: 1px solid var(--border-subtle);
+            padding: 8px 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
         }
 
-        .terminal-buttons { display: flex; gap: 6px; }
+        .terminal-header-left { display: flex; align-items: center; gap: 12px; }
+        .terminal-dots { display: flex; gap: 6px; }
         .win-dot { width: 10px; height: 10px; border-radius: 50%; }
         .win-red { background: #ff5f56; }
         .win-yellow { background: #ffbd2e; }
         .win-green { background: #27c93f; }
 
-        .terminal-lookup-bar {
-            display: flex; align-items: center; gap: 8px; flex: 1; max-width: 420px; margin: 0 10px;
-        }
+        .terminal-lookup-bar { display: flex; align-items: center; gap: 6px; flex: 1; max-width: 380px; }
 
         .lookup-input-inline {
-            flex: 1; background: var(--input-bg); border: 1px solid var(--card-border); color: var(--text-white);
-            padding: 4px 10px; border-radius: 6px; font-family: var(--font-mono); font-size: 0.78rem; outline: none;
+            flex: 1; background: var(--bg-input); border: 1px solid var(--border-subtle); color: var(--text-primary);
+            padding: 4px 10px; border-radius: var(--radius-control); font-family: var(--font-mono); font-size: 0.78rem; outline: none;
         }
 
+        .lookup-input-inline:focus { border-color: var(--border-active); }
+
         .lookup-btn-inline {
-            background: var(--text-primary); color: #000; border: none; padding: 4px 10px;
-            border-radius: 6px; font-weight: 700; font-family: var(--font-mono); font-size: 0.75rem; cursor: pointer;
-            white-space: nowrap; transition: opacity 0.2s ease;
+            background: var(--accent); color: #000; border: none; padding: 4px 10px;
+            border-radius: var(--radius-control); font-weight: 600; font-family: var(--font-ui); font-size: 0.75rem; cursor: pointer;
+            transition: opacity 0.2s ease;
         }
         .lookup-btn-inline:hover { opacity: 0.88; }
 
-        .terminal-quick-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+        .terminal-actions { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
 
-        .action-chip {
-            background: rgba(255,255,255,0.05); border: 1px solid var(--card-border); color: var(--text-muted);
-            padding: 2px 8px; border-radius: 4px; font-size: 0.72rem; cursor: pointer; transition: all 0.15s ease;
+        .chip-btn {
+            background: transparent; border: 1px solid var(--border-subtle); color: var(--text-secondary);
+            padding: 2px 8px; border-radius: 4px; font-size: 0.72rem; font-family: var(--font-ui); cursor: pointer; transition: all 0.15s ease;
         }
 
-        .action-chip:hover { color: var(--text-white); border-color: var(--text-primary); background: rgba(0,255,102,0.12); }
+        .chip-btn:hover { color: var(--text-primary); border-color: var(--border-default); background: var(--bg-hover); }
 
         .terminal-body {
-            flex: 1; padding: 14px 16px; overflow-y: auto; font-size: 0.85rem; line-height: 1.5;
-            display: flex; flex-direction: column; gap: 8px; word-break: break-word;
+            flex: 1; padding: 12px 14px; overflow-y: auto; font-family: var(--font-mono); font-size: 0.82rem; line-height: 1.5;
+            display: flex; flex-direction: column; gap: 6px; word-break: break-word; background: var(--bg-page);
         }
 
-        #cmd_output {
-            white-space: pre-wrap; font-family: var(--font-mono); color: var(--text-white);
-        }
+        #cmd_output { white-space: pre-wrap; color: var(--text-primary); }
 
-        .terminal-input-line {
-            display: flex; align-items: center; gap: 8px; margin-top: 4px;
-        }
-
-        .prompt-text { color: var(--text-primary); font-weight: 700; white-space: nowrap; }
+        .terminal-input-line { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+        .prompt-text { color: var(--info); font-weight: 600; white-space: nowrap; }
 
         .terminal-input {
-            flex: 1; background: transparent; border: none; outline: none; color: var(--text-white);
-            font-family: var(--font-mono); font-size: 0.85rem; caret-color: var(--text-primary);
+            flex: 1; background: transparent; border: none; outline: none; color: var(--text-primary);
+            font-family: var(--font-mono); font-size: 0.82rem; caret-color: var(--accent);
         }
 
         /* Scrollbars */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: var(--bg-color); }
-        ::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--text-primary); }
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: var(--bg-page); }
+        ::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
 
-        @media (max-width: 900px) {
-            body { padding: 10px; }
-            .header-bar { padding: 12px 16px; }
+        @media (max-width: 1100px) {
+            body { padding: 12px; }
+            .summary-grid { grid-template-columns: repeat(2, 1fr); }
             .dashboard-grid { grid-template-columns: 1fr; }
-            .metrics-triple { grid-template-columns: 1fr; }
-            .info-grid-matrix { grid-template-columns: repeat(2, 1fr); }
-            .info-item.double-width, .info-item.full-width { grid-column: span 2; }
             .ipcheck-info-row { grid-template-columns: 1fr; }
             .unlock-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 640px) {
+            .summary-grid { grid-template-columns: 1fr; }
+            .metrics-triple { grid-template-columns: 1fr; }
+            .info-list-matrix { grid-template-columns: 1fr; }
+            .info-row.full-span { grid-column: span 1; }
+            .unlock-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Top Sci-Fi Header Bar -->
+        <!-- Top Navigation Bar -->
         <header class="header-bar">
             <div class="brand-title">
                 <span class="brand-icon">&gt;_</span>
                 <span>NODE SEEKER</span>
-                <span style="font-size:0.75rem; color:var(--text-muted); font-weight:normal">| {{ hostname }}</span>
+                <span class="text-muted" style="font-size:0.78rem; font-weight:normal">| {{ hostname }}</span>
             </div>
-            <div class="hud-status-group">
-                <span class="status-badge"><span class="pulse-dot"></span> TELEMETRY ONLINE</span>
-                <span id="acme_badge" class="status-badge" style="background:rgba(0,204,255,0.12); border-color:var(--accent-blue); color:var(--accent-blue);">🔒 SSL 智能检测中...</span>
+            <div class="header-status-group">
+                <span class="status-pill status-online"><span class="pulse-dot"></span> 系统在线</span>
+                <span id="acme_badge" class="status-pill status-info">🔒 SSL 智能检测中...</span>
+                <span id="sync_badge" class="status-pill">⏱️ 实时同步中</span>
             </div>
             <div class="controls-group">
                 <select id="theme_select" class="select-input">
@@ -873,273 +871,337 @@ TEMPLATE = r"""
                     <option value="1000">⚡ 1s 刷新</option>
                     <option value="2000">⏱️ 2s 刷新</option>
                     <option value="5000">🐢 5s 刷新</option>
-                    <option value="0">⏸️ 暂停刷新</option>
+                    <option value="0">⏸️ 暂停</option>
                 </select>
+                <button class="btn-ctrl" onclick="fetchStats(); fetchPings();">🔄 刷新</button>
+                <button class="btn-ctrl" onclick="toggleFullScreen()">⛶ 全屏</button>
             </div>
         </header>
 
-        <!-- Dashboard Cards Grid (2 Main Columns) -->
+        <!-- Tier 1: Executive Status Summary Bar (4 Cards) -->
+        <div class="summary-grid">
+            <div class="summary-card">
+                <div class="summary-label">
+                    <span>综合网络状态</span>
+                    <span id="sum_net_dot" class="pulse-dot"></span>
+                </div>
+                <div class="summary-value" id="sum_net_status">检测中...</div>
+                <div class="summary-desc" id="sum_net_desc">自动分析中...</div>
+            </div>
+
+            <div class="summary-card">
+                <div class="summary-label">
+                    <span>当前出口 IP</span>
+                    <button class="btn-copy" onclick="copyIP()" title="复制出口 IP">📋 复制</button>
+                </div>
+                <div class="summary-value mono" id="sum_ip_val" style="font-size:1.25rem">-</div>
+                <div class="summary-desc" id="sum_ip_desc">检测网络位置...</div>
+            </div>
+
+            <div class="summary-card">
+                <div class="summary-label">
+                    <span>平均 TCP 延迟</span>
+                    <span style="font-size:0.72rem" class="text-muted">40s 均值</span>
+                </div>
+                <div class="summary-value mono" id="sum_ping_val">- ms</div>
+                <div class="summary-desc" id="sum_ping_desc">边缘节点延迟...</div>
+            </div>
+
+            <div class="summary-card">
+                <div class="summary-label">
+                    <span>IP 风险评分</span>
+                    <span style="font-size:0.72rem" class="text-muted">Scamalytics</span>
+                </div>
+                <div class="summary-value mono" id="sum_risk_val">- / 100</div>
+                <div class="summary-desc" id="sum_risk_desc">欺诈风险体检中...</div>
+            </div>
+        </div>
+
+        <!-- Tier 2: Dashboard Cards Grid (2 Main Columns) -->
         <div class="dashboard-grid">
-            <!-- Left Super Panel: System & Network Telemetry -->
+            <!-- Left Column: System Telemetry & Network Panel -->
             <div class="card">
                 <div class="card-header">
-                    <span><span class="card-header-icon">🖥️</span> 系统资源 &amp; 节点网络</span>
-                    <span id="load_val" style="font-size:0.75rem; color:var(--text-muted)">Load: -</span>
+                    <div class="card-header-left">
+                        <span>🖥️</span>
+                        <span>系统资源与节点网络</span>
+                    </div>
+                    <span id="load_val" class="mono text-muted" style="font-size:0.76rem">Load: -</span>
                 </div>
 
                 <!-- Triple Progress Gauges -->
                 <div class="metrics-triple">
-                    <div class="metric-row">
-                        <div class="metric-label-val">
+                    <div class="metric-box">
+                        <div class="metric-header">
                             <span class="metric-name">CPU</span>
-                            <span class="metric-val" id="cpu_val">0.0%</span>
+                            <span class="metric-badge badge-normal" id="cpu_badge">正常</span>
                         </div>
+                        <div class="metric-val-num mono" id="cpu_val">0.0%</div>
                         <div class="progress-track">
                             <div class="progress-fill" id="cpu_bar"></div>
                         </div>
                     </div>
 
-                    <div class="metric-row">
-                        <div class="metric-label-val">
+                    <div class="metric-box">
+                        <div class="metric-header">
                             <span class="metric-name">内存</span>
-                            <span class="metric-val" id="memory_val">0.0%</span>
+                            <span class="metric-badge badge-normal" id="memory_badge">正常</span>
                         </div>
+                        <div class="metric-val-num mono" id="memory_val">0.0%</div>
                         <div class="progress-track">
                             <div class="progress-fill" id="memory_bar"></div>
                         </div>
                     </div>
 
-                    <div class="metric-row">
-                        <div class="metric-label-val">
+                    <div class="metric-box">
+                        <div class="metric-header">
                             <span class="metric-name">磁盘</span>
-                            <span class="metric-val" id="disk_val">0.0%</span>
+                            <span class="metric-badge badge-normal" id="disk_badge">正常</span>
                         </div>
+                        <div class="metric-val-num mono" id="disk_val">0.0%</div>
                         <div class="progress-track">
                             <div class="progress-fill" id="disk_bar"></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- High-Density Telemetry Matrix (4 Columns) -->
-                <div class="info-grid-matrix">
-                    <div class="info-item double-width">
-                        <span class="info-key">网络速率 (上传/下载)</span>
-                        <span class="info-value" id="net_io" style="color:var(--accent-green)">-</span>
+                <!-- System Info Definition List -->
+                <div class="info-list-matrix">
+                    <div class="info-row">
+                        <span class="info-key">网络速率 (上/下)</span>
+                        <span class="info-val mono text-success" id="net_io">-</span>
                     </div>
-                    <div class="info-item double-width">
-                        <span class="info-key">服务器 IP (内网/公网)</span>
-                        <span class="info-value" id="ip_val">-</span>
+                    <div class="info-row">
+                        <span class="info-key">服务器内/公 IP</span>
+                        <span class="info-val mono" id="ip_val">-</span>
                     </div>
 
-                    <div class="info-item double-width">
+                    <div class="info-row">
                         <span class="info-key">客户端 IP &amp; 运营商</span>
-                        <span class="info-value" id="client_ip_val">-</span>
+                        <span class="info-val mono" id="client_ip_val">-</span>
                     </div>
-                    <div class="info-item double-width">
+                    <div class="info-row">
                         <span class="info-key">ACME SSL 证书</span>
-                        <span class="info-value" id="acme_val" style="color:var(--accent-blue)">-</span>
+                        <span class="info-val mono text-info" id="acme_val">-</span>
                     </div>
 
-                    <div class="info-item">
+                    <div class="info-row">
                         <span class="info-key">容器运行时间</span>
-                        <span class="info-value" id="cuptime">-</span>
+                        <span class="info-val mono" id="cuptime">-</span>
                     </div>
-                    <div class="info-item">
+                    <div class="info-row">
                         <span class="info-key">宿主机运行时间</span>
-                        <span class="info-value" id="huptime">-</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-key">CPU 核心</span>
-                        <span class="info-value" id="cpu_cores">-</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-key">系统架构</span>
-                        <span class="info-value" id="arch_val">-</span>
+                        <span class="info-val mono" id="huptime">-</span>
                     </div>
 
-                    <div class="info-item double-width">
+                    <div class="info-row">
+                        <span class="info-key">CPU 核心</span>
+                        <span class="info-val mono" id="cpu_cores">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-key">系统架构</span>
+                        <span class="info-val mono" id="arch_val">-</span>
+                    </div>
+
+                    <div class="info-row">
                         <span class="info-key">磁盘读写 IO</span>
-                        <span class="info-value" id="disk_io">-</span>
+                        <span class="info-val mono" id="disk_io">-</span>
                     </div>
-                    <div class="info-item">
+                    <div class="info-row">
                         <span class="info-key">物理/总内存</span>
-                        <span class="info-value" id="mem_total_val">-</span>
+                        <span class="info-val mono" id="mem_total_val">-</span>
                     </div>
-                    <div class="info-item">
+
+                    <div class="info-row">
                         <span class="info-key">总磁盘容量</span>
-                        <span class="info-value" id="disk_total_val">-</span>
+                        <span class="info-val mono" id="disk_total_val">-</span>
                     </div>
-                    <div class="info-item double-width">
+                    <div class="info-row">
                         <span class="info-key">操作系统内核</span>
-                        <span class="info-value" id="os_val">-</span>
+                        <span class="info-val mono" id="os_val">-</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Right Panel: Latency Matrix -->
+            <!-- Right Column: Edge TCP Ping Latency Monitor -->
             <div class="card">
                 <div class="card-header">
-                    <span><span class="card-header-icon">📡</span> 边缘网络延迟 (TCP Ping)</span>
-                    <div class="ping-legend">
-                        <span style="color:var(--accent-green)">● &lt;80ms</span>
-                        <span style="color:var(--accent-yellow)">● &lt;160ms</span>
-                        <span style="color:var(--accent-red)">● &ge;160ms</span>
+                    <div class="card-header-left">
+                        <span>📡</span>
+                        <span>边缘网络延迟 (TCP Ping)</span>
+                    </div>
+                    <div style="font-size:0.72rem; display:flex; gap:8px" class="mono text-muted">
+                        <span class="text-success">● &lt;80ms</span>
+                        <span class="text-warning">● &lt;160ms</span>
+                        <span class="text-danger">● &ge;160ms</span>
                     </div>
                 </div>
 
                 <div class="ping-grid">
                     <div class="ping-item" id="client_ping_item">
-                        <div class="ping-header">
-                            <span class="ping-title">📍 本地/Client 延迟</span>
-                            <div class="ping-value-group">
-                                <span class="ping-trend-badge" id="client_ping_trend">~ 稳定</span>
-                                <span class="ping-value" id="client_ping_val">-</span>
-                            </div>
+                        <div class="ping-item-header">
+                            <span class="ping-title">📍 本地 Client 延迟</span>
+                            <div class="ping-value mono" id="client_ping_val">-</div>
+                        </div>
+                        <div class="ping-meta mono">
+                            <span id="client_ping_stat">均值: - | 抖动: -</span>
+                            <span id="client_ping_trend" class="text-muted">~ 稳定</span>
                         </div>
                         <div class="pixel-bar-container" id="client_ping_bars"></div>
-                        <div class="timeline-ticks"><span>-40s ⏳</span><span>-20s</span><span>现在 📍</span></div>
                     </div>
 
                     <div class="ping-item">
-                        <div class="ping-header">
+                        <div class="ping-item-header">
                             <span class="ping-title">🟢 浙江联通 Ping</span>
-                            <div class="ping-value-group">
-                                <span class="ping-trend-badge" id="ping_cu_trend">~ 稳定</span>
-                                <span class="ping-value" id="ping_cu_val">-</span>
-                            </div>
+                            <div class="ping-value mono" id="ping_cu_val">-</div>
+                        </div>
+                        <div class="ping-meta mono">
+                            <span id="ping_cu_stat">均值: - | 抖动: -</span>
+                            <span id="ping_cu_trend" class="text-muted">~ 稳定</span>
                         </div>
                         <div class="pixel-bar-container" id="ping_cu_bars"></div>
-                        <div class="timeline-ticks"><span>-40s ⏳</span><span>-20s</span><span>现在 📍</span></div>
                     </div>
 
                     <div class="ping-item">
-                        <div class="ping-header">
+                        <div class="ping-item-header">
                             <span class="ping-title">🔵 浙江移动 Ping</span>
-                            <div class="ping-value-group">
-                                <span class="ping-trend-badge" id="ping_cm_trend">~ 稳定</span>
-                                <span class="ping-value" id="ping_cm_val">-</span>
-                            </div>
+                            <div class="ping-value mono" id="ping_cm_val">-</div>
+                        </div>
+                        <div class="ping-meta mono">
+                            <span id="ping_cm_stat">均值: - | 抖动: -</span>
+                            <span id="ping_cm_trend" class="text-muted">~ 稳定</span>
                         </div>
                         <div class="pixel-bar-container" id="ping_cm_bars"></div>
-                        <div class="timeline-ticks"><span>-40s ⏳</span><span>-20s</span><span>现在 📍</span></div>
                     </div>
 
                     <div class="ping-item">
-                        <div class="ping-header">
+                        <div class="ping-item-header">
                             <span class="ping-title">🟡 浙江电信 Ping</span>
-                            <div class="ping-value-group">
-                                <span class="ping-trend-badge" id="ping_ct_trend">~ 稳定</span>
-                                <span class="ping-value" id="ping_ct_val">-</span>
-                            </div>
+                            <div class="ping-value mono" id="ping_ct_val">-</div>
+                        </div>
+                        <div class="ping-meta mono">
+                            <span id="ping_ct_stat">均值: - | 抖动: -</span>
+                            <span id="ping_ct_trend" class="text-muted">~ 稳定</span>
                         </div>
                         <div class="pixel-bar-container" id="ping_ct_bars"></div>
-                        <div class="timeline-ticks"><span>-40s ⏳</span><span>-20s</span><span>现在 📍</span></div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- IP Quality Check & Unlock Detection HUD -->
+        <!-- Tier 2: IP Quality Check & Risk HUD Panel -->
         <div class="ipcheck-card" id="ipcheck_card">
-            <div class="ipcheck-header">
-                <div class="ipcheck-header-left">
-                    <span class="card-header-icon">📊</span>
-                    <span>IP 质量体检 &amp; 流媒体 AI 解锁检测</span>
+            <div class="card-header">
+                <div class="card-header-left">
+                    <span>📊</span>
+                    <span>IP 质量体检与欺诈风控</span>
                 </div>
-                <button class="ipcheck-btn" id="ipcheck_btn" onclick="fetchIPCheck(true)">
-                    <span class="spinner" id="ipcheck_spinner"></span>
-                    <span id="ipcheck_btn_text">重新体检</span>
-                </button>
+                <span class="text-muted mono" style="font-size:0.75rem" id="ipc_time">更新时间: -</span>
             </div>
 
-            <div class="ipcheck-body" id="ipcheck_body">
-                <!-- Three columns: Basic Info / IP Type / Risk Score -->
-                <div class="ipcheck-info-row">
-                    <!-- Basic Info -->
-                    <div class="ipcheck-section">
-                        <div class="ipcheck-section-title">🌍 基础网络信息</div>
-                        <div class="ipcheck-row"><span class="ipcheck-label">IP 地址</span><span class="ipcheck-val" id="ipc_ip">-</span></div>
-                        <div class="ipcheck-row"><span class="ipcheck-label">ASN 编号</span><span class="ipcheck-val" id="ipc_asn">-</span></div>
-                        <div class="ipcheck-row"><span class="ipcheck-label">所属组织</span><span class="ipcheck-val" id="ipc_org">-</span></div>
-                        <div class="ipcheck-row"><span class="ipcheck-label">ISP 运营商</span><span class="ipcheck-val" id="ipc_isp">-</span></div>
-                        <div class="ipcheck-row"><span class="ipcheck-label">国家/地区</span><span class="ipcheck-val" id="ipc_country">-</span></div>
-                        <div class="ipcheck-row"><span class="ipcheck-label">城市</span><span class="ipcheck-val" id="ipc_city">-</span></div>
-                        <div class="ipcheck-row"><span class="ipcheck-label">时区</span><span class="ipcheck-val" id="ipc_tz">-</span></div>
-                    </div>
-
-                    <!-- IP Type -->
-                    <div class="ipcheck-section">
-                        <div class="ipcheck-section-title">🏷️ IP 属性 &amp; 风险标记</div>
-                        <div class="ipcheck-row"><span class="ipcheck-label">IP 类型</span><span class="ipcheck-val" id="ipc_type">-</span></div>
-                        <div class="ipcheck-row"><span class="ipcheck-label">代理 Proxy</span><span class="ipcheck-val" id="ipc_proxy">-</span></div>
-                        <div class="ipcheck-row"><span class="ipcheck-label">VPN 节点</span><span class="ipcheck-val" id="ipc_vpn">-</span></div>
-                        <div class="ipcheck-row"><span class="ipcheck-label">Tor 节点</span><span class="ipcheck-val" id="ipc_tor">-</span></div>
-                        <div class="ipcheck-row"><span class="ipcheck-label">IDC 机房</span><span class="ipcheck-val" id="ipc_hosting">-</span></div>
-                        <div class="ipcheck-row"><span class="ipcheck-label">蜂窝移动</span><span class="ipcheck-val" id="ipc_mobile">-</span></div>
-                    </div>
-
-                    <!-- Risk Score -->
-                    <div class="ipcheck-section">
-                        <div class="ipcheck-section-title">⚠️ 欺诈风险风控评分</div>
-                        <div class="ipcheck-row">
-                            <span class="ipcheck-label">风控得分</span>
-                            <span class="ipcheck-val" id="ipc_risk_score" style="font-size:1.1rem">-</span>
-                        </div>
-                        <div class="risk-bar-track">
-                            <div class="risk-bar-fill" id="ipc_risk_bar"></div>
-                        </div>
-                        <div class="ipcheck-row">
-                            <span class="ipcheck-label">风险等级</span>
-                            <span class="ipcheck-val" id="ipc_risk_label">-</span>
-                        </div>
-                        <div style="margin-top:4px; font-size:0.65rem; color:var(--text-muted); text-align:center;">
-                            <span style="color:var(--accent-green)">■ 极低</span>&nbsp;
-                            <span style="color:var(--accent-green)">■ 低</span>&nbsp;
-                            <span style="color:var(--accent-yellow)">■ 中等</span>&nbsp;
-                            <span style="color:var(--accent-red)">■ 高</span>&nbsp;
-                            <span style="color:#ff0033">■ 极高</span>
-                        </div>
-                        <div class="ipcheck-row" style="margin-top:2px">
-                            <span class="ipcheck-label">更新时间</span>
-                            <span class="ipcheck-val" id="ipc_time" style="font-size:0.68rem">-</span>
-                        </div>
-                    </div>
+            <div class="ipcheck-info-row">
+                <!-- Column 1: Basic Info -->
+                <div class="ipcheck-section">
+                    <div class="ipcheck-section-title">🌍 基础网络信息</div>
+                    <div class="ipcheck-row"><span class="ipcheck-label">IP 地址</span><span class="ipcheck-val mono" id="ipc_ip">-</span></div>
+                    <div class="ipcheck-row"><span class="ipcheck-label">ASN 编号</span><span class="ipcheck-val mono" id="ipc_asn">-</span></div>
+                    <div class="ipcheck-row"><span class="ipcheck-label">所属组织</span><span class="ipcheck-val" id="ipc_org">-</span></div>
+                    <div class="ipcheck-row"><span class="ipcheck-label">ISP 运营商</span><span class="ipcheck-val" id="ipc_isp">-</span></div>
+                    <div class="ipcheck-row"><span class="ipcheck-label">国家/地区</span><span class="ipcheck-val" id="ipc_country">-</span></div>
+                    <div class="ipcheck-row"><span class="ipcheck-label">城市</span><span class="ipcheck-val" id="ipc_city">-</span></div>
+                    <div class="ipcheck-row"><span class="ipcheck-label">时区</span><span class="ipcheck-val mono" id="ipc_tz">-</span></div>
                 </div>
 
-                <!-- Media & AI Unlock Detection -->
-                <div class="unlock-section-title">🎬 流媒体 &amp; AI 服务解锁检测</div>
-                <div class="unlock-grid" id="unlock_grid">
-                    <!-- Tiles populated by JS -->
+                <!-- Column 2: IP Attributes -->
+                <div class="ipcheck-section">
+                    <div class="ipcheck-section-title">🏷️ IP 属性与风控标记</div>
+                    <div class="ipcheck-row"><span class="ipcheck-label">IP 类型</span><span class="ipcheck-val" id="ipc_type">-</span></div>
+                    <div class="ipcheck-row"><span class="ipcheck-label">代理 Proxy</span><span class="ipcheck-val" id="ipc_proxy">-</span></div>
+                    <div class="ipcheck-row"><span class="ipcheck-label">VPN 节点</span><span class="ipcheck-val" id="ipc_vpn">-</span></div>
+                    <div class="ipcheck-row"><span class="ipcheck-label">Tor 节点</span><span class="ipcheck-val" id="ipc_tor">-</span></div>
+                    <div class="ipcheck-row"><span class="ipcheck-label">IDC 机房</span><span class="ipcheck-val" id="ipc_hosting">-</span></div>
+                    <div class="ipcheck-row"><span class="ipcheck-label">蜂窝移动</span><span class="ipcheck-val" id="ipc_mobile">-</span></div>
+                </div>
+
+                <!-- Column 3: Risk Score Breakdown -->
+                <div class="ipcheck-section">
+                    <div class="ipcheck-section-title">⚠️ 欺诈风险评分</div>
+                    <div class="risk-score-display">
+                        <span class="risk-score-num" id="ipc_risk_score">-</span>
+                        <span class="badge-tag" id="ipc_risk_label">待体检</span>
+                    </div>
+
+                    <!-- 4 Segmented Score Ribbon -->
+                    <div class="risk-bar-segmented">
+                        <div class="risk-segment" id="rseg_1"></div>
+                        <div class="risk-segment" id="rseg_2"></div>
+                        <div class="risk-segment" id="rseg_3"></div>
+                        <div class="risk-segment" id="rseg_4"></div>
+                    </div>
+
+                    <div class="risk-breakdown-list" id="risk_breakdown">
+                        <div class="risk-item"><span>数据来源:</span><span>Scamalytics API</span></div>
+                        <div class="risk-item"><span>风险构成:</span><span id="risk_factors_desc">规则判定中...</span></div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Terminal Console Section with Inline Diagnostic Bar -->
+        <!-- Tier 2: Streaming & AI Unlock Grid with Filtering Tabs -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-header-left">
+                    <span>🎬</span>
+                    <span>流媒体 &amp; AI 服务解锁检测</span>
+                </div>
+                <div class="unlock-header-right">
+                    <div class="filter-tabs">
+                        <button class="tab-btn active" onclick="filterUnlockTiles('all', this)">全部</button>
+                        <button class="tab-btn" onclick="filterUnlockTiles('unlocked', this)">已解锁</button>
+                        <button class="tab-btn" onclick="filterUnlockTiles('blocked', this)">未解锁</button>
+                        <button class="tab-btn" onclick="filterUnlockTiles('unknown', this)">异常</button>
+                    </div>
+                    <button class="btn-ctrl" id="ipcheck_btn" onclick="fetchIPCheck(true)" style="background:var(--accent); color:#000; font-weight:600">
+                        <span id="ipcheck_spinner" style="display:none">🔄</span>
+                        <span id="ipcheck_btn_text">重新体检</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="unlock-grid" id="unlock_grid">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <!-- Tier 3: Resizable Interactive Diagnostic Terminal Console -->
         <div class="terminal-card" id="terminal_box">
             <div class="terminal-header">
-                <div class="terminal-buttons">
-                    <div class="win-dot win-red"></div>
-                    <div class="win-dot win-yellow"></div>
-                    <div class="win-dot win-green"></div>
+                <div class="terminal-header-left">
+                    <div class="terminal-dots">
+                        <div class="win-dot win-red"></div>
+                        <div class="win-dot win-yellow"></div>
+                        <div class="win-dot win-green"></div>
+                    </div>
+                    <span style="font-size:0.8rem; font-weight:600; color:var(--text-secondary)">Diagnostic Console</span>
                 </div>
 
-                <!-- Inline Quick Lookup Tool -->
+                <!-- Inline Quick Diagnostic Input -->
                 <div class="terminal-lookup-bar">
-                    <input type="text" id="lookup_input" class="lookup-input-inline" placeholder="🔍 快速诊断域名/IP (如 github.com 或 8.8.8.8)..." />
+                    <input type="text" id="lookup_input" class="lookup-input-inline" placeholder="输入域名或 IP (如 github.com)..." />
                     <button id="lookup_btn" class="lookup-btn-inline">诊断</button>
                 </div>
 
-                <div class="terminal-quick-actions">
-                    <span class="action-chip" onclick="quickRun('ipcheck')">IP 质量</span>
-                    <span class="action-chip" onclick="quickRun('acme status')">ACME 状态</span>
-                    <span class="action-chip" onclick="quickRun('acme issue')">申请 IP 证书</span>
-                    <span class="action-chip" onclick="quickRun('ping zj-cu-v4.ip.zstaticcdn.com')">Ping 联通</span>
-                    <span class="action-chip" onclick="quickRun('ping zj-cm-v4.ip.zstaticcdn.com')">Ping 移动</span>
-                    <span class="action-chip" onclick="quickRun('ping zj-ct-v4.ip.zstaticcdn.com')">Ping 电信</span>
-                    <span class="action-chip" onclick="quickRun('mtr 1.1.1.1')">MTR 1.1.1.1</span>
-                    <span class="action-chip" onclick="quickRun('clear')">清屏</span>
+                <div class="terminal-actions">
+                    <button class="chip-btn" onclick="quickRun('ipcheck')">IP 质量</button>
+                    <button class="chip-btn" onclick="quickRun('acme status')">ACME 状态</button>
+                    <button class="chip-btn" onclick="quickRun('acme issue')">申请证书</button>
+                    <button class="chip-btn" onclick="quickRun('ping zj-cu-v4.ip.zstaticcdn.com')">Ping 联通</button>
+                    <button class="chip-btn" onclick="quickRun('mtr 1.1.1.1')">MTR</button>
+                    <button class="chip-btn" onclick="quickRun('clear')">清屏</button>
+                    <button class="chip-btn" onclick="toggleTerminalExpand()" title="展开/收起终端">⤢ 缩放</button>
                 </div>
             </div>
+
             <div class="terminal-body" id="terminal_body">
                 <pre id="cmd_output">System initialized. Type 'help' for available commands.
 Try typing 'acme status' or 'acme issue' or 'ping 8.8.8.8'
@@ -1153,6 +1215,17 @@ Try typing 'acme status' or 'acme issue' or 'ping 8.8.8.8'
     </div>
 
     <script>
+    // Safe DOM Text & HTML Helpers
+    function setElText(id, text) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = (text !== null && text !== undefined) ? text : '-';
+    }
+
+    function setElHTML(id, html) {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = (html !== null && html !== undefined) ? html : '-';
+    }
+
     // Theme switcher
     const themeSelect = document.getElementById('theme_select');
     themeSelect.addEventListener('change', e => {
@@ -1162,6 +1235,35 @@ Try typing 'acme status' or 'acme issue' or 'ping 8.8.8.8'
     const savedTheme = localStorage.getItem('console_theme') || 'matrix';
     themeSelect.value = savedTheme;
     document.documentElement.setAttribute('data-theme', savedTheme);
+
+    // Fullscreen Toggle
+    function toggleFullScreen() {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(()=>{});
+        } else {
+            if (document.exitFullscreen) document.exitFullscreen().catch(()=>{});
+        }
+    }
+
+    // Terminal Expansion Toggle
+    function toggleTerminalExpand() {
+        const box = document.getElementById('terminal_box');
+        box.classList.toggle('expanded');
+    }
+
+    // Copy Egress IP to Clipboard
+    let rawEgressIP = '';
+    function copyIP() {
+        if (!rawEgressIP) return;
+        navigator.clipboard.writeText(rawEgressIP).then(() => {
+            const btn = document.querySelector('.btn-copy');
+            if (btn) {
+                const orig = btn.textContent;
+                btn.textContent = '✅ 已复制';
+                setTimeout(() => btn.textContent = orig, 1800);
+            }
+        }).catch(()=>{});
+    }
 
     // Dynamic Interval Control
     let refreshTimer = null;
@@ -1181,29 +1283,31 @@ Try typing 'acme status' or 'acme issue' or 'ping 8.8.8.8'
     }
     intervalSelect.addEventListener('change', updateTimers);
 
-    // Color helpers for metrics
-    function getMetricColor(pct) {
-        if (pct < 50) return 'var(--text-primary)';
-        if (pct < 80) return 'var(--accent-yellow)';
-        return 'var(--accent-red)';
-    }
-
+    // Metrics progress bars
     function updateProgress(id, pct) {
         const valEl = document.getElementById(id + '_val');
         const barEl = document.getElementById(id + '_bar');
+        const badgeEl = document.getElementById(id + '_badge');
+
         if (valEl) valEl.textContent = `${pct.toFixed(1)}%`;
         if (barEl) {
             barEl.style.width = `${Math.min(100, Math.max(0, pct))}%`;
             barEl.className = 'progress-fill';
-            if (pct >= 80) barEl.classList.add('danger');
-            else if (pct >= 50) barEl.classList.add('warn');
+            if (badgeEl) {
+                if (pct >= 85) {
+                    barEl.classList.add('danger');
+                    badgeEl.className = 'metric-badge badge-danger';
+                    badgeEl.textContent = '告警';
+                } else if (pct >= 60) {
+                    barEl.classList.add('warn');
+                    badgeEl.className = 'metric-badge badge-warn';
+                    badgeEl.textContent = '预警';
+                } else {
+                    badgeEl.className = 'metric-badge badge-normal';
+                    badgeEl.textContent = '正常';
+                }
+            }
         }
-    }
-
-    // Safe DOM Text Setter
-    function setElText(id, text) {
-        const el = document.getElementById(id);
-        if (el) el.textContent = (text !== null && text !== undefined) ? text : '-';
     }
 
     // Fetch ACME SSL Status
@@ -1212,26 +1316,23 @@ Try typing 'acme status' or 'acme issue' or 'ping 8.8.8.8'
             const res = await fetch('/acme/status');
             const data = await res.json();
             const badge = document.getElementById('acme_badge');
-            const valEl = document.getElementById('acme_val');
             if (data.has_cert) {
                 if (badge) {
-                    badge.style.borderColor = 'var(--accent-green)';
-                    badge.style.color = 'var(--accent-green)';
-                    badge.textContent = `🔒 SSL 已开启 (${data.days_left}天)`;
+                    badge.className = 'status-pill status-online';
+                    badge.textContent = `🔒 SSL 证书正常 (${data.days_left}天)`;
                 }
                 setElText('acme_val', `${data.domain} (${data.days_left}天后到期)`);
             } else {
                 if (badge) {
-                    badge.style.borderColor = 'var(--text-muted)';
-                    badge.style.color = 'var(--text-muted)';
+                    badge.className = 'status-pill';
                     badge.textContent = `🔓 HTTP 运行中`;
                 }
-                setElText('acme_val', `未安装 (可运行 'acme issue' 自动申请)`);
+                setElText('acme_val', `未申请 (支持 'acme issue' 签发)`);
             }
         } catch(e) {}
     }
 
-    // Fetch stats
+    // Fetch Stats & Update Executive Summary
     async function fetchStats() {
         try {
             const res = await fetch('/stats');
@@ -1251,6 +1352,13 @@ Try typing 'acme status' or 'acme issue' or 'ping 8.8.8.8'
             const cip = data.client_ip ? `${data.client_ip} [${data.client_isp || '未知'}]` : '局域网';
             setElText('client_ip_val', cip);
 
+            // Update Summary Card 2: Egress IP
+            if (data.ip) {
+                rawEgressIP = data.ip.split(' ')[0];
+                setElText('sum_ip_val', rawEgressIP);
+                setElText('sum_ip_desc', data.hostname || '节点位置已知');
+            }
+
             fetchAcmeStatus();
         } catch (e) {
             console.error("Failed to fetch stats:", e);
@@ -1269,18 +1377,9 @@ Try typing 'acme status' or 'acme issue' or 'ping 8.8.8.8'
         } catch(e) {}
     }
 
-    // Ping history & Overall Trend Calculation
+    // Latency Ping History & Sparkline Calculation
     const pingHistory = { client_ping: [], ping_cu: [], ping_cm: [], ping_ct: [] };
     const MAX_BARS = 40;
-    const MAX_HEIGHT = 40; // px
-    const MAX_MS = 300;
-
-    function getPingColor(ms) {
-        if (ms === null || ms === undefined) return 'var(--accent-red)';
-        if (ms < 80) return 'var(--accent-green)';
-        if (ms < 160) return 'var(--accent-yellow)';
-        return 'var(--accent-red)';
-    }
 
     function renderPixelBars(key) {
         const container = document.getElementById(key + '_bars');
@@ -1288,101 +1387,70 @@ Try typing 'acme status' or 'acme issue' or 'ping 8.8.8.8'
         const rawHistory = pingHistory[key];
         if (!rawHistory.length) return;
 
-        // Apply Exponential Moving Average (EMA) smoothing for clean overall trend visualization
-        const history = [];
-        let ema = null;
-        const alpha = 0.35;
-        for (let i = 0; i < rawHistory.length; i++) {
-            const val = rawHistory[i];
-            if (val === null || val === undefined) {
-                history.push(null);
-            } else {
-                if (ema === null) ema = val;
-                else ema = alpha * val + (1 - alpha) * ema;
-                history.push(ema);
-            }
-        }
-
-        while (container.children.length < MAX_BARS) {
-            const bar = document.createElement('div');
-            bar.className = 'pixel-bar px-empty';
-            bar.style.height = '2px';
-            container.appendChild(bar);
-        }
-        while (container.children.length > MAX_BARS) {
-            container.removeChild(container.lastChild);
-        }
-
-        const bars = container.children;
-        const offset = MAX_BARS - history.length;
-
+        container.innerHTML = '';
         for (let i = 0; i < MAX_BARS; i++) {
-            const bar = bars[i];
-            const dataIdx = i - offset;
-
-            if (dataIdx < 0 || dataIdx >= history.length) {
-                bar.className = 'pixel-bar px-empty';
-                bar.style.height = '2px';
-                continue;
-            }
-
-            const ms = history[dataIdx];
-            if (ms === null || ms === undefined) {
-                bar.className = 'pixel-bar px-timeout';
-                bar.style.height = '3px';
+            const bar = document.createElement('div');
+            bar.className = 'pixel-bar';
+            const val = rawHistory[i];
+            if (val === undefined) {
+                bar.classList.add('px-empty');
+            } else if (val === null) {
+                bar.classList.add('px-timeout');
             } else {
-                const h = Math.max(3, Math.round((Math.min(ms, MAX_MS) / MAX_MS) * MAX_HEIGHT));
-                bar.style.height = h + 'px';
-                if (ms < 80) bar.className = 'pixel-bar px-green';
-                else if (ms < 160) bar.className = 'pixel-bar px-yellow';
-                else bar.className = 'pixel-bar px-red';
+                const heightPct = Math.min(100, Math.max(10, (val / 300) * 100));
+                bar.style.height = `${heightPct}%`;
+                if (val < 80) bar.classList.add('px-green');
+                else if (val < 160) bar.classList.add('px-yellow');
+                else bar.classList.add('px-red');
             }
+            container.appendChild(bar);
         }
     }
 
     function updatePingUI(key, ms) {
+        const history = pingHistory[key];
+        history.push(ms);
+        if (history.length > MAX_BARS) history.shift();
+
         const valEl = document.getElementById(key + '_val');
+        const statEl = document.getElementById(key + '_stat');
         const trendEl = document.getElementById(key + '_trend');
 
-        pingHistory[key].push(ms);
-        if (pingHistory[key].length > MAX_BARS) pingHistory[key].shift();
-
-        const history = pingHistory[key];
         const validSamples = history.filter(v => v !== null && v !== undefined);
 
-        // Overall trend calculation: compare recent window average vs initial baseline average
         if (valEl) {
             if (ms === null || ms === undefined) {
-                valEl.textContent = '超时/不可达';
-                valEl.style.color = 'var(--accent-red)';
+                valEl.textContent = '超时';
+                valEl.style.color = 'var(--danger)';
             } else {
-                const avg = validSamples.length ? (validSamples.reduce((a,b)=>a+b,0) / validSamples.length) : ms;
-                valEl.innerHTML = `${ms.toFixed(1)} ms <span style="font-size:0.75rem; color:var(--text-muted); font-weight:normal">(均值 ${avg.toFixed(1)}ms)</span>`;
-                valEl.style.color = getPingColor(ms);
+                valEl.textContent = `${ms.toFixed(1)} ms`;
+                valEl.style.color = ms < 80 ? 'var(--success)' : ms < 160 ? 'var(--warning)' : 'var(--danger)';
             }
         }
 
-        if (trendEl) {
-            if (validSamples.length >= 3) {
-                const firstHalf = validSamples.slice(0, Math.floor(validSamples.length / 2));
-                const secondHalf = validSamples.slice(Math.floor(validSamples.length / 2));
-                const avgOld = firstHalf.reduce((a,b)=>a+b,0) / firstHalf.length;
-                const avgNew = secondHalf.reduce((a,b)=>a+b,0) / secondHalf.length;
-                const diff = avgNew - avgOld;
+        if (statEl && validSamples.length) {
+            const avg = validSamples.reduce((a,b)=>a+b,0) / validSamples.length;
+            const min = Math.min(...validSamples);
+            const jitter = Math.abs(ms - avg);
+            statEl.textContent = `均值:${avg.toFixed(0)}ms | Min:${min.toFixed(0)}ms | 抖动:±${jitter.toFixed(0)}ms`;
+        }
 
-                if (diff <= -2.0) {
-                    trendEl.textContent = `↓ 较初始 ${diff.toFixed(1)}ms`;
-                    trendEl.className = 'ping-trend-badge trend-down';
-                } else if (diff >= 2.0) {
-                    trendEl.textContent = `↑ 较初始 +${diff.toFixed(1)}ms`;
-                    trendEl.className = 'ping-trend-badge trend-up';
-                } else {
-                    trendEl.textContent = '~ 整体平稳';
-                    trendEl.className = 'ping-trend-badge';
-                }
+        if (trendEl && validSamples.length >= 3) {
+            const firstHalf = validSamples.slice(0, Math.floor(validSamples.length / 2));
+            const secondHalf = validSamples.slice(Math.floor(validSamples.length / 2));
+            const avgOld = firstHalf.reduce((a,b)=>a+b,0) / firstHalf.length;
+            const avgNew = secondHalf.reduce((a,b)=>a+b,0) / secondHalf.length;
+            const diff = avgNew - avgOld;
+
+            if (diff <= -2.0) {
+                trendEl.textContent = `↓ 较初始 ${diff.toFixed(1)}ms`;
+                trendEl.style.color = 'var(--success)';
+            } else if (diff >= 2.0) {
+                trendEl.textContent = `↑ 较初始 +${diff.toFixed(1)}ms`;
+                trendEl.style.color = 'var(--danger)';
             } else {
-                trendEl.textContent = '~ 整体平稳';
-                trendEl.className = 'ping-trend-badge';
+                trendEl.textContent = '~ 平稳';
+                trendEl.style.color = 'var(--text-secondary)';
             }
         }
 
@@ -1397,6 +1465,26 @@ Try typing 'acme status' or 'acme issue' or 'ping 8.8.8.8'
             updatePingUI('ping_cu', data.ping_cu);
             updatePingUI('ping_cm', data.ping_cm);
             updatePingUI('ping_ct', data.ping_ct);
+
+            // Update Summary Cards 1 & 3
+            const pings = [data.ping_cu, data.ping_cm, data.ping_ct].filter(v => v !== null && v !== undefined);
+            if (pings.length) {
+                const avgPing = pings.reduce((a,b)=>a+b,0) / pings.length;
+                setElText('sum_ping_val', `${avgPing.toFixed(0)} ms`);
+
+                const statusEl = document.getElementById('sum_net_status');
+                const descEl = document.getElementById('sum_net_desc');
+                if (avgPing < 150) {
+                    if (statusEl) { statusEl.textContent = '健康'; statusEl.className = 'summary-value text-success'; }
+                    if (descEl) descEl.textContent = `平均延迟 ${avgPing.toFixed(0)}ms · 线路良好`;
+                } else if (avgPing < 250) {
+                    if (statusEl) { statusEl.textContent = '良好'; statusEl.className = 'summary-value text-warning'; }
+                    if (descEl) descEl.textContent = `平均延迟 ${avgPing.toFixed(0)}ms · 抖动正常`;
+                } else {
+                    if (statusEl) { statusEl.textContent = '较高'; statusEl.className = 'summary-value text-danger'; }
+                    if (descEl) descEl.textContent = `平均延迟 ${avgPing.toFixed(0)}ms · 建议检测网络`;
+                }
+            }
         } catch (e) {
             console.error("Failed to fetch pings:", e);
         }
@@ -1405,7 +1493,6 @@ Try typing 'acme status' or 'acme issue' or 'ping 8.8.8.8'
     // Quick Lookup Form
     const lookupBtn = document.getElementById('lookup_btn');
     const lookupInput = document.getElementById('lookup_input');
-    const lookupResult = document.getElementById('lookup_result');
 
     async function doLookup(target) {
         if (!target) return;
@@ -1414,15 +1501,11 @@ Try typing 'acme status' or 'acme issue' or 'ping 8.8.8.8'
             const res = await fetch(`/pinginfo?url=${encodeURIComponent(target)}`);
             if (!res.ok) throw new Error("查询失败");
             const data = await res.json();
-            document.getElementById('res_target').textContent = data.host || target;
-            document.getElementById('res_ip').textContent = data.ip || '解析失败';
-            document.getElementById('res_isp').textContent = data.isp || '未知 ISP';
-            document.getElementById('res_ping').textContent = data.ping !== null ? `${data.ping.toFixed(1)} ms` : '超时/未知';
-            lookupResult.style.display = 'flex';
+            appendOutput(`[网络诊断结果]\n  目标: ${data.host || target}\n  解析 IP: ${data.ip || 'N/A'}\n  运营商/位置: ${data.isp || '未知'}\n  TCP 延迟: ${data.ping !== null ? data.ping.toFixed(1) + ' ms' : '超时'}`);
         } catch (e) {
-            alert('查询出错: ' + e.message);
+            appendOutput('诊断出错: ' + e.message);
         } finally {
-            lookupBtn.textContent = '开始查询';
+            lookupBtn.textContent = '诊断';
         }
     }
 
@@ -1440,7 +1523,11 @@ Try typing 'acme status' or 'acme issue' or 'ping 8.8.8.8'
     let historyIdx = -1;
     let currentSource = null;
 
-    terminalBox.addEventListener('click', () => inputEl.focus());
+    terminalBox.addEventListener('click', (e) => {
+        if (!e.target.closest('button') && !e.target.closest('input')) {
+            inputEl.focus();
+        }
+    });
 
     function appendOutput(text) {
         outputEl.insertAdjacentText('beforeend', text + '\n');
@@ -1517,7 +1604,7 @@ Try typing 'acme status' or 'acme issue' or 'ping 8.8.8.8'
                     });
                 } else if (sub === 'issue') {
                     const targetHost = args[1] || '';
-                    appendOutput(`${PROMPT} ${text}\nInitiating ACME Certificate issuance${targetHost ? ' for ' + targetHost : ' (Auto Public IP)'}... Please wait...`);
+                    appendOutput(`${PROMPT} ${text}\nInitiating ACME Certificate issuance... Please wait...`);
                     fetch(`/acme/issue${targetHost ? '?target=' + encodeURIComponent(targetHost) : ''}`).then(r=>r.json()).then(data => {
                         appendOutput(`[ACME Issue Result]\n  Success: ${data.success}\n  Message: ${data.message}`);
                         fetchAcmeStatus();
@@ -1533,29 +1620,8 @@ Try typing 'acme status' or 'acme issue' or 'ping 8.8.8.8'
                 }
                 break;
             case 'ipcheck':
-                appendOutput(`${PROMPT} ${text}\nRunning IP Quality Check... Please wait (this may take 10-15s)...`);
-                fetch('/ipcheck').then(r=>r.json()).then(data => {
-                    if (data.error) { appendOutput(`Error: ${data.error}`); return; }
-                    let out = '\n╔══════════════════════════════════════╗\n';
-                    out += '║   IP QUALITY CHECK REPORT            ║\n';
-                    out += '╚══════════════════════════════════════╝\n';
-                    const b = data.basic || {};
-                    const r2 = data.risk || {};
-                    out += `\n[基础信息]\n  IP:     ${b.ip || 'N/A'}\n  ASN:    ${b.asn || 'N/A'}\n  组织:   ${b.org || 'N/A'}\n  ISP:    ${b.isp || 'N/A'}\n  位置:   ${b.country || ''} ${b.city || ''}\n  时区:   ${b.timezone || 'N/A'}`;
-                    out += `\n\n[IP类型]  ${r2.ip_type_label || 'N/A'}`;
-                    out += `\n  Proxy: ${r2.is_proxy ? '是 ⚠️' : '否 ✅'}  VPN: ${r2.is_vpn ? '是 ⚠️' : '否 ✅'}  Tor: ${r2.is_tor ? '是 ⚠️' : '否 ✅'}  Hosting: ${r2.is_hosting ? '是' : '否'}`;
-                    out += `\n\n[风险评分]  ${r2.risk_score || 0}/100  ${r2.risk_label || ''}`;
-                    out += '\n\n[流媒体 & AI 解锁]';
-                    (data.media || []).forEach(m => {
-                        const icon = m.status === 'unlocked' ? '✅' : m.status === 'blocked' ? '❌' : '⚠️';
-                        const region = m.region ? ` [${m.region}]` : '';
-                        out += `\n  ${icon} ${m.name}: ${m.status === 'unlocked' ? '解锁' : m.status === 'blocked' ? '屏蔽' : '检测失败'}${region}`;
-                    });
-                    out += `\n\n检测时间: ${data.timestamp || 'N/A'}`;
-                    appendOutput(out);
-                    // Also update the card
-                    renderIPCheckResult(data);
-                }).catch(err => appendOutput(`IP check error: ${err.message}`));
+                appendOutput(`${PROMPT} ${text}\nRunning IP Quality Check... Please wait...`);
+                fetchIPCheck(true);
                 break;
             case 'help':
                 appendOutput(`${PROMPT} ${text}\n` +
@@ -1626,15 +1692,56 @@ Try typing 'acme status' or 'acme issue' or 'ping 8.8.8.8'
         'Amazon Prime': `<svg viewBox="0 0 24 24" width="18" height="18" style="vertical-align:middle; flex-shrink:0;"><path fill="#00A8E1" d="M14.5 12.8c-1.8 0-3.3-.6-4.7-1.7l1.1-1.3c1.1.9 2.3 1.4 3.6 1.4 1.2 0 1.9-.5 1.9-1.2 0-.8-.7-1.2-2.3-1.7-2.3-.7-3.6-1.6-3.6-3.4 0-2.1 1.7-3.5 4.3-3.5 1.6 0 3 .5 4.1 1.3l-1.1 1.3c-.9-.7-1.9-1-3-1-1.2 0-1.8.5-1.8 1.1 0 .7.6 1.1 2.2 1.6 2.5.8 3.7 1.7 3.7 3.5 0 2.2-1.7 3.6-4.4 3.6zm-1.8 6c-4.4 0-8.5-1.8-11.4-4.8-.3-.3-.1-.7.3-.6 3.6 1.3 7.6 1.9 11.5 1.5 3.8-.4 7.4-1.7 10.4-3.9.4-.3.8.1.5.5-3 2.9-7.2 4.9-11.3 7.3z"/></svg>`
     };
 
-    function setElHTML(id, html) {
-        const el = document.getElementById(id);
-        if (el) el.innerHTML = (html !== null && html !== undefined) ? html : '-';
+    let cachedMediaData = [];
+    let currentUnlockFilter = 'all';
+
+    function filterUnlockTiles(filter, btnEl) {
+        currentUnlockFilter = filter;
+        if (btnEl) {
+            document.querySelectorAll('.filter-tabs .tab-btn').forEach(b => b.classList.remove('active'));
+            btnEl.classList.add('active');
+        }
+        renderUnlockGrid(cachedMediaData);
+    }
+
+    function renderUnlockGrid(mediaList) {
+        cachedMediaData = mediaList || [];
+        const grid = document.getElementById('unlock_grid');
+        if (!grid) return;
+        grid.innerHTML = '';
+
+        const filtered = cachedMediaData.filter(m => {
+            if (currentUnlockFilter === 'unlocked') return m.status === 'unlocked';
+            if (currentUnlockFilter === 'blocked') return m.status === 'blocked';
+            if (currentUnlockFilter === 'unknown') return m.status !== 'unlocked' && m.status !== 'blocked';
+            return true;
+        });
+
+        if (!filtered.length) {
+            grid.innerHTML = `<div style="grid-column:span 4; text-align:center; padding:12px; color:var(--text-tertiary); font-size:0.78rem">无匹配的服务解锁记录</div>`;
+            return;
+        }
+
+        filtered.forEach(m => {
+            const icon = MEDIA_ICONS[m.name] || '🌐';
+            let badgeClass, badgeText;
+            if (m.status === 'unlocked') { badgeClass = 'unlocked'; badgeText = '已解锁'; }
+            else if (m.status === 'blocked') { badgeClass = 'blocked'; badgeText = '未解锁'; }
+            else { badgeClass = 'unknown'; badgeText = '检测异常'; }
+            const regionText = m.region ? ` (${m.region})` : '';
+
+            grid.innerHTML += `
+                <div class="unlock-tile">
+                    <div class="unlock-tile-left">
+                        <span class="unlock-tile-icon">${icon}</span>
+                        <span class="unlock-tile-name">${m.name}</span>
+                    </div>
+                    <div class="unlock-badge ${badgeClass}">${badgeText}${regionText}</div>
+                </div>`;
+        });
     }
 
     function renderIPCheckResult(data) {
-        const body = document.getElementById('ipcheck_body');
-        if (body) body.classList.add('visible');
-
         const b = data.basic || {};
         const r = data.risk || {};
 
@@ -1649,62 +1756,69 @@ Try typing 'acme status' or 'acme issue' or 'ping 8.8.8.8'
         setElText('ipc_tz', b.timezone || 'N/A');
 
         // IP type badge
-        const typeClass = 'ip-type-' + (r.ip_type || 'isp');
-        setElHTML('ipc_type', `<span class="ip-type-badge ${typeClass}">${r.ip_type_label || 'N/A'}</span>`);
+        const typeLabel = r.ip_type_label || '原生 ISP';
+        const typeClass = r.is_hosting ? 'badge-tag-yes' : 'badge-tag-no';
+        setElHTML('ipc_type', `<span class="badge-tag ${typeClass}">${typeLabel}</span>`);
 
         // Risk factors
-        const factorHTML = (val) => val ? '<span class="factor-yes">⚠ 是</span>' : '<span class="factor-no">✅ 否</span>';
+        const factorHTML = (val) => val ? '<span class="badge-tag badge-tag-yes">是</span>' : '<span class="badge-tag badge-tag-no">否</span>';
         setElHTML('ipc_proxy', factorHTML(r.is_proxy));
         setElHTML('ipc_vpn', factorHTML(r.is_vpn));
         setElHTML('ipc_tor', factorHTML(r.is_tor));
         setElHTML('ipc_hosting', factorHTML(r.is_hosting));
         setElHTML('ipc_mobile', factorHTML(r.is_mobile));
 
-        // Risk score
+        // Risk Score Meter & 4 Segmented Ribbon
         const score = r.risk_score || 0;
-        setElText('ipc_risk_score', score + ' / 100');
-        const bar = document.getElementById('ipc_risk_bar');
-        if (bar) {
-            bar.style.width = Math.min(100, score) + '%';
-            bar.className = 'risk-bar-fill';
-            if (score <= 15) bar.classList.add('risk-vlow');
-            else if (score <= 33) bar.classList.add('risk-low');
-            else if (score <= 66) bar.classList.add('risk-med');
-            else if (score <= 85) bar.classList.add('risk-high');
-            else bar.classList.add('risk-vhigh');
+        setElText('ipc_risk_score', score);
+
+        // Update Summary Card 4: Risk Score
+        const sumRiskVal = document.getElementById('sum_risk_val');
+        const sumRiskDesc = document.getElementById('sum_risk_desc');
+        if (sumRiskVal) {
+            sumRiskVal.textContent = `${score} / 100`;
+            if (score <= 30) sumRiskVal.className = 'summary-value text-success mono';
+            else if (score <= 60) sumRiskVal.className = 'summary-value text-warning mono';
+            else if (score <= 80) sumRiskVal.className = 'summary-value mono'; // Orange
+            else sumRiskVal.className = 'summary-value text-danger mono';
+        }
+        if (sumRiskDesc) sumRiskDesc.textContent = `${r.risk_label || '低风险'} · ${b.isp || '原生网络'}`;
+
+        const riskBadge = document.getElementById('ipc_risk_label');
+        if (riskBadge) {
+            riskBadge.textContent = r.risk_label || '低风险';
+            if (score <= 30) riskBadge.className = 'badge-tag badge-tag-no';
+            else if (score <= 60) riskBadge.className = 'badge-tag badge-tag-yes';
+            else riskBadge.className = 'badge-tag badge-tag-high';
         }
 
-        const labelEl = document.getElementById('ipc_risk_label');
-        if (labelEl) {
-            labelEl.textContent = r.risk_label || '-';
-            if (score <= 33) labelEl.style.color = 'var(--accent-green)';
-            else if (score <= 66) labelEl.style.color = 'var(--accent-yellow)';
-            else labelEl.style.color = 'var(--accent-red)';
+        // 4 Segment Ribbon
+        const s1 = document.getElementById('rseg_1');
+        const s2 = document.getElementById('rseg_2');
+        const s3 = document.getElementById('rseg_3');
+        const s4 = document.getElementById('rseg_4');
+        if (s1 && s2 && s3 && s4) {
+            s1.className = 'risk-segment' + (score > 0 ? ' active-green' : '');
+            s2.className = 'risk-segment' + (score > 30 ? ' active-yellow' : '');
+            s3.className = 'risk-segment' + (score > 60 ? ' active-orange' : '');
+            s4.className = 'risk-segment' + (score > 80 ? ' active-red' : '');
         }
 
-        setElText('ipc_time', data.timestamp || '-');
-
-        // Compact Media unlock tiles (Chips)
-        const grid = document.getElementById('unlock_grid');
-        if (grid) {
-            grid.innerHTML = '';
-            (data.media || []).forEach(m => {
-                const icon = MEDIA_ICONS[m.name] || '🌐';
-                let statusClass, statusText;
-                if (m.status === 'unlocked') { statusClass = 'unlock-yes'; statusText = '✅ 解锁'; }
-                else if (m.status === 'blocked') { statusClass = 'unlock-no'; statusText = '❌ 屏蔽'; }
-                else { statusClass = 'unlock-fail'; statusText = '⚠️ 未知'; }
-                const regionText = m.region ? ` (${m.region})` : '';
-                grid.innerHTML += `
-                    <div class="unlock-tile">
-                        <div class="unlock-tile-left">
-                            <span class="unlock-tile-icon">${icon}</span>
-                            <span class="unlock-tile-name">${m.name}</span>
-                        </div>
-                        <div class="unlock-tile-status ${statusClass}">${statusText}${regionText}</div>
-                    </div>`;
-            });
+        // Risk breakdown explanation
+        const breakdownEl = document.getElementById('risk_factors_desc');
+        if (breakdownEl) {
+            const factors = [];
+            if (r.is_proxy) factors.push('代理特征');
+            if (r.is_vpn) factors.push('VPN节点');
+            if (r.is_hosting) factors.push('IDC机房IP');
+            if (r.is_tor) factors.push('Tor出口');
+            breakdownEl.textContent = factors.length ? factors.join(' + ') : '洁净住宅 IP';
         }
+
+        setElText('ipc_time', data.timestamp ? `更新时间: ${data.timestamp}` : '更新时间: 刚刚');
+
+        // Render Streaming Unlock Tiles
+        renderUnlockGrid(data.media || []);
     }
 
     async function fetchIPCheck(force) {
