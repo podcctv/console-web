@@ -2141,13 +2141,22 @@ if __name__ == "__main__":
     cert_file = acme_manager.CERT_FILE
     key_file = acme_manager.KEY_FILE
 
-    has_ssl = cert_file.exists() and key_file.exists()
-
-    if has_ssl:
-        logger.info("SSL Certificate detected (%s)! Starting HTTPS server on 0.0.0.0:8080...", cert_file)
+    ssl_ctx = None
+    if cert_file.exists() and key_file.exists():
         try:
-            ssl_ctx = (str(cert_file), str(key_file))
-            app.run(host="0.0.0.0", port=8080, ssl_context=ssl_ctx, threaded=True)
+            ssl_ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+            ssl_ctx.verify_mode = ssl.CERT_NONE
+            ssl_ctx.load_cert_chain(certfile=str(cert_file), keyfile=str(key_file))
+            logger.info("Loaded SSL certificate chain from: %s", cert_file)
+        except Exception as e:
+            logger.warning("Failed to load SSL cert chain: %s", e)
+            ssl_ctx = None
+
+    if ssl_ctx:
+        logger.info("Starting HTTPS Werkzeug Server on 0.0.0.0:8080 (SSL Enabled)")
+        try:
+            server = make_server("0.0.0.0", 8080, app, threaded=True, ssl_context=ssl_ctx)
+            server.serve_forever()
         except Exception as e:
             logger.warning("Failed to start HTTPS server, falling back to HTTP: %s", e)
             app.run(host="0.0.0.0", port=8080, threaded=True)
