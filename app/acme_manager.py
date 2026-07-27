@@ -142,11 +142,14 @@ def get_cert_status() -> dict:
                     ).replace(tzinfo=timezone.utc)
                     days_left = (exp_dt - datetime.now(timezone.utc)).days
 
+                    meta = _load_meta()
                     domain_name = "N/A"
                     for prefix in ("CN = ", "CN="):
                         if prefix in subject_str:
                             domain_name = subject_str.split(prefix)[1].split("/")[0].strip()
                             break
+                    if domain_name == "N/A" and meta.get("target"):
+                        domain_name = meta.get("target")
 
                     issuer_name = "ACME SSL"
                     if "ZeroSSL" in issuer_str:

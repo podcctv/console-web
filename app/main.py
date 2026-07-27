@@ -2144,7 +2144,7 @@ if __name__ == "__main__":
     ssl_ctx = None
     if cert_file.exists() and key_file.exists():
         try:
-            ssl_ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+            ssl_ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
             ssl_ctx.load_cert_chain(certfile=str(cert_file), keyfile=str(key_file))
             logger.info("Loaded SSL certificate chain: %s", cert_file)
         except Exception as e:
