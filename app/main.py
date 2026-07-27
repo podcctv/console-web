@@ -544,7 +544,7 @@ TEMPLATE = r"""
         .info-key { color: var(--text-muted); font-size: 0.75rem; }
         .info-value { color: var(--text-white); font-weight: 600; word-break: break-all; }
 
-        /* Latency Ping Monitor */
+        /* Latency Ping Monitor with Digital LED Dot Matrix */
         .ping-grid {
             display: flex; flex-direction: column; gap: 14px;
         }
@@ -561,12 +561,36 @@ TEMPLATE = r"""
         .ping-title { color: var(--text-white); font-weight: 600; display: flex; align-items: center; gap: 6px; }
         .ping-value { font-weight: 700; }
 
-        .ping-chart-container {
-            width: 100%; height: 32px; margin-top: 4px; display: flex; align-items: center; position: relative;
+        /* Digital LED Dot Matrix Latency Bar */
+        .digital-dot-matrix {
+            display: flex; align-items: center; gap: 4px; height: 24px; margin-top: 4px;
+            padding: 4px 8px; background: rgba(0,0,0,0.45); border-radius: 6px;
+            border: 1px solid var(--card-border); overflow: hidden;
         }
 
-        canvas.ping-chart {
-            width: 100%; height: 32px; display: block; border-radius: 4px; background: rgba(0,0,0,0.3);
+        .dot-cell {
+            flex: 1; height: 12px; border-radius: 2px;
+            background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.02);
+            transition: background 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .dot-cell.active-green {
+            background: var(--accent-green); border-color: var(--accent-green);
+            box-shadow: 0 0 8px var(--accent-green);
+        }
+
+        .dot-cell.active-yellow {
+            background: var(--accent-yellow); border-color: var(--accent-yellow);
+            box-shadow: 0 0 8px var(--accent-yellow);
+        }
+
+        .dot-cell.active-red {
+            background: var(--accent-red); border-color: var(--accent-red);
+            box-shadow: 0 0 8px var(--accent-red);
+        }
+
+        .dot-cell.timeout {
+            background: #ff0033; box-shadow: 0 0 6px #ff0033;
         }
 
         .ping-legend {
@@ -800,7 +824,7 @@ Welcome to Console-Web Cyber Edition 🚀 | System Status &amp; Realtime Network
                 </div>
             </div>
 
-            <!-- Card 3: Ping & Latency Dashboard -->
+            <!-- Card 3: Ping & Latency Dashboard (Pure Digital Dot Matrix Bar) -->
             <div class="card">
                 <div class="card-header">
                     <span><span class="card-header-icon">📡</span> 网络延迟 (TCP Ping)</span>
@@ -817,9 +841,7 @@ Welcome to Console-Web Cyber Edition 🚀 | System Status &amp; Realtime Network
                             <span class="ping-title">📍 本地/Client 延迟</span>
                             <span class="ping-value" id="client_ping_val">-</span>
                         </div>
-                        <div class="ping-chart-container">
-                            <canvas id="client_ping_chart" class="ping-chart" width="300" height="32"></canvas>
-                        </div>
+                        <div class="digital-dot-matrix" id="client_ping_matrix"></div>
                     </div>
 
                     <div class="ping-item">
@@ -827,9 +849,7 @@ Welcome to Console-Web Cyber Edition 🚀 | System Status &amp; Realtime Network
                             <span class="ping-title">🟢 浙江联通 Ping</span>
                             <span class="ping-value" id="ping_cu_val">-</span>
                         </div>
-                        <div class="ping-chart-container">
-                            <canvas id="ping_cu_chart" class="ping-chart" width="300" height="32"></canvas>
-                        </div>
+                        <div class="digital-dot-matrix" id="ping_cu_matrix"></div>
                     </div>
 
                     <div class="ping-item">
@@ -837,9 +857,7 @@ Welcome to Console-Web Cyber Edition 🚀 | System Status &amp; Realtime Network
                             <span class="ping-title">🔵 浙江移动 Ping</span>
                             <span class="ping-value" id="ping_cm_val">-</span>
                         </div>
-                        <div class="ping-chart-container">
-                            <canvas id="ping_cm_chart" class="ping-chart" width="300" height="32"></canvas>
-                        </div>
+                        <div class="digital-dot-matrix" id="ping_cm_matrix"></div>
                     </div>
 
                     <div class="ping-item">
@@ -847,9 +865,7 @@ Welcome to Console-Web Cyber Edition 🚀 | System Status &amp; Realtime Network
                             <span class="ping-title">🟡 浙江电信 Ping</span>
                             <span class="ping-value" id="ping_ct_val">-</span>
                         </div>
-                        <div class="ping-chart-container">
-                            <canvas id="ping_ct_chart" class="ping-chart" width="300" height="32"></canvas>
-                        </div>
+                        <div class="digital-dot-matrix" id="ping_ct_matrix"></div>
                     </div>
                 </div>
             </div>
@@ -1014,9 +1030,6 @@ Try typing 'acme status' or 'acme issue' or 'ping 8.8.8.8'
         } catch(e) {}
     }
 
-    // Ping history & Canvas charts
-    const pingHistory = { client_ping: [], ping_cu: [], ping_cm: [], ping_ct: [] };
-
     function getPingColor(ms) {
         if (ms === null || ms === undefined) return '#ff3366';
         if (ms < 80) return '#00ff66';
@@ -1024,52 +1037,41 @@ Try typing 'acme status' or 'acme issue' or 'ping 8.8.8.8'
         return '#ff3366';
     }
 
-    function renderCanvasChart(canvasId, historyData) {
-        const canvas = document.getElementById(canvasId);
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
+    // Render Pure HTML/CSS Digital Dot Matrix LED Bar
+    function renderDigitalMatrix(key, ms) {
+        const container = document.getElementById(key + '_matrix');
+        if (!container) return;
 
-        const dpr = window.devicePixelRatio || 1;
-        const rect = canvas.getBoundingClientRect();
-        const width = rect.width > 0 ? rect.width : (canvas.offsetWidth || 300);
-        const height = rect.height > 0 ? rect.height : (canvas.offsetHeight || 32);
+        const TOTAL_DOTS = 28;
+        if (container.children.length !== TOTAL_DOTS) {
+            container.innerHTML = '';
+            for (let i = 0; i < TOTAL_DOTS; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'dot-cell';
+                container.appendChild(cell);
+            }
+        }
 
-        if (width <= 0 || height <= 0) return;
+        const cells = container.children;
 
-        canvas.width = width * dpr;
-        canvas.height = height * dpr;
-        ctx.scale(dpr, dpr);
-
-        ctx.clearRect(0, 0, width, height);
-
-        if (!historyData || historyData.length === 0) {
-            // Draw placeholder grid bars before initial ping returns
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
-            for (let i = 0; i < width; i += 6) {
-                ctx.fillRect(i, height - 4, 4, 4);
+        if (ms === null || ms === undefined) {
+            for (let i = 0; i < TOTAL_DOTS; i++) {
+                cells[i].className = 'dot-cell timeout';
             }
             return;
         }
 
-        const validPings = historyData.filter(v => v !== null && v !== undefined);
-        const maxPing = validPings.length > 0 ? Math.max(...validPings, 100) : 100;
-        const maxBars = 45;
-        const dataToDraw = historyData.slice(-maxBars);
-        const barGap = 2;
-        const barWidth = Math.max(2, Math.floor((width - (dataToDraw.length - 1) * barGap) / dataToDraw.length));
+        const maxScale = 300; // 300ms max scale
+        const activeCount = Math.max(1, Math.min(TOTAL_DOTS, Math.round((ms / maxScale) * TOTAL_DOTS)));
+        const colorClass = ms < 80 ? 'active-green' : (ms < 160 ? 'active-yellow' : 'active-red');
 
-        dataToDraw.forEach((val, i) => {
-            const x = i * (barWidth + barGap);
-            if (val === null || val === undefined) {
-                ctx.fillStyle = '#ff3366';
-                ctx.fillRect(x, 0, barWidth, 4);
+        for (let i = 0; i < TOTAL_DOTS; i++) {
+            if (i < activeCount) {
+                cells[i].className = 'dot-cell ' + colorClass;
             } else {
-                const h = Math.max(3, Math.round((Math.min(val, maxPing) / maxPing) * height));
-                ctx.fillStyle = getPingColor(val);
-                ctx.fillRect(x, height - h, barWidth, h);
+                cells[i].className = 'dot-cell';
             }
-        });
+        }
     }
 
     function updatePingUI(key, ms) {
@@ -1083,9 +1085,7 @@ Try typing 'acme status' or 'acme issue' or 'ping 8.8.8.8'
                 valEl.style.color = getPingColor(ms);
             }
         }
-        pingHistory[key].push(ms);
-        if (pingHistory[key].length > 40) pingHistory[key].shift();
-        renderCanvasChart(key + '_chart', pingHistory[key]);
+        renderDigitalMatrix(key, ms);
     }
 
     async function fetchPings() {
@@ -1292,11 +1292,6 @@ Try typing 'acme status' or 'acme issue' or 'ping 8.8.8.8'
     fetchHost();
     fetchPings();
     updateTimers();
-
-    // Redraw charts on window resize
-    window.addEventListener('resize', () => {
-        Object.keys(pingHistory).forEach(key => renderCanvasChart(key + '_chart', pingHistory[key]));
-    });
     </script>
 </body>
 </html>
