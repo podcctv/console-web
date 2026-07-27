@@ -461,13 +461,13 @@ TEMPLATE = r"""
             background-attachment: fixed;
         }
 
-        /* Rule 1: Unified Page Container across ALL modules */
+        /* 1680px Master Container across ALL modules */
         .page-container {
-            width: min(1440px, calc(100% - 48px));
+            width: min(1680px, calc(100% - 48px));
             margin-inline: auto;
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 18px;
         }
 
         .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
@@ -483,30 +483,30 @@ TEMPLATE = r"""
             width: 100%;
             display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;
             background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-card);
-            padding: 12px 20px; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-            position: relative; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.45);
+            padding: 14px 24px; backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+            position: relative; overflow: hidden; box-shadow: 0 6px 28px rgba(0,0,0,0.5);
         }
 
         .header-bar::before, .summary-card::before, .card::before, .ipcheck-card::before, .streaming-card::before, .terminal-card::before {
             content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px;
-            background: linear-gradient(90deg, rgba(0, 217, 255, 0.4), rgba(0, 217, 255, 0.05) 60%, transparent);
+            background: linear-gradient(90deg, rgba(0, 217, 255, 0.45), rgba(0, 217, 255, 0.08) 60%, transparent);
             pointer-events: none;
         }
 
         .brand-group {
-            display: flex; align-items: center; gap: 12px; font-size: 1.1rem; font-weight: 700; color: var(--text-primary);
+            display: flex; align-items: center; gap: 12px; font-size: 1.15rem; font-weight: 700; color: var(--text-primary);
         }
 
         .brand-icon {
             display: inline-flex; align-items: center; justify-content: center;
-            width: 32px; height: 32px; border-radius: var(--radius-control); background: var(--accent-soft);
+            width: 34px; height: 34px; border-radius: var(--radius-control); background: var(--accent-soft);
             border: 1px solid var(--border-default); color: var(--accent); font-family: var(--font-mono); font-weight: 700;
         }
 
-        .status-light-group { display: flex; align-items: center; gap: 16px; }
+        .status-light-group { display: flex; align-items: center; gap: 18px; }
 
         .status-dot-item {
-            display: inline-flex; align-items: center; gap: 6px; font-size: 0.78rem; font-weight: 500; color: var(--text-secondary);
+            display: inline-flex; align-items: center; gap: 7px; font-size: 0.8rem; font-weight: 500; color: var(--text-secondary);
         }
 
         .pulse-dot {
@@ -519,67 +519,67 @@ TEMPLATE = r"""
 
         @keyframes pulse {
             0% { opacity: 0.75; transform: scale(0.95); }
-            50% { opacity: 1; transform: scale(1.2); }
+            50% { opacity: 1; transform: scale(1.25); }
             100% { opacity: 0.75; transform: scale(0.95); }
         }
 
-        .controls-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .controls-group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 
         .btn-ctrl, .select-input {
             background: var(--bg-input); border: 1px solid var(--border-default); color: var(--text-primary);
-            padding: 5px 12px; border-radius: var(--radius-control); font-family: var(--font-ui); font-size: 0.78rem;
+            padding: 6px 14px; border-radius: var(--radius-control); font-family: var(--font-ui); font-size: 0.8rem;
             cursor: pointer; transition: all 0.2s ease; outline: none; display: inline-flex; align-items: center; gap: 6px;
         }
 
         .btn-ctrl:hover, .select-input:hover {
-            border-color: var(--border-active); background: var(--bg-hover); box-shadow: 0 2px 10px rgba(0, 217, 255, 0.15);
+            border-color: var(--border-active); background: var(--bg-hover); box-shadow: 0 2px 12px rgba(0, 217, 255, 0.16);
         }
 
-        /* 4 Flagship Executive Summary Cards in 1 Row */
+        /* 4 Flagship Executive Summary Cards in 1 Row (128-136px Height) */
         .summary-grid {
             width: 100%;
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 16px;
+            gap: 18px;
         }
 
         .summary-card {
-            height: 118px;
+            height: 132px;
             background: var(--bg-surface);
             border: 1px solid var(--border-default);
             border-radius: var(--radius-card);
-            padding: 14px 18px;
+            padding: 16px 20px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
             transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
             position: relative; overflow: hidden;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
         }
 
         .summary-card:hover {
             background: var(--bg-surface-elevated); border-color: var(--border-active);
-            transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0, 217, 255, 0.12);
+            transform: translateY(-2px); box-shadow: 0 10px 32px rgba(0, 217, 255, 0.14);
         }
 
         .summary-card.hero-card {
             background: linear-gradient(135deg, var(--bg-surface), var(--bg-surface-elevated));
-            border-color: rgba(0, 217, 255, 0.32);
+            border-color: rgba(0, 217, 255, 0.35);
         }
 
         .summary-label {
-            font-size: 0.76rem; font-weight: 500; color: var(--text-secondary); display: flex; justify-content: space-between; align-items: center;
+            font-size: 0.78rem; font-weight: 500; color: var(--text-secondary); display: flex; justify-content: space-between; align-items: center;
         }
 
         .summary-value {
-            font-size: 2.1rem; font-weight: 700; color: var(--text-primary); line-height: 1.1;
-            display: flex; align-items: baseline; gap: 6px; letter-spacing: -0.5px;
+            font-size: 2.35rem; font-weight: 700; color: var(--text-primary); line-height: 1.05;
+            display: flex; align-items: baseline; gap: 8px; letter-spacing: -0.5px;
         }
 
-        .summary-unit { font-size: 0.9rem; font-weight: 500; color: var(--text-muted); }
+        .summary-unit { font-size: 0.95rem; font-weight: 500; color: var(--text-muted); }
 
         .summary-desc {
-            font-size: 0.74rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
 
         .btn-copy {
@@ -1517,9 +1517,9 @@ Try typing 'acme status' or 'acme issue 您的域名.com' or 'ping 8.8.8.8'
         } catch(e) {}
     }
 
-    // Latency Ping History & Sparkline Calculation (Rule 7: Sci-Fi Blue Sparklines)
+    // Latency Ping History & Precision Sparkline Calculation
     const pingHistory = { client_ping: [], ping_cu: [], ping_cm: [], ping_ct: [] };
-    const MAX_BARS = 40;
+    const MAX_BARS = 42;
 
     function renderPixelBars(key) {
         const container = document.getElementById(key + '_bars');
@@ -1528,21 +1528,40 @@ Try typing 'acme status' or 'acme issue 您的域名.com' or 'ping 8.8.8.8'
         if (!rawHistory.length) return;
 
         container.innerHTML = '';
+        let lastValidIdx = -1;
+        for (let i = rawHistory.length - 1; i >= 0; i--) {
+            if (rawHistory[i] !== undefined && rawHistory[i] !== null) {
+                lastValidIdx = i;
+                break;
+            }
+        }
+
         for (let i = 0; i < MAX_BARS; i++) {
             const bar = document.createElement('div');
             bar.className = 'pixel-bar';
             const val = rawHistory[i];
+
             if (val === undefined) {
                 bar.classList.add('px-empty');
             } else if (val === null) {
                 bar.classList.add('px-timeout');
+                bar.title = '请求超时 / 丢包';
             } else {
-                const heightPct = Math.min(100, Math.max(12, (val / 350) * 100));
+                const heightPct = Math.min(100, Math.max(14, (val / 350) * 100));
                 bar.style.height = `${heightPct}%`;
+                bar.title = `${val.toFixed(1)} ms`;
+
                 if (val < 80) bar.classList.add('px-cyan');
                 else if (val < 160) bar.classList.add('px-yellow');
                 else if (val < 250) bar.classList.add('px-orange');
                 else bar.classList.add('px-red');
+
+                if (i === lastValidIdx) {
+                    bar.style.position = 'relative';
+                    const dot = document.createElement('div');
+                    dot.style.cssText = 'position:absolute; top:-3px; left:50%; transform:translateX(-50%); width:4px; height:4px; border-radius:50%; background:#fff; box-shadow:0 0 6px var(--accent);';
+                    bar.appendChild(dot);
+                }
             }
             container.appendChild(bar);
         }
@@ -1561,8 +1580,7 @@ Try typing 'acme status' or 'acme issue 您的域名.com' or 'ping 8.8.8.8'
 
         if (valEl) {
             if (ms === null || ms === undefined) {
-                valEl.textContent = '超时';
-                valEl.style.color = 'var(--danger)';
+                valEl.innerHTML = `<span style="font-size:0.82rem; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:var(--danger); padding:2px 8px; border-radius:4px; font-weight:700">⚠️ TIMEOUT (超时)</span>`;
             } else {
                 valEl.textContent = `${ms.toFixed(1)} ms`;
                 valEl.style.color = ms < 80 ? 'var(--info)' : ms < 160 ? 'var(--warning)' : ms < 250 ? 'var(--orange)' : 'var(--danger)';
@@ -1573,7 +1591,8 @@ Try typing 'acme status' or 'acme issue 您的域名.com' or 'ping 8.8.8.8'
             const avg = validSamples.reduce((a,b)=>a+b,0) / validSamples.length;
             const min = Math.min(...validSamples);
             const jitter = Math.abs(ms - avg);
-            statEl.textContent = `均值:${avg.toFixed(0)}ms | Min:${min.toFixed(0)}ms | 抖动:±${jitter.toFixed(0)}ms`;
+            const lossPct = ((history.filter(v => v === null).length / history.length) * 100).toFixed(0);
+            statEl.textContent = `均值:${avg.toFixed(0)}ms | Min:${min.toFixed(0)}ms | 抖动:±${jitter.toFixed(0)}ms | 丢包:${lossPct}%`;
         }
 
         if (trendEl && validSamples.length >= 3) {
