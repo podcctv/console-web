@@ -2,7 +2,7 @@
 
 ![Build & Publish Docker](https://github.com/podcctv/console-web/actions/workflows/docker-publish.yml/badge.svg)
 
-`console-web` 是一个基于 [Flask](https://flask.palletsprojects.com/) 和 [psutil](https://psutil.readthedocs.io/) 构建的极简赛博朋克风格系统监控面板与网络诊断工具。界面采用暗黑终端与玻璃拟态设计，实时展示 CPU、内存、磁盘、网络 IO 及各运营商延迟状态。
+`console-web` 是一个基于 [Flask](https://flask.palletsprojects.com/) 和 [psutil](https://psutil.readthedocs.io/) 构建的极简赛博朋克风格系统监控面板与网络诊断工具。界面采用暗黑终端与玻璃拟态设计，实时展示 CPU、内存、磁盘、网络 IO、各运营商延迟及 ACME SSL 证书状态。
 
 <img width="1012" height="1054" alt="image" src="https://github.com/user-attachments/assets/5093b202-5b38-4929-ac9a-1db5062d863a" />
 
@@ -27,14 +27,19 @@ wget -qO- https://raw.githubusercontent.com/podcctv/console-web/main/deploy.sh |
 ---
 
 ## ✨ 核心功能
+- **🔒 自动 ACME IP / 域名 SSL 证书及自动续期**：
+  - 支持为公网 IP 地址或自定义域名自动向 ZeroSSL / Let's Encrypt 申请 90 天免费 SSL 证书。
+  - 内置 HTTP-01 Challenge 自动化校验服务。
+  - 后台 24 小时后台守护进程自动监测证书过期天数，**小于 30 天时自动触发静默自动续期**。
 - **赛博极客风格界面**：支持 `Matrix Classic` 绿、`Cyberpunk Neon` 紫、`Tech Blue` 蓝三款主题一键无缝切换。
 - **实时系统性能监控**：CPU 使用率、内存、磁盘空间平滑渐变进度条，带智能使用率预警。
 - **网络流量与 IO**：实时显示当前上传/下载速率、磁盘读写速度、公网/内网 IP 以及客户端 IP & ISP 运营商。
-- **动态 Latency 折线图**：对三大运营商（联通、移动、电信）及本地客户端的 TCP/ICMP Ping 进行可视化高帧率 Canvas 折线图绘制。
+- **动态 Latency 折线图**：对三大运营商（联通、移动、电信）及本地客户端的 TCP/ICMP Ping 进行可视化高帧率 Canvas 柱状/折线图绘制。
 - **图形化域名/IP 快速诊断**：支持直接输入任意 URL / IP 查询 DNS 解析、地理位置/ISP 运营商及响应延迟。
 - **增强型 Web Terminal**：
+  - 支持 `acme status`（查询 SSL 证书状态与到期天数）、`acme issue [IP/域名]`（申请免费 ACME 证书）、`acme renew`（强制续期）。
   - 支持**键盘上下方向键（Up/Down Arrow）**调出历史命令。
-  - 内置一键快捷动作按钮（`Ping 联通`、`Ping 移动`、`MTR 1.1.1.1`、`清屏` 等）。
+  - 内置一键快捷动作按钮（`ACME 证书`、`Ping 联通`、`Ping 移动`、`MTR 1.1.1.1`、`清屏` 等）。
   - 支持 `ping`、`mtr`、`lookup`、`stats`、`theme` 等命令的实时 SSE 流式回显。
 
 ---
@@ -64,6 +69,7 @@ docker run -d \
   --name console-web \
   --restart=always \
   -p 8180:8080 \
+  -v ./certs:/app/certs \
   --memory=128m --memory-swap=128m \
   ghcr.io/podcctv/console-web:latest
 ```
@@ -73,7 +79,7 @@ docker run -d \
 docker compose up -d
 ```
 
-默认将容器的 `8080` 端口映射到宿主机的 `8180` 端口。
+默认将容器的 `8080` 端口映射到宿主机的 `8180` 端口，并将证书保存至挂载卷 `./certs`。
 
 ---
 
@@ -88,7 +94,8 @@ docker compose up -d
 ## 目录结构
 ```
 .
-├── app/                  # Flask 应用与 Web 前端模板
+├── app/                  # Flask 应用与 ACME 证书管理模块 (acme_manager.py)
+├── certs/                # ACME 证书存储与 Challenge 目录
 ├── Dockerfile            # 多架构 Docker 构建配置
 ├── deploy.sh             # 一键自动部署脚本
 ├── docker-compose.yml    # Compose 一键编排文件

@@ -17,6 +17,11 @@ from concurrent.futures import ThreadPoolExecutor
 import psutil
 from flask import Flask, render_template_string, jsonify, Response, stream_with_context, request
 
+try:
+    from app import acme_manager
+except ImportError:
+    import acme_manager
+
 def configure_logging():
     log_dir = Path(__file__).resolve().parent.parent / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
@@ -51,6 +56,12 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 start_time = datetime.now()
 host_boot_time = datetime.fromtimestamp(psutil.boot_time())
+
+# Start ACME Auto-renewal daemon thread
+try:
+    acme_manager.start_daemon()
+except Exception as e:
+    logger.warning("Failed to start ACME auto-renew daemon: %s", e)
 
 logger.info(
     "console-web starting (pid=%s, platform=%s %s, python=%s)",
@@ -145,6 +156,33 @@ COMMANDS = {
     if extra
     else ["mtr", "-w", "-c", "5", target],
 }
+
+
+@app.route("/.well-known/acme-challenge/<token>")
+def acme_challenge_route(token):
+    token_file = acme_manager.CHALLENGE_DIR / token
+    if token_file.exists():
+        return Response(token_file.read_text(), mimetype="text/plain")
+    return Response("token not found", status=404)
+
+
+@app.route("/acme/status")
+def acme_status_route():
+    return jsonify(acme_manager.get_cert_status())
+
+
+@app.route("/acme/issue")
+def acme_issue_route():
+    target = request.args.get("target", "").strip() or None
+    email = request.args.get("email", "").strip() or None
+    success, msg = acme_manager.issue_cert(target, email)
+    return jsonify(success=success, message=msg)
+
+
+@app.route("/acme/renew")
+def acme_renew_route():
+    success, msg = acme_manager.renew_cert()
+    return jsonify(success=success, message=msg)
 
 
 @app.route("/run/<cmd>")
@@ -634,6 +672,7 @@ TEMPLATE = r"""
                 <span class="brand-icon">&gt;_</span>
                 <span>{{ hostname }}</span>
                 <span class="status-badge"><span class="pulse-dot"></span> ONLINE</span>
+                <span id="acme_badge" class="status-badge" style="background:rgba(0,204,255,0.1); border-color:var(--accent-blue); color:var(--accent-blue);">🔒 SSL 智能检测中...</span>
             </div>
             <div class="controls-group">
                 <select id="theme_select" class="select-input">
@@ -743,12 +782,12 @@ Welcome to Console-Web Cyber Edition 🚀 | System Status &amp; Realtime Network
 
                 <div class="info-grid">
                     <div class="info-item">
-                        <span class="info-key">操作系统</span>
-                        <span class="info-value" id="os_val">-</span>
+                        <span class="info-key">ACME SSL 证书状态</span>
+                        <span class="info-value" id="acme_val" style="color:var(--accent-blue)">-</span>
                     </div>
                     <div class="info-item">
-                        <span class="info-key">系统架构</span>
-                        <span class="info-value" id="arch_val">-</span>
+                        <span class="info-key">操作系统</span>
+                        <span class="info-value" id="os_val">-</span>
                     </div>
                     <div class="info-item">
                         <span class="info-key">物理/总内存</span>
@@ -842,6 +881,8 @@ Welcome to Console-Web Cyber Edition 🚀 | System Status &amp; Realtime Network
                     <div class="win-dot win-green"></div>
                 </div>
                 <div class="terminal-quick-actions">
+                    <span class="action-chip" onclick="quickRun('acme status')">ACME 证书状态</span>
+                    <span class="action-chip" onclick="quickRun('acme issue')">申请 IP 证书</span>
                     <span class="action-chip" onclick="quickRun('ping zj-cu-v4.ip.zstaticcdn.com')">Ping 联通</span>
                     <span class="action-chip" onclick="quickRun('ping zj-cm-v4.ip.zstaticcdn.com')">Ping 移动</span>
                     <span class="action-chip" onclick="quickRun('ping zj-ct-v4.ip.zstaticcdn.com')">Ping 电信</span>
@@ -852,7 +893,7 @@ Welcome to Console-Web Cyber Edition 🚀 | System Status &amp; Realtime Network
             </div>
             <div class="terminal-body" id="terminal_body">
                 <pre id="cmd_output">System initialized. Type 'help' for available commands.
-Try typing 'ping 8.8.8.8' or 'mtr 1.1.1.1' or 'lookup google.com'
+Try typing 'acme status' or 'acme issue' or 'ping 8.8.8.8'
 </pre>
                 <div class="terminal-input-line">
                     <span class="prompt-text">root@{{ short_isp }}:~$</span>
@@ -910,6 +951,31 @@ Try typing 'ping 8.8.8.8' or 'mtr 1.1.1.1' or 'lookup google.com'
         }
     }
 
+    // Fetch ACME SSL Status
+    async function fetchAcmeStatus() {
+        try {
+            const res = await fetch('/acme/status');
+            const data = await res.json();
+            const badge = document.getElementById('acme_badge');
+            const valEl = document.getElementById('acme_val');
+            if (data.has_cert) {
+                if (badge) {
+                    badge.style.borderColor = 'var(--accent-green)';
+                    badge.style.color = 'var(--accent-green)';
+                    badge.textContent = `🔒 SSL 已开启 (${data.days_left}天)`;
+                }
+                if (valEl) valEl.textContent = `${data.domain} (${data.days_left}天后到期)`;
+            } else {
+                if (badge) {
+                    badge.style.borderColor = 'var(--text-muted)';
+                    badge.style.color = 'var(--text-muted)';
+                    badge.textContent = `🔓 HTTP 运行中`;
+                }
+                if (valEl) valEl.textContent = `未安装 (可运行 'acme issue' 自动申请)`;
+            }
+        } catch(e) {}
+    }
+
     // Fetch stats
     async function fetchStats() {
         try {
@@ -929,6 +995,8 @@ Try typing 'ping 8.8.8.8' or 'mtr 1.1.1.1' or 'lookup google.com'
             
             const cip = data.client_ip ? `${data.client_ip} [${data.client_isp || '未知'}]` : '局域网';
             document.getElementById('client_ip_val').textContent = cip;
+
+            fetchAcmeStatus();
         } catch (e) {
             console.error("Failed to fetch stats:", e);
         }
@@ -1139,9 +1207,36 @@ Try typing 'ping 8.8.8.8' or 'mtr 1.1.1.1' or 'lookup google.com'
                     appendOutput(`${PROMPT} ${text}\nError: Missing domain or IP.`);
                 }
                 break;
+            case 'acme':
+                const sub = args[0] ? args[0].toLowerCase() : 'status';
+                if (sub === 'status') {
+                    appendOutput(`${PROMPT} ${text}\nQuerying ACME SSL Certificate Status...`);
+                    fetch('/acme/status').then(r=>r.json()).then(data => {
+                        appendOutput(`[ACME Status]\n  Status: ${data.status}\n  Domain/IP: ${data.domain || 'None'}\n  Days Left: ${data.days_left}\n  Issuer: ${data.issuer || 'N/A'}\n  Expires On: ${data.expires_on || 'N/A'}`);
+                    });
+                } else if (sub === 'issue') {
+                    const targetHost = args[1] || '';
+                    appendOutput(`${PROMPT} ${text}\nInitiating ACME Certificate issuance${targetHost ? ' for ' + targetHost : ' (Auto Public IP)'}... Please wait...`);
+                    fetch(`/acme/issue${targetHost ? '?target=' + encodeURIComponent(targetHost) : ''}`).then(r=>r.json()).then(data => {
+                        appendOutput(`[ACME Issue Result]\n  Success: ${data.success}\n  Message: ${data.message}`);
+                        fetchAcmeStatus();
+                    }).catch(err => appendOutput(`ACME issue error: ${err.message}`));
+                } else if (sub === 'renew') {
+                    appendOutput(`${PROMPT} ${text}\nTriggering ACME Certificate renewal...`);
+                    fetch('/acme/renew').then(r=>r.json()).then(data => {
+                        appendOutput(`[ACME Renew Result]\n  Success: ${data.success}\n  Message: ${data.message}`);
+                        fetchAcmeStatus();
+                    }).catch(err => appendOutput(`ACME renew error: ${err.message}`));
+                } else {
+                    appendOutput(`${PROMPT} ${text}\nUsage: acme <status|issue|renew> [domain_or_ip]`);
+                }
+                break;
             case 'help':
                 appendOutput(`${PROMPT} ${text}\n` +
                     'Available Cyber Commands:\n' +
+                    '  acme status         - Check ACME SSL certificate status\n' +
+                    '  acme issue [domain] - Issue free ACME SSL certificate for IP/Domain\n' +
+                    '  acme renew          - Force renew ACME SSL certificate\n' +
                     '  ping <host>         - Run ping to target host/IP\n' +
                     '  mtr <host>          - Run MTR traceroute to target\n' +
                     '  lookup <host>       - Query IP, ISP, and latency info\n' +
