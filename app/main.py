@@ -2138,24 +2138,7 @@ from werkzeug.serving import make_server
 
 if __name__ == "__main__":
     acme_manager._auto_init()
-    cert_file = acme_manager.FULLCHAIN_FILE if acme_manager.FULLCHAIN_FILE.exists() else acme_manager.CERT_FILE
-    key_file = acme_manager.KEY_FILE
-
-    if cert_file.exists() and key_file.exists():
-        logger.info("🔒 SSL Certificate present (%s). Launching Gunicorn HTTPS server on 0.0.0.0:8080...", cert_file)
-        cmd = [
-            "gunicorn",
-            "-b", "0.0.0.0:8080",
-            "--certfile", str(cert_file),
-            "--keyfile", str(key_file),
-            "--workers", "2",
-            "--timeout", "120",
-            "app.main:app"
-        ]
-        os.execvp("gunicorn", cmd)
-    else:
-        logger.info("🔓 No SSL Certificate found yet. Launching HTTP server on 0.0.0.0:8080...")
-        app.run(host="0.0.0.0", port=8080, threaded=True)
+    app.run(host="0.0.0.0", port=8080, threaded=True)
 
 
 

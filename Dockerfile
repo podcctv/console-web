@@ -16,7 +16,9 @@ COPY . /app
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
+RUN chmod +x /app/entrypoint.sh
+
 # Preserve certs volume
 VOLUME ["/app/certs"]
 
-CMD ["python", "main.py"]
+CMD ["/bin/sh", "/app/entrypoint.sh"]
