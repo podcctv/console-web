@@ -1063,7 +1063,8 @@ TEMPLATE = r"""
                         <div class="ipcheck-row"><span class="ipcheck-label">所属组织</span><span class="ipcheck-val" id="ipc_org">-</span></div>
                         <div class="ipcheck-row"><span class="ipcheck-label">ISP 运营商</span><span class="ipcheck-val" id="ipc_isp">-</span></div>
                         <div class="ipcheck-row"><span class="ipcheck-label">国家/地区</span><span class="ipcheck-val" id="ipc_country">-</span></div>
-                        <div class="ipcheck-row"><span class="ipcheck-label">城市 / 时区</span><span class="ipcheck-val" id="ipc_city">-</span></div>
+                        <div class="ipcheck-row"><span class="ipcheck-label">城市</span><span class="ipcheck-val" id="ipc_city">-</span></div>
+                        <div class="ipcheck-row"><span class="ipcheck-label">时区</span><span class="ipcheck-val" id="ipc_tz">-</span></div>
                     </div>
 
                     <!-- IP Type -->
@@ -1625,74 +1626,85 @@ Try typing 'acme status' or 'acme issue' or 'ping 8.8.8.8'
         'Amazon Prime': `<svg viewBox="0 0 24 24" width="18" height="18" style="vertical-align:middle; flex-shrink:0;"><path fill="#00A8E1" d="M14.5 12.8c-1.8 0-3.3-.6-4.7-1.7l1.1-1.3c1.1.9 2.3 1.4 3.6 1.4 1.2 0 1.9-.5 1.9-1.2 0-.8-.7-1.2-2.3-1.7-2.3-.7-3.6-1.6-3.6-3.4 0-2.1 1.7-3.5 4.3-3.5 1.6 0 3 .5 4.1 1.3l-1.1 1.3c-.9-.7-1.9-1-3-1-1.2 0-1.8.5-1.8 1.1 0 .7.6 1.1 2.2 1.6 2.5.8 3.7 1.7 3.7 3.5 0 2.2-1.7 3.6-4.4 3.6zm-1.8 6c-4.4 0-8.5-1.8-11.4-4.8-.3-.3-.1-.7.3-.6 3.6 1.3 7.6 1.9 11.5 1.5 3.8-.4 7.4-1.7 10.4-3.9.4-.3.8.1.5.5-3 2.9-7.2 4.9-11.3 7.3z"/></svg>`
     };
 
+    function setElHTML(id, html) {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = (html !== null && html !== undefined) ? html : '-';
+    }
+
     function renderIPCheckResult(data) {
         const body = document.getElementById('ipcheck_body');
-        body.classList.add('visible');
+        if (body) body.classList.add('visible');
 
         const b = data.basic || {};
         const r = data.risk || {};
 
         // Basic info
-        document.getElementById('ipc_ip').textContent = b.ip || 'N/A';
-        document.getElementById('ipc_asn').textContent = b.asn || 'N/A';
-        document.getElementById('ipc_org').textContent = b.org || 'N/A';
-        document.getElementById('ipc_isp').textContent = b.isp || 'N/A';
+        setElText('ipc_ip', b.ip || 'N/A');
+        setElText('ipc_asn', b.asn || 'N/A');
+        setElText('ipc_org', b.org || 'N/A');
+        setElText('ipc_isp', b.isp || 'N/A');
         const flag = b.countryCode ? String.fromCodePoint(...[...b.countryCode.toUpperCase()].map(c => 0x1F1E6 + c.charCodeAt(0) - 65)) + ' ' : '';
-        document.getElementById('ipc_country').textContent = flag + (b.country || 'N/A');
-        document.getElementById('ipc_city').textContent = b.city || 'N/A';
-        document.getElementById('ipc_tz').textContent = b.timezone || 'N/A';
+        setElText('ipc_country', flag + (b.country || 'N/A'));
+        setElText('ipc_city', b.city || 'N/A');
+        setElText('ipc_tz', b.timezone || 'N/A');
 
         // IP type badge
         const typeClass = 'ip-type-' + (r.ip_type || 'isp');
-        document.getElementById('ipc_type').innerHTML = `<span class="ip-type-badge ${typeClass}">${r.ip_type_label || 'N/A'}</span>`;
+        setElHTML('ipc_type', `<span class="ip-type-badge ${typeClass}">${r.ip_type_label || 'N/A'}</span>`);
 
         // Risk factors
         const factorHTML = (val) => val ? '<span class="factor-yes">⚠ 是</span>' : '<span class="factor-no">✅ 否</span>';
-        document.getElementById('ipc_proxy').innerHTML = factorHTML(r.is_proxy);
-        document.getElementById('ipc_vpn').innerHTML = factorHTML(r.is_vpn);
-        document.getElementById('ipc_tor').innerHTML = factorHTML(r.is_tor);
-        document.getElementById('ipc_hosting').innerHTML = factorHTML(r.is_hosting);
-        document.getElementById('ipc_mobile').innerHTML = factorHTML(r.is_mobile);
+        setElHTML('ipc_proxy', factorHTML(r.is_proxy));
+        setElHTML('ipc_vpn', factorHTML(r.is_vpn));
+        setElHTML('ipc_tor', factorHTML(r.is_tor));
+        setElHTML('ipc_hosting', factorHTML(r.is_hosting));
+        setElHTML('ipc_mobile', factorHTML(r.is_mobile));
 
         // Risk score
         const score = r.risk_score || 0;
-        document.getElementById('ipc_risk_score').textContent = score + ' / 100';
+        setElText('ipc_risk_score', score + ' / 100');
         const bar = document.getElementById('ipc_risk_bar');
-        bar.style.width = Math.min(100, score) + '%';
-        bar.className = 'risk-bar-fill';
-        if (score <= 15) bar.classList.add('risk-vlow');
-        else if (score <= 33) bar.classList.add('risk-low');
-        else if (score <= 66) bar.classList.add('risk-med');
-        else if (score <= 85) bar.classList.add('risk-high');
-        else bar.classList.add('risk-vhigh');
+        if (bar) {
+            bar.style.width = Math.min(100, score) + '%';
+            bar.className = 'risk-bar-fill';
+            if (score <= 15) bar.classList.add('risk-vlow');
+            else if (score <= 33) bar.classList.add('risk-low');
+            else if (score <= 66) bar.classList.add('risk-med');
+            else if (score <= 85) bar.classList.add('risk-high');
+            else bar.classList.add('risk-vhigh');
+        }
 
         const labelEl = document.getElementById('ipc_risk_label');
-        labelEl.textContent = r.risk_label || '-';
-        if (score <= 33) labelEl.style.color = 'var(--accent-green)';
-        else if (score <= 66) labelEl.style.color = 'var(--accent-yellow)';
-        else labelEl.style.color = 'var(--accent-red)';
+        if (labelEl) {
+            labelEl.textContent = r.risk_label || '-';
+            if (score <= 33) labelEl.style.color = 'var(--accent-green)';
+            else if (score <= 66) labelEl.style.color = 'var(--accent-yellow)';
+            else labelEl.style.color = 'var(--accent-red)';
+        }
 
-        document.getElementById('ipc_time').textContent = data.timestamp || '-';
+        setElText('ipc_time', data.timestamp || '-');
 
         // Compact Media unlock tiles (Chips)
         const grid = document.getElementById('unlock_grid');
-        grid.innerHTML = '';
-        (data.media || []).forEach(m => {
-            const icon = MEDIA_ICONS[m.name] || '🌐';
-            let statusClass, statusText;
-            if (m.status === 'unlocked') { statusClass = 'unlock-yes'; statusText = '✅ 解锁'; }
-            else if (m.status === 'blocked') { statusClass = 'unlock-no'; statusText = '❌ 屏蔽'; }
-            else { statusClass = 'unlock-fail'; statusText = '⚠️ 未知'; }
-            const regionText = m.region ? ` (${m.region})` : '';
-            grid.innerHTML += `
-                <div class="unlock-tile">
-                    <div class="unlock-tile-left">
-                        <span class="unlock-tile-icon">${icon}</span>
-                        <span class="unlock-tile-name">${m.name}</span>
-                    </div>
-                    <div class="unlock-tile-status ${statusClass}">${statusText}${regionText}</div>
-                </div>`;
-        });
+        if (grid) {
+            grid.innerHTML = '';
+            (data.media || []).forEach(m => {
+                const icon = MEDIA_ICONS[m.name] || '🌐';
+                let statusClass, statusText;
+                if (m.status === 'unlocked') { statusClass = 'unlock-yes'; statusText = '✅ 解锁'; }
+                else if (m.status === 'blocked') { statusClass = 'unlock-no'; statusText = '❌ 屏蔽'; }
+                else { statusClass = 'unlock-fail'; statusText = '⚠️ 未知'; }
+                const regionText = m.region ? ` (${m.region})` : '';
+                grid.innerHTML += `
+                    <div class="unlock-tile">
+                        <div class="unlock-tile-left">
+                            <span class="unlock-tile-icon">${icon}</span>
+                            <span class="unlock-tile-name">${m.name}</span>
+                        </div>
+                        <div class="unlock-tile-status ${statusClass}">${statusText}${regionText}</div>
+                    </div>`;
+            });
+        }
     }
 
     async function fetchIPCheck(force) {
