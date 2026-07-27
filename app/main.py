@@ -1844,4 +1844,18 @@ def host():
     )
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080)
+    acme_manager._auto_init()
+    cert_file = acme_manager.CERT_FILE
+    key_file = acme_manager.KEY_FILE
+
+    if cert_file.exists() and key_file.exists():
+        logger.info("Starting Flask server with SSL context (%s, %s)", cert_file, key_file)
+        try:
+            app.run(host="0.0.0.0", port=8080, ssl_context=(str(cert_file), str(key_file)))
+        except Exception as e:
+            logger.warning("Failed to start server with SSL context, falling back to HTTP: %s", e)
+            app.run(host="0.0.0.0", port=8080)
+    else:
+        logger.info("Starting Flask server in HTTP mode on port 8080")
+        app.run(host="0.0.0.0", port=8080)
+

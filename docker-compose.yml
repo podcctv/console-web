@@ -7,4 +7,10 @@ services:
     command: ["python", "main.py"]
     ports:
       - "8180:8080"
+    volumes:
+      - console-web-certs:/app/certs
     restart: unless-stopped
+
+volumes:
+  console-web-certs:
+

@@ -42,14 +42,34 @@ deploy() {
     --name "$CONTAINER_NAME" \
     --restart=always \
     -p ${PORT}:8080 \
+    -v console-web-certs:/app/certs \
     --memory=128m --memory-swap=128m \
     "$IMAGE_NAME"
+
+  echo "⏳ 等待容器服务初始化..."
+  sleep 3
+
+  echo ""
+  echo "🔒 正在执行 ACME SSL 证书检测与申请..."
+  HAS_SSL=0
+  if docker exec "$CONTAINER_NAME" python -m app.acme_manager; then
+    HAS_SSL=1
+    # 重启容器以使 Python 服务加载新签发的 SSL 证书 (若首次签发)
+    docker restart "$CONTAINER_NAME" >/dev/null 2>&1 || true
+    sleep 2
+  fi
 
   SERVER_IP=$(ip route get 1 2>/dev/null | awk '{print $7; exit}' || curl -s ifconfig.me || echo "your-server-ip")
   echo ""
   echo "=================================================="
   echo "🎉 部署完成！Console-Web 已成功在后台运行。"
-  echo "👉 访问地址: http://${SERVER_IP}:${PORT}"
+  if [ "$HAS_SSL" -eq 1 ]; then
+    echo "🔒 ACME SSL 证书检测通过，已开启 HTTPS 安全加密访问。"
+    echo "👉 HTTPS 访问地址: https://${SERVER_IP}:${PORT}"
+    echo "👉 HTTP  备用地址: http://${SERVER_IP}:${PORT}"
+  else
+    echo "👉 访问地址: http://${SERVER_IP}:${PORT}"
+  fi
   echo "=================================================="
 }
 

@@ -339,3 +339,32 @@ def _auto_renew_loop():
 def start_daemon():
     t = threading.Thread(target=_auto_renew_loop, daemon=True, name="ACME-AutoRenew")
     t.start()
+
+
+if __name__ == "__main__":
+    import sys
+    print("==================================================")
+    print("🔒 ACME SSL 证书检测与申请管理")
+    print("==================================================")
+    status = get_cert_status()
+    if not status.get("has_cert") or status.get("days_left", 0) <= 7:
+        print("🔍 未检测到有效 SSL 证书，正在自动触发 ACME / ZeroSSL 证书申请...")
+        ok, msg = issue_cert()
+        print(f"👉 结果: {msg}")
+        status = get_cert_status()
+    else:
+        print("✅ 检测到有效 SSL 证书，状态良好。")
+
+    print("\n--- ACME / SSL 证书运行状态 ---")
+    print(f"域名 / IP:  {status.get('domain', 'N/A')}")
+    print(f"签发机构:   {status.get('issuer', 'N/A')}")
+    print(f"剩余有效:   {status.get('days_left', 0)} 天")
+    print(f"到期时间:   {status.get('expires_on', 'N/A')}")
+    print(f"当前状态:   {status.get('status', 'N/A')}")
+    print("==================================================")
+
+    if status.get("has_cert"):
+        sys.exit(0)
+    else:
+        sys.exit(1)
+

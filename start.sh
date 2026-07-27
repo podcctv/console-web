@@ -57,9 +57,15 @@ fi
 export PYTHONPATH="$ROOT_DIR:$PYTHONPATH"
 
 if [ "$USE_GUNICORN" -eq 1 ]; then
+  SSL_ARGS=""
+  if [ -f "$ROOT_DIR/certs/cert.pem" ] && [ -f "$ROOT_DIR/certs/key.pem" ]; then
+    echo "🔒 检测到 SSL 证书，Gunicorn 将以 HTTPS 模式启动..."
+    SSL_ARGS="--certfile $ROOT_DIR/certs/cert.pem --keyfile $ROOT_DIR/certs/key.pem"
+  fi
   echo "🚀 使用 gunicorn 启动 (监听 0.0.0.0:8080)..."
-  exec "$PYTHON_BIN" -m gunicorn -b 0.0.0.0:8080 main:app
+  exec "$PYTHON_BIN" -m gunicorn -b 0.0.0.0:8080 $SSL_ARGS main:app
 else
   echo "🚀 使用内置服务器启动 (监听 0.0.0.0:8080)..."
   exec "$PYTHON_BIN" main.py
 fi
+
