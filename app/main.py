@@ -375,52 +375,52 @@ TEMPLATE = r"""
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            /* Sci-Fi Blue Surface & Background Palette */
-            --bg-page: #040912;
-            --bg-surface: #081220;
-            --bg-surface-elevated: #0d1b30;
-            --bg-hover: #112440;
-            --bg-input: #060e1b;
+            /* Premium Sci-Fi Ambient Palette */
+            --bg-page: radial-gradient(ellipse at 50% -10%, #0c1527 0%, #050811 75%);
+            --bg-surface: rgba(11, 18, 32, 0.75);
+            --bg-surface-elevated: rgba(16, 26, 45, 0.85);
+            --bg-hover: rgba(22, 36, 62, 0.9);
+            --bg-input: rgba(7, 12, 22, 0.85);
 
-            /* Subdued Muted Borders */
+            /* Subdued Muted Borders & Highlighting */
             --border-subtle: rgba(0, 217, 255, 0.08);
             --border-default: rgba(0, 217, 255, 0.14);
             --border-active: rgba(0, 217, 255, 0.45);
 
-            /* Typography & Colors */
-            --text-primary: #e8f1f7;
-            --text-secondary: #9cb0bd;
-            --text-muted: #607785;
+            /* Typography & Primary Colors */
+            --text-primary: #e8f2f8;
+            --text-secondary: #94a8b8;
+            --text-muted: #586e7e;
 
             /* Semantic Color Tokens */
             --accent: #00d9ff;
-            --accent-soft: rgba(0, 217, 255, 0.10);
+            --accent-soft: rgba(0, 217, 255, 0.12);
             --info: #00d9ff;
-            --info-soft: rgba(0, 217, 255, 0.10);
-            --warning: #f5b942;
-            --warning-soft: rgba(245, 185, 66, 0.10);
-            --orange: #f58442;
-            --orange-soft: rgba(245, 132, 66, 0.10);
-            --danger: #f35b72;
-            --danger-soft: rgba(243, 91, 114, 0.10);
-            --success: #36e27b;
-            --success-soft: rgba(54, 226, 123, 0.10);
+            --info-soft: rgba(0, 217, 255, 0.12);
+            --warning: #f59e0b;
+            --warning-soft: rgba(245, 158, 11, 0.12);
+            --orange: #f97316;
+            --orange-soft: rgba(249, 115, 22, 0.12);
+            --danger: #ef4444;
+            --danger-soft: rgba(239, 68, 68, 0.12);
+            --success: #10b981;
+            --success-soft: rgba(16, 185, 129, 0.12);
 
             /* Layout Tokens */
             --radius-card: 10px;
             --radius-control: 6px;
 
-            /* Typography */
-            --font-ui: "MiSans", "HarmonyOS Sans SC", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+            /* Typography Systems */
+            --font-ui: "Inter", "MiSans", "HarmonyOS Sans SC", -apple-system, BlinkMacSystemFont, sans-serif;
             --font-mono: "JetBrains Mono", "IBM Plex Mono", "Consolas", monospace;
         }
 
         [data-theme="matrix"] {
-            --bg-page: #050807;
-            --bg-surface: #08110d;
-            --bg-surface-elevated: #0d1a14;
-            --bg-hover: #10221a;
-            --bg-input: #09150e;
+            --bg-page: radial-gradient(ellipse at 50% -10%, #06140b 0%, #040906 75%);
+            --bg-surface: rgba(8, 17, 13, 0.75);
+            --bg-surface-elevated: rgba(13, 26, 20, 0.85);
+            --bg-hover: rgba(16, 34, 26, 0.9);
+            --bg-input: rgba(9, 21, 14, 0.85);
 
             --border-subtle: rgba(93, 255, 167, 0.08);
             --border-default: rgba(93, 255, 167, 0.14);
@@ -435,11 +435,11 @@ TEMPLATE = r"""
         }
 
         [data-theme="cyberpunk"] {
-            --bg-page: #07040e;
-            --bg-surface: #12091c;
-            --bg-surface-elevated: #1a0d28;
-            --bg-hover: #221235;
-            --bg-input: #0f071a;
+            --bg-page: radial-gradient(ellipse at 50% -10%, #1a0826 0%, #07040e 75%);
+            --bg-surface: rgba(18, 9, 28, 0.75);
+            --bg-surface-elevated: rgba(26, 13, 40, 0.85);
+            --bg-hover: rgba(34, 18, 53, 0.9);
+            --bg-input: rgba(15, 7, 26, 0.85);
 
             --border-subtle: rgba(255, 0, 119, 0.08);
             --border-default: rgba(255, 0, 119, 0.14);
@@ -458,10 +458,7 @@ TEMPLATE = r"""
 
         body {
             display: flex; flex-direction: column; align-items: center; padding: 24px 0;
-            background-image: 
-                radial-gradient(circle at 50% 0%, rgba(0, 217, 255, 0.04), transparent 70%),
-                linear-gradient(to bottom, rgba(255,255,255,0.008) 1px, transparent 1px);
-            background-size: 100% 100%, 100% 24px;
+            background-attachment: fixed;
         }
 
         /* Rule 1: Unified Page Container across ALL modules */
@@ -486,7 +483,14 @@ TEMPLATE = r"""
             width: 100%;
             display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;
             background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-card);
-            padding: 12px 20px; backdrop-filter: blur(16px);
+            padding: 12px 20px; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            position: relative; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.45);
+        }
+
+        .header-bar::before, .summary-card::before, .card::before, .ipcheck-card::before, .streaming-card::before, .terminal-card::before {
+            content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, rgba(0, 217, 255, 0.4), rgba(0, 217, 255, 0.05) 60%, transparent);
+            pointer-events: none;
         }
 
         .brand-group {
@@ -507,16 +511,16 @@ TEMPLATE = r"""
 
         .pulse-dot {
             width: 7px; height: 7px; border-radius: 50%; background: var(--success);
-            box-shadow: 0 0 6px var(--success); animation: pulse 2s infinite;
+            box-shadow: 0 0 6px var(--success); animation: pulse 2.4s ease-in-out infinite;
         }
 
         .pulse-dot.dot-warning { background: var(--warning); box-shadow: 0 0 6px var(--warning); }
         .pulse-dot.dot-orange { background: var(--orange); box-shadow: 0 0 6px var(--orange); }
 
         @keyframes pulse {
-            0% { opacity: 0.7; transform: scale(0.95); }
-            50% { opacity: 1; transform: scale(1.25); }
-            100% { opacity: 0.7; transform: scale(0.95); }
+            0% { opacity: 0.75; transform: scale(0.95); }
+            50% { opacity: 1; transform: scale(1.2); }
+            100% { opacity: 0.75; transform: scale(0.95); }
         }
 
         .controls-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -528,10 +532,10 @@ TEMPLATE = r"""
         }
 
         .btn-ctrl:hover, .select-input:hover {
-            border-color: var(--border-active); background: var(--bg-hover);
+            border-color: var(--border-active); background: var(--bg-hover); box-shadow: 0 2px 10px rgba(0, 217, 255, 0.15);
         }
 
-        /* Rule 2 & 3: Restored 4 Uniform Summary Cards in 1 Row (104-124px Height) */
+        /* 4 Flagship Executive Summary Cards in 1 Row */
         .summary-grid {
             width: 100%;
             display: grid;
@@ -540,7 +544,7 @@ TEMPLATE = r"""
         }
 
         .summary-card {
-            height: 114px;
+            height: 118px;
             background: var(--bg-surface);
             border: 1px solid var(--border-default);
             border-radius: var(--radius-card);
@@ -548,16 +552,19 @@ TEMPLATE = r"""
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            transition: background 0.2s ease, border-color 0.2s ease;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative; overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
         }
 
         .summary-card:hover {
             background: var(--bg-surface-elevated); border-color: var(--border-active);
+            transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0, 217, 255, 0.12);
         }
 
         .summary-card.hero-card {
             background: linear-gradient(135deg, var(--bg-surface), var(--bg-surface-elevated));
-            border-color: rgba(0, 217, 255, 0.28);
+            border-color: rgba(0, 217, 255, 0.32);
         }
 
         .summary-label {
@@ -565,8 +572,8 @@ TEMPLATE = r"""
         }
 
         .summary-value {
-            font-size: 2rem; font-weight: 700; color: var(--text-primary); line-height: 1.1;
-            display: flex; align-items: baseline; gap: 6px;
+            font-size: 2.1rem; font-weight: 700; color: var(--text-primary); line-height: 1.1;
+            display: flex; align-items: baseline; gap: 6px; letter-spacing: -0.5px;
         }
 
         .summary-unit { font-size: 0.9rem; font-weight: 500; color: var(--text-muted); }
@@ -582,7 +589,7 @@ TEMPLATE = r"""
 
         .btn-copy:hover { color: var(--accent); border-color: var(--border-default); background: var(--accent-soft); }
 
-        /* Rule 2 & 5: 12-Column Responsive Dashboard Grid */
+        /* 12-Column Responsive Dashboard Grid */
         .dashboard-grid {
             width: 100%;
             display: grid;
@@ -597,10 +604,11 @@ TEMPLATE = r"""
         .card {
             width: 100%;
             background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-card);
-            padding: 18px 20px; display: flex; flex-direction: column; gap: 16px; transition: border-color 0.2s ease;
+            padding: 18px 20px; display: flex; flex-direction: column; gap: 16px; transition: all 0.25s ease;
+            position: relative; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
         }
 
-        .card:hover { border-color: var(--border-active); }
+        .card:hover { border-color: var(--border-active); box-shadow: 0 6px 24px rgba(0, 217, 255, 0.08); }
 
         .card-header {
             display: flex; justify-content: space-between; align-items: center;
@@ -610,15 +618,17 @@ TEMPLATE = r"""
 
         .card-header-left { display: flex; align-items: center; gap: 8px; }
 
-        /* Rule 6: System Metrics Gauges */
+        /* Precision Metric Gauges */
         .metrics-triple {
             display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
         }
 
         .metric-box {
             background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-control);
-            padding: 10px 12px; display: flex; flex-direction: column; gap: 6px;
+            padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; transition: border-color 0.2s ease;
         }
+
+        .metric-box:hover { border-color: var(--border-default); }
 
         .metric-header {
             display: flex; justify-content: space-between; align-items: center; font-size: 0.76rem;
@@ -630,21 +640,28 @@ TEMPLATE = r"""
         .badge-warn { background: var(--warning-soft); color: var(--warning); }
         .badge-danger { background: var(--danger-soft); color: var(--danger); }
 
-        .metric-val-num { font-size: 1.15rem; font-weight: 700; color: var(--text-primary); }
+        .metric-val-num { font-size: 1.25rem; font-weight: 700; color: var(--text-primary); }
 
         .progress-track {
-            height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden; position: relative; margin-top: 2px;
+            height: 6px; background: rgba(0, 217, 255, 0.08); border-radius: 3px; overflow: hidden; position: relative; margin-top: 2px;
         }
 
         .progress-fill {
-            height: 100%; width: 0%; background: var(--info); border-radius: 3px;
-            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            height: 100%; width: 0%; background: linear-gradient(90deg, rgba(0, 217, 255, 0.6), var(--info)); border-radius: 3px;
+            position: relative; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .progress-fill.warn { background: var(--warning); }
-        .progress-fill.danger { background: var(--danger); }
+        .progress-fill::after {
+            content: ""; position: absolute; right: 0; top: 0; bottom: 0; width: 3px;
+            background: #fff; border-radius: 2px; box-shadow: 0 0 6px var(--info);
+        }
 
-        /* System Info Matrix with Split LAN / Public IP Lines */
+        .progress-fill.warn { background: linear-gradient(90deg, rgba(245, 158, 11, 0.6), var(--warning)); }
+        .progress-fill.warn::after { box-shadow: 0 0 6px var(--warning); }
+        .progress-fill.danger { background: linear-gradient(90deg, rgba(239, 68, 68, 0.6), var(--danger)); }
+        .progress-fill.danger::after { box-shadow: 0 0 6px var(--danger); }
+
+        /* System Info Matrix */
         .info-subgroups { display: flex; flex-direction: column; gap: 12px; }
 
         .info-subgroup-title {
@@ -665,14 +682,16 @@ TEMPLATE = r"""
         .info-key { color: var(--text-secondary); font-size: 0.76rem; }
         .info-val { color: var(--text-primary); font-weight: 600; text-align: right; word-break: break-all; }
 
-        /* Rule 7: Refined Sci-Fi Blue TCP Ping Sparkline Monitor */
+        /* Refined TCP Ping Sparkline Monitor */
         .ping-grid { display: flex; flex-direction: column; gap: 10px; }
 
         .ping-item {
-            height: 100px;
+            height: 102px;
             background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-control);
-            padding: 10px 14px; display: flex; flex-direction: column; justify-content: space-between;
+            padding: 10px 14px; display: flex; flex-direction: column; justify-content: space-between; transition: border-color 0.2s ease;
         }
+
+        .ping-item:hover { border-color: var(--border-default); }
 
         .ping-item-header {
             display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem;
@@ -680,16 +699,16 @@ TEMPLATE = r"""
 
         .ping-title { font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 6px; }
         .ping-meta { font-size: 0.72rem; color: var(--text-muted); display: flex; gap: 12px; }
-        .ping-value { font-weight: 700; font-size: 0.95rem; }
+        .ping-value { font-weight: 700; font-size: 0.98rem; }
 
         .pixel-bar-container {
-            display: flex; align-items: flex-end; gap: 2px; height: 32px;
-            padding: 2px 4px; background: rgba(0,0,0,0.3); border-radius: 4px;
+            display: flex; align-items: flex-end; gap: 2px; height: 34px;
+            padding: 2px 4px; background: rgba(0,0,0,0.35); border-radius: 4px;
             border: 1px solid var(--border-subtle); overflow: hidden; position: relative;
         }
 
         .pixel-bar-container::before {
-            content: ''; position: absolute; left: 4px; right: 4px; bottom: 16px;
+            content: ''; position: absolute; left: 4px; right: 4px; bottom: 17px;
             border-top: 1px dashed rgba(255,255,255,0.06);
         }
 
@@ -705,11 +724,12 @@ TEMPLATE = r"""
         .pixel-bar.px-timeout { background: var(--danger); min-height: 2px; }
         .pixel-bar.px-empty { background: rgba(255,255,255,0.02); min-height: 2px; }
 
-        /* Rule 8: IP Quality Full-Width Panel with 4:3:5 Internal Grid */
+        /* IP Quality Full-Width Panel */
         .ipcheck-card {
             width: 100%; grid-column: span 12;
             background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-card);
             padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; transition: border-color 0.2s ease;
+            position: relative; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
         }
 
         .ipcheck-card:hover { border-color: var(--border-active); }
@@ -720,8 +740,10 @@ TEMPLATE = r"""
 
         .ipcheck-section {
             background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-control);
-            padding: 12px 14px; display: flex; flex-direction: column; gap: 6px;
+            padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; transition: border-color 0.2s ease;
         }
+
+        .ipcheck-section:hover { border-color: var(--border-default); }
 
         .ipcheck-section-title {
             font-size: 0.78rem; font-weight: 600; color: var(--text-secondary);
@@ -740,7 +762,7 @@ TEMPLATE = r"""
         .risk-score-display {
             display: flex; justify-content: space-between; align-items: baseline; margin-top: 2px;
         }
-        .risk-score-num { font-size: 1.5rem; font-weight: 700; font-family: var(--font-mono); }
+        .risk-score-num { font-size: 1.6rem; font-weight: 700; font-family: var(--font-mono); }
 
         .risk-bar-segmented {
             display: flex; gap: 3px; height: 7px; border-radius: 4px; overflow: hidden; margin-top: 4px;
@@ -753,7 +775,7 @@ TEMPLATE = r"""
         .risk-segment.active-red { background: var(--danger); }
 
         .risk-factors-container {
-            display: flex; flex-direction: column; gap: 4px; margin-top: 6px; background: rgba(0,0,0,0.2);
+            display: flex; flex-direction: column; gap: 4px; margin-top: 6px; background: rgba(0,0,0,0.25);
             padding: 8px 10px; border-radius: 4px; border: 1px solid var(--border-subtle);
         }
 
@@ -771,15 +793,16 @@ TEMPLATE = r"""
             display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 4px;
             font-size: 0.72rem; font-weight: 600; font-family: var(--font-ui);
         }
-        .badge-tag-yes { background: var(--warning-soft); color: var(--warning); border: 1px solid rgba(245, 185, 66, 0.25); }
-        .badge-tag-no { background: var(--success-soft); color: var(--success); border: 1px solid rgba(54, 226, 123, 0.25); }
-        .badge-tag-high { background: var(--danger-soft); color: var(--danger); border: 1px solid rgba(243, 91, 114, 0.25); }
+        .badge-tag-yes { background: var(--warning-soft); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.25); }
+        .badge-tag-no { background: var(--success-soft); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.25); }
+        .badge-tag-high { background: var(--danger-soft); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.25); }
 
-        /* Rule 9: Streaming & AI Full-Width Grid (4 Columns, 2-Row Tiles) */
+        /* Streaming & AI Matrix */
         .streaming-card {
             width: 100%; grid-column: span 12;
             background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-card);
             padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; transition: border-color 0.2s ease;
+            position: relative; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
         }
 
         .unlock-header-right { display: flex; align-items: center; gap: 10px; }
@@ -790,12 +813,12 @@ TEMPLATE = r"""
         }
 
         .tab-btn-seg {
-            background: transparent; border: none; color: var(--text-secondary); padding: 3px 12px;
-            border-radius: 4px; font-size: 0.74rem; font-weight: 500; cursor: pointer; transition: all 0.15s ease;
+            background: transparent; border: none; color: var(--text-secondary); padding: 4px 14px;
+            border-radius: 4px; font-size: 0.74rem; font-weight: 500; cursor: pointer; transition: all 0.2s ease;
         }
 
         .tab-btn-seg:hover { color: var(--text-primary); }
-        .tab-btn-seg.active { background: var(--accent); color: #000; font-weight: 700; box-shadow: 0 1px 4px rgba(0,0,0,0.4); }
+        .tab-btn-seg.active { background: var(--accent); color: #000; font-weight: 700; box-shadow: 0 1px 6px rgba(0, 217, 255, 0.3); }
 
         .unlock-grid {
             width: 100%; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px;
@@ -816,16 +839,17 @@ TEMPLATE = r"""
             font-size: 0.7rem; font-weight: 600; white-space: nowrap;
         }
 
-        .unlock-badge.unlocked { background: var(--success-soft); color: var(--success); border: 1px solid rgba(54, 226, 123, 0.25); }
-        .unlock-badge.blocked { background: var(--danger-soft); color: var(--danger); border: 1px solid rgba(243, 91, 114, 0.25); }
-        .unlock-badge.unknown { background: var(--warning-soft); color: var(--warning); border: 1px solid rgba(245, 185, 66, 0.25); }
+        .unlock-badge.unlocked { background: var(--success-soft); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.25); }
+        .unlock-badge.blocked { background: var(--danger-soft); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.25); }
+        .unlock-badge.unknown { background: var(--warning-soft); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.25); }
 
-        /* Rule 10: Diagnostic Console Full-Width Alignment */
+        /* Embedded Professional Terminal */
         .terminal-card {
             width: 100%; grid-column: span 12;
             background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-card);
             padding: 0; overflow: hidden; display: flex; flex-direction: column;
             height: 280px; min-height: 220px; max-height: 600px; transition: height 0.2s ease;
+            position: relative; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
         }
 
         .terminal-card.expanded { height: 480px; }
