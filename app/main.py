@@ -501,12 +501,14 @@ TEMPLATE = r"""
         /* Grid Layout */
         .dashboard-grid {
             display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px;
+            align-items: stretch;
         }
 
         .card {
             background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px;
             padding: 20px; backdrop-filter: blur(10px); box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-            display: flex; flex-direction: column; gap: 16px; transition: transform 0.2s ease, border-color 0.2s ease;
+            display: flex; flex-direction: column; justify-content: space-between; gap: 14px; height: 100%;
+            transition: transform 0.2s ease, border-color 0.2s ease;
         }
 
         .card:hover {
@@ -1280,32 +1282,46 @@ Try typing 'acme status' or 'acme issue' or 'ping 8.8.8.8'
         } catch(e) {}
     }
 
-    // Ping history & Pixel Bar Chart
+    // Ping history & Overall Trend Calculation
     const pingHistory = { client_ping: [], ping_cu: [], ping_cm: [], ping_ct: [] };
     const MAX_BARS = 40;
-    const MAX_HEIGHT = 40; // px (container height minus padding)
-    const MAX_MS = 300;    // latency scale ceiling
+    const MAX_HEIGHT = 40; // px
+    const MAX_MS = 300;
 
     function getPingColor(ms) {
-        if (ms === null || ms === undefined) return '#ff3366';
-        if (ms < 80) return '#00ff66';
-        if (ms < 160) return '#ffcc00';
-        return '#ff3366';
+        if (ms === null || ms === undefined) return 'var(--accent-red)';
+        if (ms < 80) return 'var(--accent-green)';
+        if (ms < 160) return 'var(--accent-yellow)';
+        return 'var(--accent-red)';
     }
 
     function renderPixelBars(key) {
         const container = document.getElementById(key + '_bars');
         if (!container) return;
-        const history = pingHistory[key];
+        const rawHistory = pingHistory[key];
+        if (!rawHistory.length) return;
 
-        // Ensure we have enough bar elements
+        // Apply Exponential Moving Average (EMA) smoothing for clean overall trend visualization
+        const history = [];
+        let ema = null;
+        const alpha = 0.35;
+        for (let i = 0; i < rawHistory.length; i++) {
+            const val = rawHistory[i];
+            if (val === null || val === undefined) {
+                history.push(null);
+            } else {
+                if (ema === null) ema = val;
+                else ema = alpha * val + (1 - alpha) * ema;
+                history.push(ema);
+            }
+        }
+
         while (container.children.length < MAX_BARS) {
             const bar = document.createElement('div');
             bar.className = 'pixel-bar px-empty';
             bar.style.height = '2px';
             container.appendChild(bar);
         }
-        // Remove excess
         while (container.children.length > MAX_BARS) {
             container.removeChild(container.lastChild);
         }
@@ -1340,40 +1356,49 @@ Try typing 'acme status' or 'acme issue' or 'ping 8.8.8.8'
     function updatePingUI(key, ms) {
         const valEl = document.getElementById(key + '_val');
         const trendEl = document.getElementById(key + '_trend');
-        const history = pingHistory[key];
-        const prevMs = history.length > 0 ? history[history.length - 1] : null;
 
+        pingHistory[key].push(ms);
+        if (pingHistory[key].length > MAX_BARS) pingHistory[key].shift();
+
+        const history = pingHistory[key];
+        const validSamples = history.filter(v => v !== null && v !== undefined);
+
+        // Overall trend calculation: compare recent window average vs initial baseline average
         if (valEl) {
             if (ms === null || ms === undefined) {
                 valEl.textContent = '超时/不可达';
                 valEl.style.color = 'var(--accent-red)';
             } else {
-                valEl.textContent = `${ms.toFixed(1)} ms`;
+                const avg = validSamples.length ? (validSamples.reduce((a,b)=>a+b,0) / validSamples.length) : ms;
+                valEl.innerHTML = `${ms.toFixed(1)} ms <span style="font-size:0.75rem; color:var(--text-muted); font-weight:normal">(均值 ${avg.toFixed(1)}ms)</span>`;
                 valEl.style.color = getPingColor(ms);
             }
         }
 
         if (trendEl) {
-            if (ms !== null && ms !== undefined && prevMs !== null && prevMs !== undefined) {
-                const diff = ms - prevMs;
-                if (diff <= -1.0) {
-                    trendEl.textContent = `↓ ${diff.toFixed(1)}ms`;
+            if (validSamples.length >= 3) {
+                const firstHalf = validSamples.slice(0, Math.floor(validSamples.length / 2));
+                const secondHalf = validSamples.slice(Math.floor(validSamples.length / 2));
+                const avgOld = firstHalf.reduce((a,b)=>a+b,0) / firstHalf.length;
+                const avgNew = secondHalf.reduce((a,b)=>a+b,0) / secondHalf.length;
+                const diff = avgNew - avgOld;
+
+                if (diff <= -2.0) {
+                    trendEl.textContent = `↓ 较初始 ${diff.toFixed(1)}ms`;
                     trendEl.className = 'ping-trend-badge trend-down';
-                } else if (diff >= 1.0) {
-                    trendEl.textContent = `↑ +${diff.toFixed(1)}ms`;
+                } else if (diff >= 2.0) {
+                    trendEl.textContent = `↑ 较初始 +${diff.toFixed(1)}ms`;
                     trendEl.className = 'ping-trend-badge trend-up';
                 } else {
-                    trendEl.textContent = '~ 稳定';
+                    trendEl.textContent = '~ 整体平稳';
                     trendEl.className = 'ping-trend-badge';
                 }
             } else {
-                trendEl.textContent = '~ 稳定';
+                trendEl.textContent = '~ 整体平稳';
                 trendEl.className = 'ping-trend-badge';
             }
         }
 
-        pingHistory[key].push(ms);
-        if (pingHistory[key].length > MAX_BARS) pingHistory[key].shift();
         renderPixelBars(key);
     }
 
@@ -1439,7 +1464,7 @@ Try typing 'acme status' or 'acme issue' or 'ping 8.8.8.8'
         if (currentSource) currentSource.close();
         const commandText = [cmd, target, args].filter(Boolean).join(' ');
         appendOutput(`${PROMPT} ${commandText}`);
-        
+
         let url = `/run/${cmd}`;
         const params = [];
         if (target) params.push(`target=${encodeURIComponent(target)}`);
@@ -1577,6 +1602,42 @@ Try typing 'acme status' or 'acme issue' or 'ping 8.8.8.8'
                 break;
             default:
                 appendOutput(`${PROMPT} ${text}\nCommand not found: '${cmd}'. Type 'help' for commands.`);
+        }
+        inputEl.value = '';
+    }
+
+    inputEl.addEventListener('keydown', e => {
+        if (e.key === 'Enter') {
+            handleCommand(inputEl.value);
+        } else if (e.key === 'ArrowUp') {
+            if (cmdHistory.length && historyIdx > 0) {
+                historyIdx--;
+                inputEl.value = cmdHistory[historyIdx];
+            }
+            e.preventDefault();
+        } else if (e.key === 'ArrowDown') {
+            if (cmdHistory.length && historyIdx < cmdHistory.length - 1) {
+                historyIdx++;
+                inputEl.value = cmdHistory[historyIdx];
+            } else {
+                historyIdx = cmdHistory.length;
+                inputEl.value = '';
+            }
+            e.preventDefault();
+        }
+    });
+
+    // IP Quality Check & Official Brand Vector SVGs
+    const MEDIA_ICONS = {
+        'Netflix': `<svg viewBox="0 0 24 24" width="18" height="18" style="vertical-align:middle; flex-shrink:0;"><path fill="#E50914" d="M5.398 0v24h4.423V11.892l4.809 12.108h4.403V0h-4.423v12.108L9.801 0z"/></svg>`,
+        'YouTube Premium': `<svg viewBox="0 0 24 24" width="18" height="18" style="vertical-align:middle; flex-shrink:0;"><path fill="#FF0000" d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>`,
+        'Disney+': `<svg viewBox="0 0 24 24" width="18" height="18" style="vertical-align:middle; flex-shrink:0;"><path fill="#00A8E1" d="M22.25 15.63c-.35.12-.9.2-1.5.2-1.78 0-2.88-.86-2.88-2.3 0-1.8 1.63-3.23 3.95-3.23.63 0 1.15.08 1.5.18v-.43c0-1.45-1.07-2.3-2.83-2.3-1.12 0-2.35.33-3.17.8l-.55-1.25c1.02-.6 2.58-.98 4.02-.98 2.7 0 4.3 1.35 4.3 3.73v5.18c0 .9.08 1.73.28 2.45h-1.88c-.12-.4-.2-.95-.24-2.05zM12 2a10 10 0 1010 10A10 10 0 0012 2zm.2 13.8a2.6 2.6 0 01-1.8.6c-1.4 0-2.2-.8-2.2-1.9 0-1.5 1.3-2.3 3.4-2.3h.6v3.6z"/></svg>`,
+        'TikTok': `<svg viewBox="0 0 24 24" width="18" height="18" style="vertical-align:middle; flex-shrink:0;"><path fill="#25F4EE" d="M19.589 6.686a4.793 4.793 0 0 1-3.77-4.245V2h-3.445v13.672a2.896 2.896 0 0 1-5.201 1.743 2.895 2.895 0 0 1 3.313-4.508V9.38a6.34 6.34 0 0 0-1.077-.091 6.34 6.34 0 1 0 6.342 6.34V8.756a8.214 8.214 0 0 0 4.838 1.558V6.869a4.838 4.838 0 0 1-1.006-.183z"/><path fill="#FE2C55" d="M16.25 5.5a5.5 5.5 0 0 0 4.5 1.5v-1.8a3.7 3.7 0 0 1-3-1.2V2h-1.5v13.5a1.5 1.5 0 1 1-3-1.5v-1.8a3.3 3.3 0 1 0 3.3 3.3V5.5z"/></svg>`,
+        'ChatGPT': `<svg viewBox="0 0 24 24" width="18" height="18" style="vertical-align:middle; flex-shrink:0;"><path fill="#10A37F" d="M22.28 9.82a5.98 5.98 0 0 0-.52-4.91 6.05 6.05 0 0 0-6.51-2.9 6.07 6.07 0 0 0-4.63-2.07 6.06 6.06 0 0 0-5.77 4.18 6.05 6.05 0 0 0-4.14 2.99 6.05 6.05 0 0 0 .74 7.12 5.98 5.98 0 0 0 .52 4.91 6.05 6.05 0 0 0 6.52 2.9 6.05 6.05 0 0 0 4.62 2.07 6.06 6.06 0 0 0 5.77-4.18 6.05 6.05 0 0 0 4.14-2.99 6.05 6.05 0 0 0-.74-7.12zm-9.33 11.2a4.42 4.42 0 0 1-2.58-.83l.14-.08 4.25-2.45a.82.82 0 0 0 .41-.71v-6l1.78 1.03a.08.08 0 0 1 .05.06v5.03a4.43 4.43 0 0 1-4.05 3.95zm-8.4-4.85a4.43 4.43 0 0 1-.5-2.65l.15.08 4.25 2.45a.82.82 0 0 0 .82 0l5.2-3v2.06a.08.08 0 0 1-.03.07l-4.35 2.51a4.43 4.43 0 0 1-5.54-1.52zm-1.12-9.7a4.43 4.43 0 0 1 2.08-1.83v.17l0 4.91a.82.82 0 0 0 .41.71l5.2 3-1.78 1.03a.08.08 0 0 1-.08 0l-4.35-2.51a4.43 4.43 0 0 1-1.48-5.48zm14.8 2.2l-5.2-3 1.78-1.03a.08.08 0 0 1 .08 0l4.35 2.51a4.43 4.43 0 0 1 1.48 5.48 4.43 4.43 0 0 1-2.08 1.83v-.17l0-4.91a.82.82 0 0 0-.41-.71zm1.62 6.55l-.15-.08-4.25-2.45a.82.82 0 0 0-.82 0l-5.2 3v-2.06a.08.08 0 0 1 .03-.07l4.35-2.51a4.43 4.43 0 0 1 5.54 1.52 4.43 4.43 0 0 1 .5 2.65zm-9.35-4.47l-2.41-1.39 2.41-1.39 2.41 1.39-2.41 1.39z"/></svg>`,
+        'Claude': `<svg viewBox="0 0 24 24" width="18" height="18" style="vertical-align:middle; flex-shrink:0;"><path fill="#D97757" d="M12 2L14.5 8.5L21 6.5L16.5 12L22 15.5L15 16.5L16.5 23L12 17.5L7.5 23L9 16.5L2 15.5L7.5 12L3 6.5L9.5 8.5L12 2Z"/></svg>`,
+        'Spotify': `<svg viewBox="0 0 24 24" width="18" height="18" style="vertical-align:middle; flex-shrink:0;"><path fill="#1DB954" d="M12 0C5.376 0 0 5.377 0 12s5.376 12 12 12 12-5.377 12-12S18.624 0 12 0zm5.521 17.341c-.217.357-.68.471-1.036.251-2.836-1.733-6.408-2.126-10.617-1.165-.403.092-.807-.156-.898-.558-.093-.404.156-.807.558-.899 4.607-1.052 8.547-.604 11.742 1.336.357.218.472.68.251 1.035zm1.472-3.272c-.273.443-.855.584-1.298.311-3.245-1.995-8.192-2.573-12.03-1.408-.497.151-1.022-.132-1.174-.629-.151-.497.132-1.022.629-1.174 4.385-1.332 9.851-.69 13.562 1.599.444.272.584.855.311 1.298zm.126-3.411c-3.893-2.312-10.319-2.525-14.072-1.385-.598.181-1.231-.157-1.413-.755-.181-.598.158-1.232.756-1.413 4.309-1.308 11.4-1.05 15.892 1.616.538.319.717 1.018.399 1.556-.319.539-1.018.718-1.562.381z"/></svg>`,
+        'Amazon Prime': `<svg viewBox="0 0 24 24" width="18" height="18" style="vertical-align:middle; flex-shrink:0;"><path fill="#00A8E1" d="M14.5 12.8c-1.8 0-3.3-.6-4.7-1.7l1.1-1.3c1.1.9 2.3 1.4 3.6 1.4 1.2 0 1.9-.5 1.9-1.2 0-.8-.7-1.2-2.3-1.7-2.3-.7-3.6-1.6-3.6-3.4 0-2.1 1.7-3.5 4.3-3.5 1.6 0 3 .5 4.1 1.3l-1.1 1.3c-.9-.7-1.9-1-3-1-1.2 0-1.8.5-1.8 1.1 0 .7.6 1.1 2.2 1.6 2.5.8 3.7 1.7 3.7 3.5 0 2.2-1.7 3.6-4.4 3.6zm-1.8 6c-4.4 0-8.5-1.8-11.4-4.8-.3-.3-.1-.7.3-.6 3.6 1.3 7.6 1.9 11.5 1.5 3.8-.4 7.4-1.7 10.4-3.9.4-.3.8.1.5.5-3 2.9-7.2 4.9-11.3 7.3z"/></svg>`
+    };
         }
         inputEl.value = '';
     }
