@@ -282,7 +282,9 @@ def issue_cert(target=None, email=None) -> tuple:
         if not target:
             target = _detect_public_ip()
 
-        email = email or f"admin@{target}"
+        # Fix: Ensure email domain part is NOT a raw IP address (e.g. admin@37.114.48.47), which ZeroSSL API rejects
+        if not email or "@" not in email or email.split("@")[-1].replace(".", "").isdigit():
+            email = "admin@console-web.org"
         logger.info("ACME issue starting for target=%s, email=%s", target, email)
 
         acme_cmd = get_acme_cmd()
@@ -294,11 +296,12 @@ def issue_cert(target=None, email=None) -> tuple:
             return False, "未能安装或找到 acme.sh 工具，请检查系统环境"
 
         try:
-            # 1. Register account with ZeroSSL
-            subprocess.run(
+            # 1. Register account with ZeroSSL using valid email syntax
+            reg_proc = subprocess.run(
                 [*acme_cmd, "--register-account", "-m", email, "--server", "zerossl"],
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
             )
+            logger.info("ZeroSSL account registration output: %s", reg_proc.stdout)
 
             # 2. Issue via standalone / webroot HTTP-01
             issue_args = [
@@ -355,7 +358,12 @@ def issue_cert(target=None, email=None) -> tuple:
                     logger.info("ACME Let's Encrypt certificate issued successfully for %s", target)
                     return True, f"成功为 {target} 签发 Let's Encrypt ACME 证书！"
 
-            return False, f"ACME 官方证书签发失败，请确认域名/公网 IP ({target}) 的 80 端口可被外网访问"
+            # Specific diagnostic check for IP address ACME limitations
+            combined_out = (proc.stdout or "") + (le_proc.stdout or "")
+            if "unsupportedIdentifier" in combined_out or "not yet supported" in combined_out:
+                return False, f"ACME 官方 CA (ZeroSSL/Let's Encrypt) 仅支持为域名签发免费证书。纯 IP 地址 ({target}) 不支持 ACME 协议，请输入绑定的真实域名后在终端执行 'acme issue 您的域名'。"
+
+            return False, f"ACME 官方证书签发失败，请确认域名/公网 IP ({target}) 的 80 端口可被外网访问 (详细: {proc.stdout[:120]})"
         except Exception as e:
             logger.exception("ACME issuance exception: %s", e)
             return False, f"ACME 证书签发发生错误: {e}"
