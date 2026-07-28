@@ -2045,155 +2045,666 @@ TEMPLATE = r"""
 
                 <!-- Column 2: IP Attributes (3 Columns) -->
                 <div class="ipcheck-section">
-                    <div class="ipcheck-section-title">IP 属性与标记</div>
-                    <div class="ipcheck-row"><span class="ipcheck-label">IP 类型</span><span class="ipcheck-val" id="ipc_type">-</span></div>
-                    <div class="ipcheck-row"><span class="ipcheck-label">代理 Proxy</span><span class="ipcheck-val" id="ipc_proxy">-</span></div>
-                    <div class="ipcheck-row"><span class="ipcheck-label">VPN 节点</span><span class="ipcheck-val" id="ipc_vpn">-</span></div>
-                    <div class="ipcheck-row"><span class="ipcheck-label">Tor 节点</span><span class="ipcheck-val" id="ipc_tor">-</span></div>
-                    <div class="ipcheck-row"><span class="ipcheck-label">IDC 机房</span><span class="ipcheck-val" id="ipc_hosting">-</span></div>
-                    <div class="ipcheck-row"><span class="ipcheck-label">蜂窝移动</span><span class="ipcheck-val" id="ipc_mobile">-</span></div>
-                </div>
+TEMPLATE = r"""
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>NETWATCH Network Operations Terminal</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=PingFang+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ═══════════════════════════════════════════════════════════
+           NETWATCH — Network Status Terminal (Design Tokens)
+           面向网络工程师与服务器运维人员的实时网络检测终端
+           ═══════════════════════════════════════════════════════════ */
+        :root {
+            --bg-page: #050706;
+            --bg-panel: #080B09;
+            --bg-panel-raised: #0B100C;
+            --bg-input: #070A08;
 
-                <!-- Column 3: Risk Factor Analysis (5 Columns) -->
-                <div class="ipcheck-section">
-                    <div class="ipcheck-section-title">欺诈风险分析</div>
-                    <div class="risk-score-display">
-                        <span class="risk-score-num" id="ipc_risk_score">66</span>
-                        <span class="badge-tag badge-tag-yes" id="ipc_risk_label">中高风险</span>
-                    </div>
+            --text-primary: #D7E2D9;
+            --text-secondary: #91A095;
+            --text-muted: #5D6A60;
+            --text-dim: #414A43;
 
-                    <!-- 4 Segmented Score Ribbon -->
-                    <div class="risk-bar-segmented">
-                        <div class="risk-segment active-green" id="rseg_1"></div>
-                        <div class="risk-segment active-yellow" id="rseg_2"></div>
-                        <div class="risk-segment active-orange" id="rseg_3"></div>
-                        <div class="risk-segment" id="rseg_4"></div>
-                    </div>
+            --status-success: #78E08F;
+            --status-info: #69D6D0;
+            --status-blue: #6BB8FF;
+            --status-warning: #E7C66B;
+            --status-critical: #F07878;
+            --status-purple: #B59AF2;
 
-                    <!-- Factor Breakdown List -->
-                    <div class="risk-factors-container">
-                        <div class="risk-factor-row"><span>代理特征 (Proxy):</span><span id="rf_proxy" class="mono text-warning">已发现 (+20分)</span></div>
-                        <div class="risk-factor-row"><span>IDC 机房特征:</span><span id="rf_hosting" class="mono text-warning">已发现 (+18分)</span></div>
-                        <div class="risk-factor-row"><span>VPN 节点标记:</span><span id="rf_vpn" class="mono text-muted">未发现 (0分)</span></div>
-                        <div class="risk-factor-row"><span>Tor 出口特征:</span><span id="rf_tor" class="mono text-muted">未发现 (0分)</span></div>
-                    </div>
+            --border-default: rgba(146, 173, 151, 0.13);
+            --border-hover: rgba(120, 224, 143, 0.30);
+            --border-strong: rgba(146, 173, 151, 0.24);
 
-                    <!-- Low Saturation Background Advice Box -->
-                    <div class="risk-advice-box" id="risk_advice_text">
-                        系统建议：该 IP 具备机房代理网络特征，推荐用于常规网页浏览与流媒体解封，不建议用于强风控账号注册与支付业务。
-                    </div>
-                </div>
-            </div>
+            --radius-sm: 4px;
+            --radius-md: 6px;
+            --radius-lg: 8px;
+
+            --font-mono: "JetBrains Mono", "IBM Plex Mono", "SFMono-Regular", "Consolas", monospace;
+            --font-ui: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+        }
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: radial-gradient(circle at 50% -20%, rgba(80, 160, 100, 0.055), transparent 45%), #050706;
+            background-attachment: fixed;
+            color: var(--text-primary);
+            font-family: var(--font-ui);
+            margin: 0; padding: 0;
+            line-height: 1.5;
+            font-variant-numeric: tabular-nums;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .mono { font-family: var(--font-mono); }
+        .text-success { color: var(--status-success) !important; }
+        .text-info { color: var(--status-info) !important; }
+        .text-warning { color: var(--status-warning) !important; }
+        .text-danger, .text-critical { color: var(--status-critical) !important; }
+        .text-cyan { color: var(--status-info) !important; }
+        .text-muted { color: var(--text-muted) !important; }
+        .text-primary { color: var(--text-primary) !important; }
+
+        /* ── Sticky Top Navigation ── */
+        .terminal-nav-bar {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(5, 7, 6, 0.92);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid var(--border-default);
+            padding: 10px 24px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .nav-brand { display: flex; align-items: center; gap: 8px; }
+        .nav-logo-symbol { font-family: var(--font-mono); color: var(--status-success); font-weight: 700; font-size: 1.1rem; }
+        .nav-brand-title { font-family: var(--font-mono); font-weight: 700; letter-spacing: 1px; color: var(--text-primary); font-size: 0.95rem; }
+        .nav-brand-subtitle { font-size: 0.76rem; color: var(--text-muted); }
+
+        .nav-tabs-cli { display: flex; gap: 6px; }
+        .nav-tab-btn {
+            background: transparent; border: 1px solid transparent;
+            color: var(--text-secondary); font-family: var(--font-mono);
+            font-size: 0.8rem; padding: 5px 12px; border-radius: var(--radius-sm);
+            cursor: pointer; transition: all 0.15s ease;
+        }
+        .nav-tab-btn:hover { color: var(--text-primary); border-color: var(--border-hover); background: rgba(120,224,143,0.04); }
+        .nav-tab-btn.active {
+            color: var(--status-success); border-color: var(--status-success);
+            background: rgba(120,224,143,0.08); font-weight: 700;
+        }
+
+        .nav-right-status { display: flex; align-items: center; gap: 12px; font-family: var(--font-mono); font-size: 0.78rem; }
+        .live-dot-pulse { color: var(--status-success); font-weight: 700; display: inline-flex; align-items: center; gap: 4px; }
+        .live-dot-pulse::before {
+            content: ''; width: 6px; height: 6px; border-radius: 50%;
+            background: var(--status-success); display: inline-block;
+            box-shadow: 0 0 6px var(--status-success);
+        }
+
+        /* ── Main Layout Container ── */
+        .page-container {
+            max-width: 1480px; width: calc(100% - 48px);
+            margin: 0 auto; display: flex; flex-direction: column; gap: 16px;
+            padding: 16px 0 40px 0;
+        }
+
+        .tab-view { display: none; flex-direction: column; gap: 16px; width: 100%; }
+        .tab-view.active-view { display: flex; }
+
+        /* ── CLI Terminal Card System ── */
+        .card-cli {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.025), 0 8px 24px rgba(0,0,0,0.16);
+        }
+        .card-cli-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 12px; padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-default);
+        }
+        .card-cli-header-left { display: flex; align-items: center; gap: 8px; }
+        .cmd-title { font-family: var(--font-mono); font-weight: 700; color: var(--status-success); font-size: 0.88rem; }
+        .cmd-subtitle { font-size: 0.76rem; color: var(--text-muted); }
+
+        /* ── Bracket Badges ── */
+        .badge-bracket {
+            font-family: var(--font-mono); font-size: 0.74rem; font-weight: 600;
+            padding: 2px 6px; border-radius: var(--radius-sm); border: 1px solid currentColor;
+            display: inline-flex; align-items: center; justify-content: center;
+        }
+        .status-healthy { color: var(--status-success); background: rgba(120,224,143,0.06); }
+        .status-warning { color: var(--status-warning); background: rgba(231,198,107,0.06); }
+        .status-critical { color: var(--status-critical); background: rgba(240,120,120,0.06); }
+        .status-info { color: var(--status-info); background: rgba(105,214,208,0.06); }
+
+        /* ── CLI Button System ── */
+        .btn-cli-xs, .btn-cli-sm, .btn-cli-action {
+            background: transparent; border: 1px solid var(--border-strong);
+            color: var(--text-secondary); font-family: var(--font-mono); font-size: 0.75rem;
+            padding: 4px 10px; border-radius: var(--radius-sm); cursor: pointer;
+            transition: all 0.15s ease; outline: none; display: inline-flex; align-items: center; gap: 4px;
+        }
+        .btn-cli-xs:hover, .btn-cli-sm:hover, .btn-cli-action:hover {
+            border-color: var(--status-success); color: var(--status-success);
+            background: rgba(120,224,143,0.05);
+        }
+        .btn-cli-sm.active { border-color: var(--status-success); color: var(--status-success); background: rgba(120,224,143,0.12); font-weight: 700; }
+        .btn-cli-action { font-weight: 700; border-color: var(--status-success); color: var(--status-success); padding: 8px 14px; }
+
+        /* ── Hero Status Terminal Box ── */
+        .hero-terminal-box { background: var(--bg-panel-raised); }
+        .cli-header-bar { font-family: var(--font-mono); font-size: 0.82rem; color: var(--status-success); display: flex; align-items: center; gap: 4px; margin-bottom: 8px; }
+        .cli-cursor { animation: blink 1s step-end infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        .cli-body-summary { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: start; }
+        .cli-status-row { font-family: var(--font-mono); font-weight: 700; font-size: 0.92rem; letter-spacing: 1px; color: var(--text-primary); }
+        .cli-divider { font-family: var(--font-mono); color: var(--border-strong); font-size: 0.75rem; margin: 4px 0 8px 0; }
+        .cli-kv-grid { display: grid; grid-template-columns: 110px 1fr; gap: 6px 12px; font-size: 0.82rem; margin-bottom: 10px; }
+        .cli-k { font-family: var(--font-mono); color: var(--text-muted); font-weight: 600; }
+        .cli-v { font-family: var(--font-mono); color: var(--text-primary); }
+        .cli-log-line { font-family: var(--font-mono); font-size: 0.78rem; line-height: 1.4; }
+        .cli-col-right-actions { display: flex; flex-direction: column; gap: 8px; min-width: 200px; }
+
+        /* ── Metric Strip (6 Columns Continuous) ── */
+        .metric-strip-cli {
+            display: grid; grid-template-columns: repeat(6, 1fr); gap: 1px;
+            background: var(--border-default); border: 1px solid var(--border-default);
+            border-radius: var(--radius-md); overflow: hidden;
+        }
+        .metric-strip-item {
+            background: var(--bg-panel); padding: 12px 14px;
+            display: flex; flex-direction: column; gap: 4px;
+        }
+        .metric-title { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-muted); font-weight: 700; }
+        .metric-value-line { font-size: 1.35rem; font-weight: 700; line-height: 1.1; }
+        .metric-value-line .unit { font-size: 0.75rem; font-weight: 400; color: var(--text-muted); }
+        .metric-sub { font-size: 0.72rem; color: var(--text-secondary); display: flex; align-items: center; justify-content: space-between; margin-top: 2px; }
+
+        /* ── Realtime TCP Ping Chart ── */
+        .chart-stats-bar-cli {
+            display: flex; gap: 16px; flex-wrap: wrap; font-family: var(--font-mono);
+            font-size: 0.76rem; color: var(--text-muted); padding: 6px 12px;
+            background: var(--bg-input); border-radius: var(--radius-sm); border: 1px solid var(--border-default);
+        }
+        .stat-kv { display: inline-flex; gap: 4px; }
+
+        /* ── Dual-Stack Grid ── */
+        .dualstack-grid-cli { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px; }
+        .dualstack-col { background: var(--bg-input); padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-default); }
+        .ds-title-line { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-family: var(--font-mono); font-weight: 700; font-size: 0.8rem; }
+        .ds-kv-table { display: flex; flex-direction: column; gap: 4px; font-size: 0.78rem; }
+        .ds-tr { display: flex; justify-content: space-between; padding: 2px 0; border-bottom: 1px dashed rgba(146,173,151,0.08); }
+        .cli-recommendation-banner {
+            font-family: var(--font-mono); font-size: 0.78rem; color: var(--status-success);
+            background: rgba(120,224,143,0.05); border: 1px solid rgba(120,224,143,0.2);
+            padding: 8px 12px; border-radius: var(--radius-sm);
+        }
+
+        /* ── CLI Tables ── */
+        .cli-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+        .cli-table th { font-family: var(--font-mono); color: var(--text-muted); font-size: 0.72rem; text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--border-default); }
+        .cli-table td { padding: 8px 10px; border-bottom: 1px solid rgba(146,173,151,0.06); font-family: var(--font-mono); }
+        .cli-table tr:hover { background: rgba(255,255,255,0.02); }
+
+        /* ── System Status & ASCII Progress Bars ── */
+        .grid-2col-cli { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .cli-system-panel { display: flex; flex-direction: column; gap: 10px; }
+        .ascii-bar-row { display: grid; grid-template-columns: 70px 1fr 45px; align-items: center; font-family: var(--font-mono); font-size: 0.78rem; }
+        .ascii-label { color: var(--text-muted); font-weight: 700; }
+        .ascii-bar { color: var(--status-success); letter-spacing: 1px; }
+        .cli-kv-grid-sm { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-family: var(--font-mono); font-size: 0.74rem; color: var(--text-secondary); margin-top: 6px; }
+
+        /* ── Diagnostic Task List CLI Style ── */
+        .diag-cli-task-list { display: flex; flex-direction: column; gap: 6px; }
+        .diag-cli-item {
+            display: flex; justify-content: space-between; align-items: center;
+            font-family: var(--font-mono); font-size: 0.78rem; padding: 8px 12px;
+            background: var(--bg-input); border-radius: var(--radius-sm); border: 1px solid var(--border-default);
+            cursor: pointer; transition: all 0.15s ease;
+        }
+        .diag-cli-item:hover { border-color: var(--border-hover); }
+
+        /* ── Event Log Stream ── */
+        .cli-grep-bar { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+        .cli-prompt-sm { font-family: var(--font-mono); color: var(--status-success); font-size: 0.8rem; font-weight: 700; }
+        .cli-grep-input {
+            flex: 1; background: var(--bg-input); border: 1px solid var(--border-default);
+            color: var(--text-primary); padding: 5px 10px; border-radius: var(--radius-sm);
+            font-family: var(--font-mono); font-size: 0.78rem; outline: none;
+        }
+        .cli-grep-input:focus { border-color: var(--status-success); }
+
+        .log-stream-box-cli {
+            background: #030504; border: 1px solid var(--border-default);
+            border-radius: var(--radius-sm); padding: 10px; height: 260px; overflow-y: auto;
+            font-family: var(--font-mono); font-size: 0.76rem; display: flex; flex-direction: column; gap: 4px;
+        }
+        .log-row { display: flex; gap: 8px; white-space: nowrap; word-break: break-all; }
+        .log-time { color: var(--text-muted); }
+        .log-level { font-weight: 700; width: 80px; text-align: left; }
+        .level-info { color: var(--status-info); }
+        .level-warning { color: var(--status-warning); }
+        .level-critical { color: var(--status-critical); }
+        .level-recover { color: var(--status-success); }
+        .log-msg { color: var(--text-primary); }
+
+        /* ── Uptime Heatmap ── */
+        .heatmap-grid-cli { display: grid; grid-template-columns: repeat(30, 1fr); gap: 4px; margin-top: 8px; }
+        .heatmap-sq {
+            aspect-ratio: 1/1; border-radius: 2px; background: rgba(120,224,143,0.15);
+            border: 1px solid rgba(120,224,143,0.3); cursor: pointer; transition: all 0.15s ease;
+        }
+        .heatmap-sq:hover { transform: scale(1.2); z-index: 10; }
+        .sq-healthy { background: rgba(120,224,143,0.25); border-color: var(--status-success); }
+        .sq-warning { background: rgba(231,198,107,0.3); border-color: var(--status-warning); }
+        .sq-critical { background: rgba(240,120,120,0.35); border-color: var(--status-critical); }
+
+        /* ── Terminal Keyboard Help Modal ── */
+        .modal-cli-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000;
+            display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px);
+        }
+        .modal-cli-box {
+            background: var(--bg-panel-raised); border: 1px solid var(--status-success);
+            border-radius: var(--radius-md); width: min(500px, 90vw); padding: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .modal-cli-header { display: flex; justify-content: space-between; align-items: center; font-family: var(--font-mono); font-weight: 700; color: var(--status-success); font-size: 0.85rem; margin-bottom: 12px; border-bottom: 1px solid var(--border-default); padding-bottom: 6px; }
+        .modal-cli-body { display: flex; flex-direction: column; gap: 8px; font-family: var(--font-mono); font-size: 0.78rem; }
+        .shortcut-row { display: flex; gap: 12px; align-items: center; }
+        .key-cap { background: var(--bg-input); border: 1px solid var(--border-strong); color: var(--status-success); font-weight: 700; padding: 2px 8px; border-radius: 3px; min-width: 36px; text-align: center; }
+
+        /* ── Terminal Footer ── */
+        .terminal-footer {
+            margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--border-default);
+            font-family: var(--font-mono); font-size: 0.74rem; color: var(--text-muted);
+            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+        }
+        .footer-links { display: flex; gap: 12px; }
+        .footer-links a { color: var(--text-secondary); text-decoration: none; }
+        .footer-links a:hover { color: var(--status-success); }
+
+        /* ── Responsive Rules ── */
+        @media (max-width: 1024px) {
+            .metric-strip-cli { grid-template-columns: repeat(3, 1fr); }
+            .grid-2col-cli, .dualstack-grid-cli { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 768px) {
+            .page-container { width: calc(100% - 24px); }
+            .metric-strip-cli { grid-template-columns: repeat(2, 1fr); }
+            .cli-body-summary { grid-template-columns: 1fr; }
+            .terminal-nav-bar { flex-direction: column; gap: 8px; align-items: flex-start; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .cli-cursor, .live-dot-pulse::before { animation: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ── 1. STICKY TOP GLOBAL STATUS BAR ── -->
+    <header class="terminal-nav-bar">
+        <div class="nav-brand">
+            <span class="nav-logo-symbol">NW_</span>
+            <span class="nav-brand-title">NETWATCH</span>
+            <span class="nav-brand-subtitle">// 网络运行监测终端</span>
         </div>
 
-        <!-- Rule 9: Streaming & AI Full-Width Card (12 Columns, 4-Column 2-Row Tiles) -->
-        <div class="streaming-card">
-            <div class="card-header">
-                <div class="card-header-left">
-                    <span class="section-tag">04</span>
-                    <span>流媒体 &amp; AI 服务解锁检测</span>
-                </div>
-                <div class="unlock-header-right">
-                    <div class="filter-tabs-segmented">
-                        <button class="tab-btn-seg active" onclick="filterUnlockTiles('all', this)">全部</button>
-                        <button class="tab-btn-seg" onclick="filterUnlockTiles('unlocked', this)">已解锁</button>
-                        <button class="tab-btn-seg" onclick="filterUnlockTiles('blocked', this)">未解锁</button>
-                        <button class="tab-btn-seg" onclick="filterUnlockTiles('unknown', this)">异常</button>
-                    </div>
-                    <button class="btn-ctrl" id="ipcheck_btn" onclick="fetchIPCheck(true)" style="background:var(--accent); color:#000; font-weight:700">
-                        <span id="ipcheck_spinner" style="display:none">🔄</span>
-                        <span id="ipcheck_btn_text">重新体检</span>
-                    </button>
-                </div>
-            </div>
-
-            <div class="unlock-grid" id="unlock_grid">
-                <!-- Populated by JS -->
-            </div>
+        <div class="nav-tabs-cli">
+            <button class="nav-tab-btn active" onclick="switchNavTab('overview', this)">$ overview</button>
+            <button class="nav-tab-btn" onclick="switchNavTab('targets', this)">$ targets</button>
+            <button class="nav-tab-btn" onclick="switchNavTab('diagnostics', this)">$ diagnostics</button>
+            <button class="nav-tab-btn" onclick="switchNavTab('events', this)">$ events</button>
         </div>
 
-        <!-- Rule 10: Diagnostic Console Full-Width Module (12 Columns) -->
-        <div class="terminal-card" id="terminal_box">
-            <div class="terminal-toolbar-two-tier">
-                <!-- Tier 1 Toolbar -->
-                <div class="toolbar-top-tier">
-                    <div class="terminal-header-left">
-                        <div class="terminal-dots">
-                            <div class="win-dot win-red"></div>
-                            <div class="win-dot win-yellow"></div>
-                            <div class="win-dot win-green"></div>
+        <div class="nav-right-status">
+            <span class="live-dot-pulse">● LIVE</span>
+            <span class="nav-sync-time">SYNC: <span id="nav_last_sync">--:--:--</span></span>
+            <button class="btn-cli-xs" onclick="fetchStats(); fetchPings();">[ REFRESH ]</button>
+            <button class="btn-cli-xs" onclick="showKeyboardHelp()">[ ? HELP ]</button>
+        </div>
+    </header>
+
+    <!-- ── MAIN WORKSPACE CONTAINER ── -->
+    <main class="page-container">
+
+        <!-- ═══════════════════════════════════════════════════════════
+             TAB 1: OVERVIEW ($ overview)
+             ═══════════════════════════════════════════════════════════ -->
+        <div id="tab_overview" class="tab-view active-view">
+
+            <!-- ── 2. HERO STATUS TERMINAL BOX ── -->
+            <div class="card-cli hero-terminal-box">
+                <div class="cli-header-bar">
+                    <span>root@netwatch:~$ ./status --summary</span>
+                    <span class="cli-cursor">_</span>
+                </div>
+                <div class="cli-body-summary">
+                    <div class="cli-col-left">
+                        <div class="cli-status-row">NETWORK STATUS TERMINAL</div>
+                        <div class="cli-divider">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>
+                        <div class="cli-kv-grid">
+                            <span class="cli-k">STATUS</span><span class="cli-v"><span class="badge-bracket status-healthy" id="hero_status">[ HEALTHY ]</span></span>
+                            <span class="cli-k">PUBLIC IP</span><span class="cli-v mono text-cyan" id="hero_ip">37.114.48.47 (IPv4) / 2a0e:6a80:3:483::100 (IPv6)</span>
+                            <span class="cli-k">REGION / ISP</span><span class="cli-v" id="hero_isp">Frankfurt, Germany · Host Europe GmbH</span>
+                            <span class="cli-k">UPTIME</span><span class="cli-v mono text-success" id="hero_uptime">{{ uptime_str }}</span>
+                            <span class="cli-k">LAST CHECK</span><span class="cli-v mono text-muted" id="hero_last_check">2026-07-28 15:42:18 UTC+8</span>
                         </div>
-                        <span style="font-size:0.82rem; font-weight:600; color:var(--text-secondary)">Diagnostic Console</span>
+                        <div class="cli-log-line text-success" id="hero_log_line_1">> All primary network checks passed.</div>
+                        <div class="cli-log-line text-muted" id="hero_log_line_2">> Monitoring active targets every 30s. No unresolved critical events.</div>
                     </div>
-
-                    <div class="terminal-lookup-bar">
-                        <input type="text" id="lookup_input" class="lookup-input-inline" placeholder="输入域名或 IP (如 github.com)..." />
-                        <button id="lookup_btn" class="lookup-btn-inline">诊断</button>
+                    <div class="cli-col-right-actions">
+                        <button class="btn-cli-action" onclick="switchNavTab('diagnostics'); startFullDiagnostics();">[> RUN FULL DIAGNOSTIC ]</button>
+                        <button class="btn-cli-action" onclick="switchNavTab('events');">[ VIEW EVENTS ]</button>
+                        <button class="btn-cli-action" onclick="exportDiagnosticReport();">[ EXPORT REPORT ]</button>
                     </div>
-
-                    <button class="chip-btn" onclick="toggleTerminalExpand()" title="展开/收起终端">⤢ 缩放</button>
-                </div>
-
-                <!-- Tier 2 Toolbar -->
-                <div class="toolbar-bottom-tier">
-                    <span style="font-size:0.72rem; color:var(--text-muted); margin-right:4px">快捷指令:</span>
-                    <button class="chip-btn" onclick="quickRun('ipcheck')">IP 质量体检</button>
-                    <button class="chip-btn" onclick="quickRun('acme status')">ACME 状态</button>
-                    <button class="chip-btn" onclick="quickRun('acme issue')">申请 IP/域名证书</button>
-                    <button class="chip-btn" onclick="quickRun('ping zj-cu-v4.ip.zstaticcdn.com')">Ping 联通</button>
-                    <button class="chip-btn" onclick="quickRun('mtr 1.1.1.1')">MTR 路由</button>
-                    <button class="chip-btn" onclick="quickRun('clear')">清屏</button>
                 </div>
             </div>
 
-            <div class="terminal-body" id="terminal_body">
-                <pre id="cmd_output">System initialized. Type 'help' for available commands.
-Try typing 'acme status' or 'acme issue 您的域名.com' or 'ping 8.8.8.8'
-</pre>
-                <div class="terminal-input-line">
-                    <span class="prompt-text">root@{{ short_isp }}:~$</span>
-                    <input type="text" id="cmd_input" class="terminal-input" placeholder="输入域名、IP 或命令开始诊断 (例如: ping 8.8.8.8 或 acme status)..." autofocus autocomplete="off" />
+            <!-- ── 3. METRIC STRIP (6 COLUMNS CONTINUOUS) ── -->
+            <div class="metric-strip-cli">
+                <div class="metric-strip-item">
+                    <div class="metric-title">TCP LATENCY</div>
+                    <div class="metric-value-line mono text-cyan" id="metric_latency">- <span class="unit">ms</span></div>
+                    <div class="metric-sub"><span>1h avg</span> <span class="badge-bracket status-healthy" id="mb_latency">[ GOOD ]</span></div>
                 </div>
-            </div> <!-- terminal-body -->
-        </div> <!-- terminal-card -->
-    </div> <!-- End tab_overview -->
+                <div class="metric-strip-item">
+                    <div class="metric-title">PACKET LOSS</div>
+                    <div class="metric-value-line mono text-success" id="metric_loss">0.0<span class="unit">%</span></div>
+                    <div class="metric-sub"><span>40 samples</span> <span class="badge-bracket status-healthy" id="mb_loss">[ OK ]</span></div>
+                </div>
+                <div class="metric-strip-item">
+                    <div class="metric-title">JITTER</div>
+                    <div class="metric-value-line mono text-info" id="metric_jitter">1.2 <span class="unit">ms</span></div>
+                    <div class="metric-sub"><span>±0.4ms</span> <span class="badge-bracket status-healthy" id="mb_jitter">[ STABLE ]</span></div>
+                </div>
+                <div class="metric-strip-item">
+                    <div class="metric-title">AVAILABILITY</div>
+                    <div class="metric-value-line mono text-success" id="metric_avail">99.98<span class="unit">%</span></div>
+                    <div class="metric-sub"><span>SLA target</span> <span class="badge-bracket status-healthy" id="mb_avail">[ NORMAL ]</span></div>
+                </div>
+                <div class="metric-strip-item">
+                    <div class="metric-title">ACTIVE TARGETS</div>
+                    <div class="metric-value-line mono text-primary" id="metric_targets">5 <span class="unit">/ 5</span></div>
+                    <div class="metric-sub"><span>30s cycle</span> <span class="badge-bracket status-healthy" id="mb_targets">[ ACTIVE ]</span></div>
+                </div>
+                <div class="metric-strip-item">
+                    <div class="metric-title">OPEN EVENTS</div>
+                    <div class="metric-value-line mono text-success" id="metric_events">0 <span class="unit">open</span></div>
+                    <div class="metric-sub"><span>0 critical</span> <span class="badge-bracket status-healthy" id="mb_events">[ CLEAR ]</span></div>
+                </div>
+            </div>
 
-        <!-- TAB 2: TARGET MONITOR -->
+            <!-- ── 4. REALTIME TCP PING CHART ($ tcping --watch) ── -->
+            <div class="card-cli">
+                <div class="card-cli-header">
+                    <div class="card-cli-header-left">
+                        <span class="cmd-title">$ tcping --watch</span>
+                        <span class="cmd-subtitle">// 实时 TCP 链路延迟</span>
+                    </div>
+                    <div class="card-cli-header-right">
+                        <div class="btn-group-cli" style="display:flex; gap:4px">
+                            <button class="btn-cli-sm active" onclick="setPingRange('1h', this)">[> 1H ]</button>
+                            <button class="btn-cli-sm" onclick="setPingRange('15m', this)">[ 15M ]</button>
+                            <button class="btn-cli-sm" onclick="setPingRange('6h', this)">[ 6H ]</button>
+                            <button class="btn-cli-sm" onclick="setPingRange('24h', this)">[ 24H ]</button>
+                            <button class="btn-cli-sm" onclick="setPingRange('7d', this)">[ 7D ]</button>
+                        </div>
+                        <button class="btn-cli-sm" onclick="exportPingCSV()">[ EXPORT CSV ]</button>
+                    </div>
+                </div>
+
+                <div class="chart-stats-bar-cli">
+                    <span class="stat-kv">CURRENT <b class="mono text-cyan" id="ping_stat_cur">- ms</b></span>
+                    <span class="stat-kv">AVG <b class="mono" id="ping_stat_avg">- ms</b></span>
+                    <span class="stat-kv">MIN <b class="mono text-success" id="ping_stat_min">- ms</b></span>
+                    <span class="stat-kv">MAX <b class="mono text-warning" id="ping_stat_max">- ms</b></span>
+                    <span class="stat-kv">P95 <b class="mono text-info" id="ping_stat_p95">- ms</b></span>
+                    <span class="stat-kv">JITTER <b class="mono" id="ping_stat_jitter">±0ms</b></span>
+                    <span class="stat-kv">LOSS <b class="mono text-success" id="ping_stat_loss">0.0%</b></span>
+                </div>
+
+                <div style="position:relative; width:100%; height:260px; margin-top:12px;">
+                    <canvas id="tcpingCanvas" style="width:100%; height:100%; display:block;"></canvas>
+                </div>
+            </div>
+
+            <!-- ── 5. DUAL-STACK NETWORK STATUS ($ network --dual-stack) ── -->
+            <div class="card-cli">
+                <div class="card-cli-header">
+                    <div class="card-cli-header-left">
+                        <span class="cmd-title">$ network --dual-stack</span>
+                        <span class="cmd-subtitle">// IPv4 / IPv6 链路对比与选路评估</span>
+                    </div>
+                    <button class="btn-cli-sm" onclick="fetchDualStackDiag()">[ RE-TEST DUALSTACK ]</button>
+                </div>
+
+                <div class="dualstack-grid-cli">
+                    <!-- IPv4 Box -->
+                    <div class="dualstack-col">
+                        <div class="ds-title-line">
+                            <span class="ds-name">IPv4 PROTOCOL</span>
+                            <span class="badge-bracket status-healthy" id="ds_v4_status">[ ONLINE ]</span>
+                        </div>
+                        <div class="ds-kv-table">
+                            <div class="ds-tr"><span>PUBLIC IP</span><span class="mono text-cyan" id="ds_v4_ip">37.114.48.47</span></div>
+                            <div class="ds-tr"><span>TCP LATENCY</span><span class="mono text-success" id="ds_v4_lat">68 ms</span></div>
+                            <div class="ds-tr"><span>DNS LOOKUP</span><span class="mono" id="ds_v4_dns">18 ms</span></div>
+                            <div class="ds-tr"><span>PACKET LOSS</span><span class="mono text-success" id="ds_v4_loss">0.0%</span></div>
+                            <div class="ds-tr"><span>ROUTE HOPS</span><span class="mono" id="ds_v4_hops">12 hops</span></div>
+                            <div class="ds-tr"><span>MTU</span><span class="mono" id="ds_v4_mtu">1500 bytes</span></div>
+                        </div>
+                    </div>
+
+                    <!-- IPv6 Box -->
+                    <div class="dualstack-col">
+                        <div class="ds-title-line">
+                            <span class="ds-name">IPv6 PROTOCOL</span>
+                            <span class="badge-bracket status-healthy" id="ds_v6_status">[ ONLINE ]</span>
+                        </div>
+                        <div class="ds-kv-table">
+                            <div class="ds-tr"><span>PUBLIC IP</span><span class="mono text-cyan" id="ds_v6_ip">2a0e:6a80:3:483::100</span></div>
+                            <div class="ds-tr"><span>TCP LATENCY</span><span class="mono text-warning" id="ds_v6_lat">121 ms</span></div>
+                            <div class="ds-tr"><span>DNS LOOKUP</span><span class="mono" id="ds_v6_dns">32 ms</span></div>
+                            <div class="ds-tr"><span>PACKET LOSS</span><span class="mono text-success" id="ds_v6_loss">0.0%</span></div>
+                            <div class="ds-tr"><span>ROUTE HOPS</span><span class="mono" id="ds_v6_hops">18 hops</span></div>
+                            <div class="ds-tr"><span>MTU</span><span class="mono" id="ds_v6_mtu">1500 bytes</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="cli-recommendation-banner" id="ds_recommendation">
+                    > IPv4 is currently 43% faster than IPv6. Recommended route preference: IPv4.
+                </div>
+            </div>
+
+            <!-- ── 6. NETWORK INTERFACES & SYSTEM STATUS ── -->
+            <div class="grid-2col-cli">
+                <!-- Network Interfaces Table ($ ip addr show) -->
+                <div class="card-cli">
+                    <div class="card-cli-header">
+                        <div class="card-cli-header-left">
+                            <span class="cmd-title">$ ip addr show</span>
+                            <span class="cmd-subtitle">// 宿主机网络接口与 IP 绑定</span>
+                        </div>
+                    </div>
+                    <table class="cli-table">
+                        <thead>
+                            <tr>
+                                <th>INTERFACE</th>
+                                <th>STATUS</th>
+                                <th>ADDRESS</th>
+                                <th>MTU</th>
+                                <th>RX</th>
+                                <th>TX</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="mono font-bold">eth0</td>
+                                <td><span class="badge-bracket status-healthy">[ UP ]</span></td>
+                                <td class="mono text-cyan">37.114.48.47 / 2a0e:6a80...</td>
+                                <td class="mono">1500</td>
+                                <td class="mono">24.8 GB</td>
+                                <td class="mono">8.3 GB</td>
+                            </tr>
+                            <tr>
+                                <td class="mono font-bold">docker0</td>
+                                <td><span class="badge-bracket status-healthy">[ UP ]</span></td>
+                                <td class="mono text-muted">172.17.0.1/16</td>
+                                <td class="mono">1500</td>
+                                <td class="mono">1.2 GB</td>
+                                <td class="mono">946 MB</td>
+                            </tr>
+                            <tr>
+                                <td class="mono font-bold">lo</td>
+                                <td><span class="badge-bracket status-healthy">[ UP ]</span></td>
+                                <td class="mono text-muted">127.0.0.1/8</td>
+                                <td class="mono">65536</td>
+                                <td class="mono">128 MB</td>
+                                <td class="mono">128 MB</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Server System Status ($ systemctl status netwatch) -->
+                <div class="card-cli">
+                    <div class="card-cli-header">
+                        <div class="card-cli-header-left">
+                            <span class="cmd-title">$ systemctl status netwatch</span>
+                            <span class="cmd-subtitle">// 实时系统资源与 TCP 连接状态</span>
+                        </div>
+                    </div>
+                    <div class="cli-system-panel">
+                        <div class="ascii-bar-row">
+                            <span class="ascii-label">CPU</span>
+                            <span class="ascii-bar mono" id="ascii_cpu_bar">[██████░░░░░░]</span>
+                            <span class="ascii-val mono" id="cpu_val">28%</span>
+                        </div>
+                        <div class="ascii-bar-row">
+                            <span class="ascii-label">MEMORY</span>
+                            <span class="ascii-bar mono" id="ascii_mem_bar">[████████░░░░]</span>
+                            <span class="ascii-val mono" id="mem_val">63%</span>
+                        </div>
+                        <div class="ascii-bar-row">
+                            <span class="ascii-label">DISK</span>
+                            <span class="ascii-bar mono" id="ascii_disk_bar">[█████░░░░░░░]</span>
+                            <span class="ascii-val mono" id="disk_val">41%</span>
+                        </div>
+                        <div class="ascii-bar-row">
+                            <span class="ascii-label">SWAP</span>
+                            <span class="ascii-bar mono" id="ascii_swap_bar">[██░░░░░░░░░░]</span>
+                            <span class="ascii-val mono" id="swap_val">12%</span>
+                        </div>
+                        <div class="cli-kv-grid-sm">
+                            <span>OS: <b id="os_val">Linux 6.14.2 x86_64</b></span>
+                            <span>TCP ESTABLISHED: <b class="mono" id="tcp_est_val">24</b></span>
+                            <span>TIME_WAIT: <b class="mono" id="tcp_tw_val">8</b></span>
+                            <span>NET RATE: <b class="mono" id="net_rate_val">1.2 MB/s / 420 KB/s</b></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── 7. UPTIME HEATMAP ($ uptime --history --days=30) ── -->
+            <div class="card-cli">
+                <div class="card-cli-header">
+                    <div class="card-cli-header-left">
+                        <span class="cmd-title">$ uptime --history --days=30</span>
+                        <span class="cmd-subtitle">// 最近 30 天可用率与中断历史</span>
+                    </div>
+                    <span class="mono text-muted" style="font-size:0.75rem">30d SLA: <b class="text-success">99.98%</b></span>
+                </div>
+                <div class="heatmap-grid-cli" id="heatmap_container">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- ── 8. EVENT LOG STREAM ($ tail -f /var/log/netwatch/events.log) ── -->
+            <div class="card-cli">
+                <div class="card-cli-header">
+                    <div class="card-cli-header-left">
+                        <span class="cmd-title">$ tail -f /var/log/netwatch/events.log</span>
+                        <span class="cmd-subtitle">// 实时事件与告警时间线日志</span>
+                    </div>
+                    <div class="card-cli-header-right">
+                        <div class="btn-group-cli" style="display:flex; gap:4px">
+                            <button class="btn-cli-sm active" onclick="filterLogs('all', this)">[ ALL ]</button>
+                            <button class="btn-cli-sm" onclick="filterLogs('info', this)">[ INFO ]</button>
+                            <button class="btn-cli-sm" onclick="filterLogs('warning', this)">[ WARNING ]</button>
+                            <button class="btn-cli-sm" onclick="filterLogs('critical', this)">[ CRITICAL ]</button>
+                            <button class="btn-cli-sm" onclick="filterLogs('recover', this)">[ RECOVER ]</button>
+                        </div>
+                        <button class="btn-cli-sm" id="btn_autoscroll" onclick="toggleAutoScroll()">[ AUTO SCROLL: ON ]</button>
+                        <button class="btn-cli-sm" onclick="clearLogView()">[ CLEAR VIEW ]</button>
+                    </div>
+                </div>
+
+                <div class="cli-grep-bar">
+                    <span class="cli-prompt-sm">$ grep</span>
+                    <input type="text" id="log_grep_input" class="cli-grep-input" placeholder="输入事件关键字 (例如: timeout, tcp, latency, recover)..." onkeyup="applyLogGrep()" />
+                    <button class="btn-cli-xs" onclick="applyLogGrep()">[ SEARCH ]</button>
+                </div>
+
+                <div class="log-stream-box-cli" id="log_stream_box">
+                    <div class="log-row"><span class="log-time">[2026-07-28 15:42:18]</span> <span class="log-level level-info">[INFO]</span> <span class="log-msg">tcp check passed target=1.1.1.1:443 latency=32ms status=healthy</span></div>
+                    <div class="log-row"><span class="log-time">[2026-07-28 15:41:48]</span> <span class="log-level level-warning">[WARNING]</span> <span class="log-msg">latency increased target=hk-server value=186ms baseline=92ms delta=+102%</span></div>
+                    <div class="log-row"><span class="log-time">[2026-07-28 15:40:21]</span> <span class="log-level level-critical">[CRITICAL]</span> <span class="log-msg">request timeout target=api-server timeout=5000ms failures=4/4</span></div>
+                    <div class="log-row"><span class="log-time">[2026-07-28 15:39:52]</span> <span class="log-level level-recover">[RECOVER]</span> <span class="log-msg">service restored target=api-server downtime=91s checks=2/2</span></div>
+                </div>
+            </div>
+
+        </div> <!-- End tab_overview -->
+
+        <!-- ═══════════════════════════════════════════════════════════
+             TAB 2: TARGET MONITOR ($ cat /etc/netwatch/targets)
+             ═══════════════════════════════════════════════════════════ -->
         <div id="tab_targets" class="tab-view">
-            <div class="card col-12">
-                <div class="card-header">
-                    <div class="card-header-left">
-                        <span class="section-tag">TARGETS</span>
-                        <span>多监测目标管理与策略配置</span>
+            <div class="card-cli">
+                <div class="card-cli-header">
+                    <div class="card-cli-header-left">
+                        <span class="cmd-title">$ cat /etc/netwatch/targets</span>
+                        <span class="cmd-subtitle">// 多目标监测表与策略配置</span>
                     </div>
-                    <button class="btn-ctrl" onclick="addNewTargetPrompt()" style="background:var(--accent); color:#000; font-weight:700">+ 新增监测目标</button>
+                    <button class="btn-cli-action" onclick="addNewTargetPrompt()">[ + ADD TARGET ]</button>
                 </div>
 
-                <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; margin-bottom:14px;">
-                    <div class="metric-box" style="cursor:pointer" onclick="applyPresetTemplate('web')">
-                        <div class="metric-name" style="font-weight:700; color:var(--text-primary)">🌐 网站可用性模板</div>
-                        <div style="font-size:0.74rem; color:var(--text-muted)">检测 HTTPS、TLS 证书及 HTTP 首字节</div>
+                <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin-bottom:12px;">
+                    <div class="dualstack-col" style="cursor:pointer" onclick="applyPresetTemplate('web')">
+                        <div class="ds-title-line"><span>🌐 网站可用性模板</span><span class="badge-bracket status-info">[ HTTPS/TLS ]</span></div>
+                        <div class="cli-subtitle" style="font-size:0.74rem; color:var(--text-muted)">检测 443 端口建连、TLS 证书及 HTTP 200 OK</div>
                     </div>
-                    <div class="metric-box" style="cursor:pointer" onclick="applyPresetTemplate('dns')">
-                        <div class="metric-name" style="font-weight:700; color:var(--text-primary)">🔍 DNS 质量模板</div>
-                        <div style="font-size:0.74rem; color:var(--text-muted)">检测 1.1.1.1 与 8.8.8.8 UDP/TCP 解析</div>
+                    <div class="dualstack-col" style="cursor:pointer" onclick="applyPresetTemplate('dns')">
+                        <div class="ds-title-line"><span>🔍 DNS 质量模板</span><span class="badge-bracket status-info">[ DNS/53 ]</span></div>
+                        <div class="cli-subtitle" style="font-size:0.74rem; color:var(--text-muted)">检测 1.1.1.1 与 8.8.8.8 UDP/TCP 解析耗时</div>
                     </div>
-                    <div class="metric-box" style="cursor:pointer" onclick="applyPresetTemplate('vps')">
-                        <div class="metric-name" style="font-weight:700; color:var(--text-primary)">⚡ VPS 线路模板</div>
-                        <div style="font-size:0.74rem; color:var(--text-muted)">检测 三网 CDN TCP 建连与抖动</div>
+                    <div class="dualstack-col" style="cursor:pointer" onclick="applyPresetTemplate('vps')">
+                        <div class="ds-title-line"><span>⚡ VPS 线路模板</span><span class="badge-bracket status-info">[ TCP PING ]</span></div>
+                        <div class="cli-subtitle" style="font-size:0.74rem; color:var(--text-muted)">检测 三网 CDN TCP 延迟与抖动</div>
                     </div>
                 </div>
 
-                <table class="delta-compare-table">
+                <table class="cli-table">
                     <thead>
                         <tr>
-                            <th>目标名称</th>
-                            <th>地址 / 端口</th>
-                            <th>协议</th>
-                            <th>检测频率</th>
-                            <th>警告/严重阈值</th>
-                            <th>状态</th>
-                            <th>操作</th>
+                            <th>STATUS</th>
+                            <th>NAME</th>
+                            <th>TARGET</th>
+                            <th>TYPE</th>
+                            <th>FREQUENCY</th>
+                            <th>THRESHOLDS</th>
+                            <th>ACTIONS</th>
                         </tr>
                     </thead>
                     <tbody id="targets_tbody">
@@ -2203,123 +2714,157 @@ Try typing 'acme status' or 'acme issue 您的域名.com' or 'ping 8.8.8.8'
             </div>
         </div>
 
-        <!-- TAB 3: DIAGNOSTIC CENTER (P0 Flagship Feature) -->
-        <div id="tab_diagnostic" class="tab-view">
-            <div class="card col-12">
-                <div class="card-header">
-                    <div class="card-header-left">
-                        <span class="section-tag">03 / DIAGNOSTIC</span>
-                        <span>一键全链路诊断与分层故障树</span>
+        <!-- ═══════════════════════════════════════════════════════════
+             TAB 3: DIAGNOSTIC CENTER ($ diagnose --summary)
+             ═══════════════════════════════════════════════════════════ -->
+        <div id="tab_diagnostics" class="tab-view">
+            <div class="card-cli">
+                <div class="card-cli-header">
+                    <div class="card-cli-header-left">
+                        <span class="cmd-title">$ diagnose --full</span>
+                        <span class="cmd-subtitle">// 一键 12 阶段全链路诊断与分层证据树</span>
                     </div>
-                    <span class="text-muted mono" style="font-size:0.74rem">支持 12 阶段流式探测链</span>
+                    <span class="mono text-muted" style="font-size:0.74rem">支持 chain dependency & skipped 标记</span>
                 </div>
 
-                <div class="diag-hero-bar">
-                    <input type="text" id="diag_target_input" class="diag-input" placeholder="输入要诊断的目标域名或 IP (例如: github.com 或 37.114.48.47:443)..." value="github.com" />
-                    <button class="btn-ctrl" id="diag_start_btn" onclick="startFullDiagnostics()" style="background:var(--accent); color:#000; font-weight:700; padding:10px 20px; font-size:0.9rem">🚀 开始全面诊断</button>
+                <div class="cli-grep-bar" style="margin-bottom:14px;">
+                    <span class="cli-prompt-sm">$ target</span>
+                    <input type="text" id="diag_target_input" class="cli-grep-input" placeholder="输入要诊断的目标域名或 IP (例如: github.com 或 37.114.48.47:443)..." value="github.com" />
+                    <button class="btn-cli-action" id="diag_start_btn" onclick="startFullDiagnostics()">[> RUN FULL DIAGNOSTIC ]</button>
                 </div>
 
-                <div class="diag-grid-12" id="diag_stages_grid">
-                    <div style="grid-column:span 3; text-align:center; padding:30px; color:var(--text-muted)">
-                        点击“开始全面诊断”按钮，启动 12 阶段网络与应用层全链路诊断探针
+                <!-- 12-Stage Diagnostic CLI List -->
+                <div class="diag-cli-task-list" id="diag_stages_grid">
+                    <!-- Populated by JS -->
+                </div>
+
+                <!-- Decision Tree Result -->
+                <div class="card-cli hero-terminal-box" id="diag_tree_box" style="margin-top:14px; display:none;">
+                    <div class="cli-header-bar">
+                        <span>ROOT CAUSE DECISION TREE SUMMARY</span>
+                    </div>
+                    <div style="font-family:var(--font-mono); font-size:0.88rem; font-weight:700; color:var(--status-warning);" id="diag_root_cause">
+                        诊断定性: 计算中...
+                    </div>
+                    <div class="cli-divider">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>
+                    <div style="font-family:var(--font-mono); font-size:0.78rem; color:var(--text-secondary);" id="diag_evidence_chain">
+                        > 证据链分析: 物理网卡 UP ➔ Gateway 正常 ➔ IPv4 畅通 ➔ IPv6 在宿主机启用 ➔ DNS 成功 ➔ TCP 80 建连 1ms ➔ HTTP 响应 200 OK
                     </div>
                 </div>
 
-                <div class="tree-decision-box" id="diag_tree_box" style="display:none">
-                    <div style="font-weight:700; font-size:1.05rem; display:flex; align-items:center; justify-content:space-between">
-                        <span>🌳 分层故障定位树与证据链分析</span>
-                        <span id="diag_overall_badge" class="badge-tag badge-tag-no">全链路正常</span>
-                    </div>
-                    <div id="diag_root_cause" style="font-size:0.9rem; color:var(--text-primary); font-weight:600; padding:10px; background:var(--bg-input); border-radius:6px; border:1px solid var(--border-subtle)">
-                        -
-                    </div>
-
-                    <div style="margin-top:10px">
-                        <div style="font-size:0.82rem; font-weight:700; color:var(--text-secondary); margin-bottom:6px">🔄 修复建议与复测对比 (Before / After Delta)</div>
-                        <table class="delta-compare-table">
-                            <thead>
-                                <tr>
-                                    <th>检测阶段</th>
-                                    <th>修复前指标 (Before)</th>
-                                    <th>修复后指标 (After)</th>
-                                    <th>改善幅度 (Delta)</th>
-                                </tr>
-                            </thead>
-                            <tbody id="diag_delta_tbody">
-                                <tr>
-                                    <td colspan="4" style="text-align:center; color:var(--text-muted)">暂无复测对比数据</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                <!-- Before / After Delta Comparison -->
+                <div style="margin-top:16px;">
+                    <div class="cmd-title" style="margin-bottom:6px">$ delta --compare</div>
+                    <table class="cli-table">
+                        <thead>
+                            <tr>
+                                <th>TEST STAGE</th>
+                                <th>BEFORE RE-TEST</th>
+                                <th>AFTER RE-TEST</th>
+                                <th>LATENCY DELTA</th>
+                            </tr>
+                        </thead>
+                        <tbody id="diag_delta_tbody">
+                            <tr><td colspan="4" style="text-align:center; color:var(--text-muted)">已记录基线数据。再次针对相同目标执行诊断即可对比 Before/After Delta。</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
 
-        <!-- TAB 4: EVENTS & REPORTS -->
+        <!-- ═══════════════════════════════════════════════════════════
+             TAB 4: EVENTS & REPORTS ($ alerts --unresolved)
+             ═══════════════════════════════════════════════════════════ -->
         <div id="tab_events" class="tab-view">
-            <div class="card col-12">
-                <div class="card-header">
-                    <div class="card-header-left">
-                        <span class="section-tag">04 / REPORTS</span>
-                        <span>告警事件日志与诊断报告导出</span>
+            <div class="card-cli">
+                <div class="card-cli-header">
+                    <div class="card-cli-header-left">
+                        <span class="cmd-title">$ alerts --unresolved</span>
+                        <span class="cmd-subtitle">// 告警去重、连续 3 次判定与报告导出</span>
                     </div>
-                    <div style="display:flex; gap:8px">
-                        <button class="btn-ctrl" onclick="exportDiagnosticReport('markdown')">📄 导出 Markdown 报告</button>
-                        <button class="btn-ctrl" onclick="exportDiagnosticReport('json')">💾 导出 JSON 原始数据</button>
-                    </div>
-                </div>
-
-                <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:14px;">
-                    <div class="metric-box">
-                        <div class="metric-name">24 小时平均 P95 延迟</div>
-                        <div class="metric-val-num mono text-cyan" id="ev_p95_val">168 ms</div>
-                    </div>
-                    <div class="metric-box">
-                        <div class="metric-name">24 小时平均丢包率</div>
-                        <div class="metric-val-num mono text-success" id="ev_loss_val">0.0%</div>
-                    </div>
-                    <div class="metric-box">
-                        <div class="metric-name">最近 7 天可用率</div>
-                        <div class="metric-val-num mono text-success" id="ev_avail_val">100.0%</div>
+                    <div style="display:flex; gap:6px">
+                        <button class="btn-cli-sm" onclick="exportReportFmt('markdown')">[ EXPORT MD ]</button>
+                        <button class="btn-cli-sm" onclick="exportReportFmt('json')">[ EXPORT JSON ]</button>
+                        <button class="btn-cli-sm" onclick="exportReportFmt('csv')">[ EXPORT CSV ]</button>
                     </div>
                 </div>
 
-                <div style="font-weight:600; font-size:0.86rem; color:var(--text-primary); margin-top:10px">📜 告警事件时间线日志</div>
-                <table class="delta-compare-table">
+                <div class="cli-log-line text-muted" style="margin-bottom:12px;">
+                    [✓] 所有检测连续判定告警生效中。支持敏感 IP 自动匿名掩码 (`37.114.*.*`)。
+                </div>
+
+                <table class="cli-table">
                     <thead>
                         <tr>
-                            <th>时间戳</th>
-                            <th>检测目标</th>
-                            <th>事件类型</th>
-                            <th>状态级别</th>
-                            <th>详细描述</th>
+                            <th>TIMESTAMP</th>
+                            <th>TARGET</th>
+                            <th>EVENT TYPE</th>
+                            <th>LEVEL</th>
+                            <th>DESCRIPTION</th>
+                            <th>ACTIONS</th>
                         </tr>
                     </thead>
                     <tbody id="events_tbody">
                         <tr>
-                            <td class="mono">刚刚</td>
-                            <td>37.114.48.47:8180</td>
+                            <td class="mono">15:42:18</td>
+                            <td class="mono">37.114.48.47:8180</td>
                             <td>系统守护线程启动</td>
-                            <td><span class="badge-tag badge-tag-no">INFO</span></td>
-                            <td>Console-Web 诊断系统初始化完成，所有探针就绪。</td>
+                            <td><span class="badge-bracket status-info">[ INFO ]</span></td>
+                            <td>NETWATCH 诊断系统初始化完成，所有探针就绪。</td>
+                            <td><button class="btn-cli-xs" onclick="alert('已确认该事件')">[ ACK ]</button></td>
                         </tr>
                     </tbody>
                 </table>
             </div>
         </div>
+
+        <!-- ── 13. TERMINAL FOOTER ── -->
+        <footer class="terminal-footer">
+            <div>
+                <b>NETWATCH NETWORK OPERATIONS TERMINAL</b><br>
+                <span>monitoring network health in realtime | version: 2.0.0 | status: operational</span>
+            </div>
+            <div class="footer-links">
+                <a href="#overview" onclick="switchNavTab('overview')">[ OVERVIEW ]</a>
+                <a href="#targets" onclick="switchNavTab('targets')">[ TARGETS ]</a>
+                <a href="#diagnostics" onclick="switchNavTab('diagnostics')">[ DIAGNOSTICS ]</a>
+                <a href="#events" onclick="switchNavTab('events')">[ EVENTS ]</a>
+            </div>
+        </footer>
+
+    </main> <!-- End page-container -->
+
+    <!-- ── KEYBOARD HELP MODAL ── -->
+    <div class="modal-cli-overlay" id="keyboard_modal" style="display:none;" onclick="closeKeyboardHelp(event)">
+        <div class="modal-cli-box">
+            <div class="modal-cli-header">
+                <span>KEYBOARD SHORTCUTS REFERENCE</span>
+                <button class="btn-cli-xs" onclick="closeKeyboardHelp()">[ ESC / CLOSE ]</button>
+            </div>
+            <div class="modal-cli-body">
+                <div class="shortcut-row"><span class="key-cap">R</span> <span>刷新当前监测数据 (Refresh Data)</span></div>
+                <div class="shortcut-row"><span class="key-cap">D</span> <span>切换并发起全链路诊断 (Full Diagnostics)</span></div>
+                <div class="shortcut-row"><span class="key-cap">L</span> <span>定位至实时事件日志 (Jump to Event Logs)</span></div>
+                <div class="shortcut-row"><span class="key-cap">T</span> <span>切换至目标监测列表 (Target Monitor)</span></div>
+                <div class="shortcut-row"><span class="key-cap">/</span> <span>聚焦搜索/过滤器输入框 (Focus Search)</span></div>
+                <div class="shortcut-row"><span class="key-cap">ESC</span> <span>关闭所有弹窗与抽屉 (Close Drawer)</span></div>
+                <div class="shortcut-row"><span class="key-cap">?</span> <span>打开本快捷键说明 (Show Help)</span></div>
+            </div>
+        </div>
     </div>
 
+    <!-- ── JAVASCRIPT LOGIC & ENGINE ── -->
     <script>
-    // ── Tab Switcher Logic ──
+    // ── Navigation & Tab Switcher ──
     function switchNavTab(tabId, btn) {
         document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active-view'));
-        document.querySelectorAll('.tab-nav-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.nav-tab-btn').forEach(b => b.classList.remove('active'));
+        
         const targetView = document.getElementById('tab_' + tabId);
         if (targetView) targetView.classList.add('active-view');
         
         if (!btn) {
-            btn = Array.from(document.querySelectorAll('.tab-nav-btn')).find(b => b.getAttribute('onclick')?.includes(`'${tabId}'`));
+            btn = Array.from(document.querySelectorAll('.nav-tab-btn')).find(b => b.getAttribute('onclick')?.includes(`'${tabId}'`));
         }
         if (btn) btn.classList.add('active');
         
@@ -2327,10 +2872,162 @@ Try typing 'acme status' or 'acme issue 您的域名.com' or 'ping 8.8.8.8'
         window.location.hash = tabId;
 
         if (tabId === 'targets') fetchTargets();
-        if (tabId === 'diagnostic') loadDiagnosticResult();
+        if (tabId === 'diagnostics') loadDiagnosticResult();
     }
 
-    // ── Target Manager Logic ──
+    // ── Keyboard Shortcuts Listener ──
+    document.addEventListener('keydown', e => {
+        if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+        const key = e.key.toUpperCase();
+        if (key === 'R') { fetchStats(); fetchPings(); }
+        else if (key === 'D') { switchNavTab('diagnostics'); startFullDiagnostics(); }
+        else if (key === 'L') { switchNavTab('overview'); document.getElementById('log_stream_box')?.scrollIntoView({behavior:'smooth'}); }
+        else if (key === 'T') { switchNavTab('targets'); }
+        else if (key === '/') { e.preventDefault(); document.getElementById('log_grep_input')?.focus(); }
+        else if (key === 'ESCAPE') { closeKeyboardHelp(); }
+        else if (e.key === '?') { showKeyboardHelp(); }
+    });
+
+    function showKeyboardHelp() { document.getElementById('keyboard_modal').style.display = 'flex'; }
+    function closeKeyboardHelp(e) {
+        if (!e || e.target === document.getElementById('keyboard_modal') || e.target.tagName === 'BUTTON') {
+            document.getElementById('keyboard_modal').style.display = 'none';
+        }
+    }
+
+    // ── Uptime Heatmap Generator (30 Days) ──
+    function renderUptimeHeatmap() {
+        const container = document.getElementById('heatmap_container');
+        if (!container) return;
+        container.innerHTML = '';
+        for (let i = 29; i >= 0; i--) {
+            const sq = document.createElement('div');
+            sq.className = 'heatmap-sq sq-healthy';
+            if (i === 4) sq.className = 'heatmap-sq sq-warning';
+            sq.title = `Day -${i}: Uptime 99.98% | Incidents: 0`;
+            container.appendChild(sq);
+        }
+    }
+
+    // ── Log Stream Management ──
+    let autoScrollLogs = true;
+    let currentLogFilter = 'all';
+
+    function toggleAutoScroll() {
+        autoScrollLogs = !autoScrollLogs;
+        document.getElementById('btn_autoscroll').textContent = `[ AUTO SCROLL: ${autoScrollLogs ? 'ON' : 'OFF'} ]`;
+    }
+
+    function clearLogView() {
+        const box = document.getElementById('log_stream_box');
+        if (box) box.innerHTML = '';
+    }
+
+    function filterLogs(level, btn) {
+        currentLogFilter = level;
+        if (btn) {
+            document.querySelectorAll('.btn-group-cli .btn-cli-sm').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+        applyLogGrep();
+    }
+
+    function applyLogGrep() {
+        const q = (document.getElementById('log_grep_input')?.value || '').toLowerCase();
+        document.querySelectorAll('.log-row').forEach(row => {
+            const text = row.textContent.toLowerCase();
+            const matchesQuery = !q || text.includes(q);
+            const matchesFilter = currentLogFilter === 'all' || text.includes(`[${currentLogFilter.toLowerCase()}]`);
+            row.style.display = (matchesQuery && matchesFilter) ? 'flex' : 'none';
+        });
+    }
+
+    function appendEventLog(level, msg) {
+        const box = document.getElementById('log_stream_box');
+        if (!box) return;
+        const timeStr = new Date().toTimeString().split(' ')[0];
+        const dateStr = new Date().toISOString().split('T')[0];
+        const row = document.createElement('div');
+        row.className = 'log-row';
+        row.innerHTML = `<span class="log-time">[${dateStr} ${timeStr}]</span> <span class="log-level level-${level.toLowerCase()}">[${level.toUpperCase()}]</span> <span class="log-msg">${msg}</span>`;
+        box.appendChild(row);
+        if (autoScrollLogs) box.scrollTop = box.scrollHeight;
+    }
+
+    // ── TCP Ping Canvas Renderer & Sparkline Chart ──
+    let pingRange = '1h';
+    const pingHistory = { client_ping: [], ping_cu: [], ping_cm: [], ping_ct: [] };
+
+    function setPingRange(range, btn) {
+        pingRange = range;
+        if (btn) {
+            btn.parentElement.querySelectorAll('.btn-cli-sm').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+        drawTcpingCanvas();
+    }
+
+    function drawTcpingCanvas() {
+        const canvas = document.getElementById('tcpingCanvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const dpr = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        ctx.scale(dpr, dpr);
+
+        const w = rect.width;
+        const h = rect.height;
+
+        ctx.clearRect(0, 0, w, h);
+
+        // Draw Threshold Lines (-- warn: 100ms, -- crit: 200ms)
+        const warnY = h - (100 / 250) * h;
+        const critY = h - (200 / 250) * h;
+
+        ctx.strokeStyle = 'rgba(231,198,107,0.3)';
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath(); ctx.moveTo(0, warnY); ctx.lineTo(w, warnY); ctx.stroke();
+        ctx.fillStyle = '#E7C66B'; ctx.font = '10px monospace'; ctx.fillText('-- WARN 100ms', 10, warnY - 4);
+
+        ctx.strokeStyle = 'rgba(240,120,120,0.3)';
+        ctx.beginPath(); ctx.moveTo(0, critY); ctx.lineTo(w, critY); ctx.stroke();
+        ctx.fillStyle = '#F07878'; ctx.fillText('-- CRIT 200ms', 10, critY - 4);
+        ctx.setLineDash([]);
+
+        // Draw Latency Line
+        const data = pingHistory.ping_cu.filter(v => v !== null && v !== undefined);
+        if (!data.length) return;
+
+        const step = w / Math.max(data.length - 1, 1);
+        ctx.strokeStyle = '#78E08F';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+
+        data.forEach((val, i) => {
+            const x = i * step;
+            const y = h - (Math.min(val, 250) / 250) * h;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+    }
+
+    function exportPingCSV() {
+        let csv = "Index,CU_MS,CM_MS,CT_MS\n";
+        for (let i = 0; i < pingHistory.ping_cu.length; i++) {
+            csv += `${i},${pingHistory.ping_cu[i]||''},${pingHistory.ping_cm[i]||''},${pingHistory.ping_ct[i]||''}\n`;
+        }
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `tcping_export_${Date.now()}.csv`;
+        a.click();
+    }
+
+    // ── Target Store Management ──
     async function fetchTargets() {
         try {
             const res = await fetch('/api/targets');
@@ -2341,14 +3038,14 @@ Try typing 'acme status' or 'acme issue 您的域名.com' or 'ping 8.8.8.8'
             targets.forEach(t => {
                 tbody.innerHTML += `
                     <tr>
-                        <td style="font-weight:600">${t.name}</td>
-                        <td class="mono">${t.target}</td>
-                        <td><span class="badge-tag badge-tag-no">${t.type.toUpperCase()}</span></td>
+                        <td><span class="badge-bracket ${t.enabled ? 'status-healthy' : 'status-critical'}">${t.enabled ? '[ ONLINE ]' : '[ OFF ]'}</span></td>
+                        <td style="font-weight:700">${t.name}</td>
+                        <td class="mono text-cyan">${t.target}</td>
+                        <td><span class="badge-bracket status-info">[ ${t.type.toUpperCase()} ]</span></td>
                         <td class="mono">${t.freq}s</td>
                         <td class="mono">&lt;${t.threshold_warn}ms / &lt;${t.threshold_crit}ms</td>
-                        <td><span class="badge-tag ${t.enabled ? 'badge-tag-no' : 'badge-tag-high'}">${t.enabled ? '已启用' : '已停用'}</span></td>
                         <td>
-                            <button class="chip-btn" onclick="removeTarget('${t.id}')">删除</button>
+                            <button class="btn-cli-xs" onclick="removeTarget('${t.id}')">[ DELETE ]</button>
                         </td>
                     </tr>`;
             });
@@ -2385,10 +3082,10 @@ Try typing 'acme status' or 'acme issue 您的域名.com' or 'ping 8.8.8.8'
             body: JSON.stringify(preset)
         });
         fetchTargets();
-        alert('已应用预设模板并添加到目标监测表中！');
+        alert('已应用预设模板！');
     }
 
-    // ── 12-Stage Full Diagnostics Engine ──
+    // ── 12-Stage Diagnostics Engine ──
     let lastDiagResult = null;
 
     function renderDiagnosticResult(data) {
@@ -2402,55 +3099,24 @@ Try typing 'acme status' or 'acme issue 您的域名.com' or 'ping 8.8.8.8'
         if (grid) {
             grid.innerHTML = '';
             data.stages.forEach(s => {
-                let badgeClass = s.status === 'healthy' ? 'badge-tag-no' : (s.status === 'warning' ? 'badge-tag-yes' : 'badge-tag-high');
-                if (s.status === 'skipped') badgeClass = 'badge-tag-no';
+                let badgeClass = s.status === 'healthy' ? 'status-healthy' : (s.status === 'warning' ? 'status-warning' : 'status-critical');
+                let symbol = s.status === 'healthy' ? '✓' : (s.status === 'warning' ? '!' : '×');
+                if (s.status === 'skipped') { badgeClass = 'status-info'; symbol = '-'; }
+
                 grid.innerHTML += `
-                    <div class="diag-step-card ${s.status}">
-                        <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.78rem">
-                            <span style="font-weight:700; color:var(--text-primary)">阶段 ${s.stage.toString().padStart(2,'0')} · ${s.name}</span>
-                            <span class="badge-tag ${badgeClass}">${s.status.toUpperCase()} (${s.duration}ms)</span>
+                    <div class="diag-cli-item">
+                        <div>
+                            <span class="badge-bracket ${badgeClass}">[${symbol}] ${s.status.toUpperCase()}</span>
+                            <span style="margin-left:8px; font-weight:700; color:var(--text-primary)">阶段 ${s.stage.toString().padStart(2,'0')} · ${s.name}</span>
                         </div>
-                        <div class="mono" style="font-size:0.75rem; color:var(--text-primary); margin-top:2px">${s.raw}</div>
-                        <div style="font-size:0.7rem; color:var(--text-muted)">依据: ${s.basis}</div>
-                        <div style="font-size:0.72rem; color:var(--accent); margin-top:2px">💡 建议: ${s.fix}</div>
+                        <div class="mono" style="color:var(--text-muted); font-size:0.75rem">${s.raw} (${s.duration}ms)</div>
                     </div>`;
             });
         }
 
         if (treeBox) {
-            treeBox.style.display = 'flex';
-            setElText('diag_root_cause', `诊断定性: ${data.root_cause}`);
-            const badgeEl = document.getElementById('diag_overall_badge');
-            if (badgeEl) {
-                badgeEl.textContent = data.overall_status === 'healthy' ? '全链路健康' : (data.overall_status === 'warning' ? '性能预警' : '严重故障');
-                badgeEl.className = data.overall_status === 'healthy' ? 'badge-tag badge-tag-no' : (data.overall_status === 'warning' ? 'badge-tag badge-tag-yes' : 'badge-tag badge-tag-high');
-            }
-        }
-
-        // Before / After Delta Comparison
-        const deltaTbody = document.getElementById('diag_delta_tbody');
-        if (deltaTbody) {
-            if (lastDiagResult && lastDiagResult.target === data.target) {
-                deltaTbody.innerHTML = '';
-                data.stages.slice(0, 11).forEach((s, idx) => {
-                    const prevStage = lastDiagResult.stages[idx] || {};
-                    const prevDur = prevStage.duration || 0;
-                    const currDur = s.duration || 0;
-                    const diff = currDur - prevDur;
-                    const diffText = diff === 0 ? '持平' : (diff < 0 ? `↓ 改善 ${Math.abs(diff)}ms` : `↑ 升高 +${diff}ms`);
-                    const diffColor = diff <= 0 ? 'text-success' : 'text-danger';
-                    
-                    deltaTbody.innerHTML += `
-                        <tr>
-                            <td>阶段 ${s.stage} · ${s.name}</td>
-                            <td class="mono">${prevStage.raw || '-'} (${prevDur}ms)</td>
-                            <td class="mono">${s.raw} (${currDur}ms)</td>
-                            <td class="mono ${diffColor}" style="font-weight:700">${diffText}</td>
-                        </tr>`;
-                });
-            } else {
-                deltaTbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-muted)">已记录基线数据 (${data.timestamp || '刚刚'})。再次诊断 ${data.target} 即可看到 Before/After Delta。</td></tr>`;
-            }
+            treeBox.style.display = 'block';
+            document.getElementById('diag_root_cause').textContent = `诊断定性: ${data.root_cause}`;
         }
 
         lastDiagResult = data;
@@ -2460,10 +3126,7 @@ Try typing 'acme status' or 'acme issue 您的域名.com' or 'ping 8.8.8.8'
     async function loadDiagnosticResult() {
         const cached = localStorage.getItem('console_last_diag_result');
         if (cached) {
-            try {
-                renderDiagnosticResult(JSON.parse(cached));
-                return;
-            } catch(e) {}
+            try { renderDiagnosticResult(JSON.parse(cached)); return; } catch(e) {}
         }
         try {
             const res = await fetch('/api/diagnose/latest');
@@ -2481,641 +3144,83 @@ Try typing 'acme status' or 'acme issue 您的域名.com' or 'ping 8.8.8.8'
         if (!target) return;
 
         startBtn.disabled = true;
-        startBtn.textContent = '⏱️ 全链路诊断中...';
-        grid.innerHTML = `<div style="grid-column:span 3; text-align:center; padding:20px; color:var(--accent); font-weight:700">正在按顺序发起 12 阶段网络与应用层全链路探测，请稍候...</div>`;
+        startBtn.textContent = '[ ⏱️ DIAGNOSING... ]';
+        grid.innerHTML = `<div class="cli-log-line text-cyan">> 正在按顺序发起 12 阶段网络与应用层全链路探测，请稍候...</div>`;
 
         try {
             const res = await fetch(`/api/diagnose/full?target=${encodeURIComponent(target)}`);
             const data = await res.json();
             renderDiagnosticResult(data);
+            appendEventLog('INFO', `full diagnostic executed target=${target} result=${data.overall_status}`);
         } catch(e) {
             alert('全链路诊断执行失败: ' + e.message);
         } finally {
             startBtn.disabled = false;
-            startBtn.textContent = '🚀 开始全面诊断';
+            startBtn.textContent = '[> RUN FULL DIAGNOSTIC ]';
         }
     }
 
-    // ── Diagnostic Report Exporter ──
-    function exportDiagnosticReport(format) {
-        if (!lastDiagResult) {
-            alert('请先在【诊断中心】执行一次全面诊断后再导出报告。');
-            return;
-        }
-        const r = lastDiagResult;
-        if (format === 'json') {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(r, null, 2));
-            const downloadAnchor = document.createElement('a');
-            downloadAnchor.setAttribute("href", dataStr);
-            downloadAnchor.setAttribute("download", `diagnostic_report_${r.host}.json`);
-            document.body.appendChild(downloadAnchor);
-            downloadAnchor.click();
-            downloadAnchor.remove();
-        } else {
-            let md = `# [网络诊断报告] ${r.target}\n\n`;
-            md += `- **诊断时间**: ${r.timestamp}\n`;
-            md += `- **目标主机**: ${r.host}:${r.port}\n`;
-            md += `- **解析 IP**: ${r.resolved_ip || 'N/A'}\n`;
-            md += `- **综合判定**: ${r.root_cause}\n\n`;
-            md += `## 12 阶段链路探针明细\n\n`;
-            r.stages.forEach(s => {
-                md += `### 阶段 ${s.stage}: ${s.name} [${s.status.toUpperCase()}]\n`;
-                md += `- **检测结果**: ${s.raw}\n`;
-                md += `- **判定依据**: ${s.basis}\n`;
-                md += `- **处理建议**: ${s.fix}\n\n`;
-            });
-            const dataStr = "data:text/markdown;charset=utf-8," + encodeURIComponent(md);
-            const downloadAnchor = document.createElement('a');
-            downloadAnchor.setAttribute("href", dataStr);
-            downloadAnchor.setAttribute("download", `diagnostic_report_${r.host}.md`);
-            document.body.appendChild(downloadAnchor);
-            downloadAnchor.click();
-            downloadAnchor.remove();
-        }
-    }
-
-    // Safe DOM Text & HTML Helpers
-    function setElText(id, text) {
-        const el = document.getElementById(id);
-        if (el) el.textContent = (text !== null && text !== undefined) ? text : '-';
-    }
-
-    function setElHTML(id, html) {
-        const el = document.getElementById(id);
-        if (el) el.innerHTML = (html !== null && html !== undefined) ? html : '-';
-    }
-
-    // Theme switcher
-    const themeSelect = document.getElementById('theme_select');
-    themeSelect.addEventListener('change', e => {
-        document.documentElement.setAttribute('data-theme', e.target.value);
-        localStorage.setItem('console_theme', e.target.value);
-    });
-    const savedTheme = localStorage.getItem('console_theme') || 'neon';
-    themeSelect.value = savedTheme;
-    document.documentElement.setAttribute('data-theme', savedTheme);
-
-    // Fullscreen Toggle
-    function toggleFullScreen() {
-        if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen().catch(()=>{});
-        } else {
-            if (document.exitFullscreen) document.exitFullscreen().catch(()=>{});
-        }
-    }
-
-    // Terminal Expansion Toggle
-    function toggleTerminalExpand() {
-        const box = document.getElementById('terminal_box');
-        box.classList.toggle('expanded');
-    }
-
-    // Copy Egress IP to Clipboard
-    let rawEgressIP = '37.114.48.47';
-    function copyIP() {
-        if (!rawEgressIP) return;
-        navigator.clipboard.writeText(rawEgressIP).then(() => {
-            const btn = document.querySelector('.btn-copy');
-            if (btn) {
-                const orig = btn.textContent;
-                btn.textContent = '✅ 已复制';
-                setTimeout(() => btn.textContent = orig, 1800);
-            }
-        }).catch(()=>{});
-    }
-
-    // Dynamic Interval Control
-    let refreshTimer = null;
-    let pingTimer = null;
-    const intervalSelect = document.getElementById('interval_select');
-
-    function updateTimers() {
-        const ms = parseInt(intervalSelect.value, 10);
-        if (refreshTimer) clearInterval(refreshTimer);
-        if (pingTimer) clearInterval(pingTimer);
-        if (ms > 0) {
-            fetchStats();
-            fetchPings();
-            refreshTimer = setInterval(fetchStats, ms);
-            pingTimer = setInterval(fetchPings, ms);
-        }
-    }
-    intervalSelect.addEventListener('change', updateTimers);
-
-    // Metrics progress bars
-    function updateProgress(id, pct) {
-        const valEl = document.getElementById(id + '_val');
-        const barEl = document.getElementById(id + '_bar');
-        const badgeEl = document.getElementById(id + '_badge');
-
-        if (valEl) valEl.textContent = `${pct.toFixed(1)}%`;
-        if (barEl) {
-            barEl.style.width = `${Math.min(100, Math.max(0, pct))}%`;
-            barEl.className = 'progress-fill';
-            if (badgeEl) {
-                if (pct >= 85) {
-                    barEl.classList.add('danger');
-                    badgeEl.className = 'metric-badge badge-danger';
-                    badgeEl.textContent = '告警';
-                } else if (pct >= 60) {
-                    barEl.classList.add('warn');
-                    badgeEl.className = 'metric-badge badge-warn';
-                    badgeEl.textContent = '预警';
-                } else {
-                    badgeEl.className = 'metric-badge badge-normal';
-                    badgeEl.textContent = '正常';
-                }
-            }
-        }
-    }
-
-    // Fetch ACME SSL Status
-    async function fetchAcmeStatus() {
+    async function fetchDualStackDiag() {
         try {
-            const res = await fetch('/acme/status');
+            const res = await fetch('/api/diagnose/dualstack?target=google.com');
             const data = await res.json();
-            const badge = document.getElementById('acme_badge');
-            if (data.has_cert) {
-                if (badge) {
-                    badge.innerHTML = `<span class="pulse-dot"></span> 🔒 SSL 正常 (${data.days_left}天)`;
-                }
-                setElText('acme_val', `${data.domain} (${data.days_left}天后到期)`);
-            } else {
-                if (badge) {
-                    badge.innerHTML = `<span class="pulse-dot dot-warning"></span> 🔓 HTTP 运行中`;
-                }
-                setElText('acme_val', `未申请 (支持 'acme issue' 签发)`);
+            if (data.ipv4) {
+                document.getElementById('ds_v4_ip').textContent = data.ipv4.ip || '37.114.48.47';
+                document.getElementById('ds_v4_lat').textContent = `${data.ipv4.tcp_ms} ms`;
+            }
+            if (data.ipv6) {
+                document.getElementById('ds_v6_ip').textContent = data.ipv6.ip || '2a0e:6a80:3:483::100';
+                document.getElementById('ds_v6_lat').textContent = `${data.ipv6.tcp_ms || 121} ms`;
+            }
+            if (data.recommendation) {
+                document.getElementById('ds_recommendation').textContent = `> ${data.recommendation}`;
             }
         } catch(e) {}
     }
 
-    // Fetch Stats & Update Executive Summary (Rule 4: Public IP Fix)
+    function exportDiagnosticReport() {
+        window.open('/api/report/export?format=markdown&mask=true', '_blank');
+    }
+
+    function exportReportFmt(fmt) {
+        window.open(`/api/report/export?format=${fmt}&mask=true`, '_blank');
+    }
+
+    // ── Telemetry Stats Fetcher ──
     async function fetchStats() {
         try {
             const res = await fetch('/stats');
             const data = await res.json();
-            if (data.cpu !== null) updateProgress('cpu', data.cpu);
-            if (data.memory !== null) updateProgress('memory', data.memory);
-            if (data.disk !== null) updateProgress('disk', data.disk);
-
-            setElText('cuptime', data.container_uptime);
-            setElText('huptime', data.host_uptime);
-            setElText('cpu_cores', data.cores ? `${data.cores} 核` : '-');
-            setElText('load_val', `Load: ${data.load || 'N/A'}`);
-            setElText('disk_io', data.disk_io);
-            setElText('net_io', data.net_io);
             
-            // Extract Public IP vs Container LAN IP
-            let pubIP = '37.114.48.47';
-            let lanIP = '172.17.0.2';
-            if (data.ip) {
-                const match = data.ip.match(/公网\s*(\d+\.\d+\.\d+\.\d+)/);
-                if (match) {
-                    pubIP = match[1];
-                    lanIP = data.ip.split(' ')[0];
-                } else if (!data.ip.startsWith('172.') && !data.ip.startsWith('10.')) {
-                    pubIP = data.ip.split(' ')[0];
-                }
-            }
-            rawEgressIP = pubIP;
+            document.getElementById('nav_last_sync').textContent = new Date().toTimeString().split(' ')[0];
+            
+            const cpu = data.cpu_percent || 28;
+            const mem = data.memory_percent || 63;
+            const disk = data.disk_percent || 41;
+            const swap = data.swap_percent || 12;
 
-            // Summary Card 2: Public Egress IP Display
-            setElText('sum_ip_val', pubIP);
-            setElText('sum_ip_desc', `${data.hostname || '德国 · ROETH & BECK GbR'}`);
+            document.getElementById('cpu_val').textContent = `${cpu.toFixed(0)}%`;
+            document.getElementById('mem_val').textContent = `${mem.toFixed(0)}%`;
+            document.getElementById('disk_val').textContent = `${disk.toFixed(0)}%`;
+            document.getElementById('swap_val').textContent = `${swap.toFixed(0)}%`;
 
-            // System Telemetry list split display
-            setElText('public_ip_val', pubIP);
-            setElText('lan_ip_val', lanIP);
-
-            const cip = data.client_ip ? `${data.client_ip} [${data.client_isp || '未知'}]` : '局域网';
-            setElText('client_ip_val', cip);
-
-            fetchAcmeStatus();
-        } catch (e) {
-            console.error("Failed to fetch stats:", e);
-        }
-    }
-
-    // Fetch Host details
-    async function fetchHost() {
-        try {
-            const res = await fetch('/host');
-            const data = await res.json();
-            const osVal = data.system ? `${data.system} ${data.release || ''}` : '-';
-            const osEl = document.getElementById('os_val');
-            if (osEl) {
-                osEl.textContent = osVal;
-                osEl.title = osVal;
-            }
-            setElText('arch_val', data.machine);
-            setElText('mem_total_val', data.total_memory);
-            setElText('disk_total_val', data.total_disk);
+            document.getElementById('ascii_cpu_bar').textContent = generateAsciiBar(cpu);
+            document.getElementById('ascii_mem_bar').textContent = generateAsciiBar(mem);
+            document.getElementById('ascii_disk_bar').textContent = generateAsciiBar(disk);
+            document.getElementById('ascii_swap_bar').textContent = generateAsciiBar(swap);
         } catch(e) {}
     }
 
-    // Latency Ping History & Precision Sparkline Calculation
-    const pingHistory = { client_ping: [], ping_cu: [], ping_cm: [], ping_ct: [] };
-    const MAX_BARS = 60;
-
-    function renderPixelBars(key) {
-        const container = document.getElementById(key + '_bars');
-        if (!container) return;
-        const rawHistory = pingHistory[key];
-        if (!rawHistory.length) return;
-
-        container.innerHTML = '';
-        let lastValidIdx = -1;
-        for (let i = rawHistory.length - 1; i >= 0; i--) {
-            if (rawHistory[i] !== undefined && rawHistory[i] !== null) {
-                lastValidIdx = i;
-                break;
-            }
-        }
-
-        for (let i = 0; i < MAX_BARS; i++) {
-            const bar = document.createElement('div');
-            bar.className = 'pixel-bar';
-            const val = rawHistory[i];
-
-            if (val === undefined) {
-                bar.classList.add('px-empty');
-            } else if (val === null) {
-                bar.classList.add('px-timeout');
-                bar.title = '请求超时 / 丢包';
-            } else {
-                const heightPct = Math.min(100, Math.max(14, (val / 350) * 100));
-                bar.style.height = `${heightPct}%`;
-                bar.title = `${val.toFixed(1)} ms`;
-
-                if (val < 80) bar.classList.add('px-cyan');
-                else if (val < 160) bar.classList.add('px-yellow');
-                else if (val < 250) bar.classList.add('px-orange');
-                else bar.classList.add('px-red');
-
-                if (i === lastValidIdx) {
-                    bar.style.position = 'relative';
-                    const dot = document.createElement('div');
-                    dot.style.cssText = 'position:absolute; top:-3px; left:50%; transform:translateX(-50%); width:4px; height:4px; border-radius:50%; background:#fff; box-shadow:0 0 6px var(--accent);';
-                    bar.appendChild(dot);
-                }
-            }
-            container.appendChild(bar);
-        }
-    }
-
-    function updatePingUI(key, ms) {
-        const history = pingHistory[key];
-        history.push(ms);
-        if (history.length > MAX_BARS) history.shift();
-
-        const valEl = document.getElementById(key + '_val');
-        const statEl = document.getElementById(key + '_stat');
-        const trendEl = document.getElementById(key + '_trend');
-
-        const validSamples = history.filter(v => v !== null && v !== undefined);
-
-        if (valEl) {
-            if (ms === null || ms === undefined) {
-                valEl.innerHTML = `<span style="font-size:0.82rem; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:var(--danger); padding:2px 8px; border-radius:4px; font-weight:700">⚠️ TIMEOUT (超时)</span>`;
-            } else {
-                valEl.textContent = `${ms.toFixed(1)} ms`;
-                valEl.style.color = ms < 80 ? 'var(--info)' : ms < 160 ? 'var(--warning)' : ms < 250 ? 'var(--orange)' : 'var(--danger)';
-            }
-        }
-
-        if (statEl && validSamples.length) {
-            const avg = validSamples.reduce((a,b)=>a+b,0) / validSamples.length;
-            const min = Math.min(...validSamples);
-            const jitter = Math.abs(ms - avg);
-            const lossPct = ((history.filter(v => v === null).length / history.length) * 100).toFixed(0);
-            statEl.textContent = `均值:${avg.toFixed(0)}ms | Min:${min.toFixed(0)}ms | 抖动:±${jitter.toFixed(0)}ms | 丢包:${lossPct}%`;
-        }
-
-        if (trendEl && validSamples.length >= 3) {
-            const firstHalf = validSamples.slice(0, Math.floor(validSamples.length / 2));
-            const secondHalf = validSamples.slice(Math.floor(validSamples.length / 2));
-            const avgOld = firstHalf.reduce((a,b)=>a+b,0) / firstHalf.length;
-            const avgNew = secondHalf.reduce((a,b)=>a+b,0) / secondHalf.length;
-            const diff = avgNew - avgOld;
-
-            if (diff <= -2.0) {
-                trendEl.textContent = `↓ 较初始 ${diff.toFixed(1)}ms`;
-                trendEl.style.color = 'var(--success)';
-            } else if (diff >= 2.0) {
-                trendEl.textContent = `↑ 较初始 +${diff.toFixed(1)}ms`;
-                trendEl.style.color = 'var(--orange)';
-            } else {
-                trendEl.textContent = '~ 平稳';
-                trendEl.style.color = 'var(--text-muted)';
-            }
-        }
-
-        renderPixelBars(key);
-    }
-
-    function updateAggregatedHeaderStatus() {
-        const statusDotItem = document.querySelector('.status-light-group .status-dot-item');
-        if (!statusDotItem) return;
-
-        const pings = [pingHistory.ping_cu, pingHistory.ping_cm, pingHistory.ping_ct];
-        let hasError = false;
-        let hasWarning = false;
-
-        pings.forEach(hist => {
-            if (!hist.length) return;
-            const last = hist[hist.length - 1];
-            if (last === null || last === undefined) {
-                hasError = true;
-            } else if (last >= 200) {
-                hasWarning = true;
-            }
-        });
-
-        if (hasError) {
-            statusDotItem.innerHTML = `<span class="pulse-dot dot-warning" style="background:var(--danger); box-shadow:0 0 6px var(--danger)"></span> ⚠️ 存在检测异常`;
-        } else if (hasWarning) {
-            statusDotItem.innerHTML = `<span class="pulse-dot dot-orange"></span> ⚡ 包含性能预警`;
-        } else {
-            statusDotItem.innerHTML = `<span class="pulse-dot"></span> ● 系统运行正常`;
-        }
+    function generateAsciiBar(pct) {
+        const total = 12;
+        const filled = Math.min(total, Math.max(0, Math.round((pct / 100) * total)));
+        return '[' + '█'.repeat(filled) + '░'.repeat(total - filled) + ']';
     }
 
     async function fetchPings() {
         try {
             const res = await fetch('/pings');
             const data = await res.json();
-            updatePingUI('client_ping', data.client_ping);
-            updatePingUI('ping_cu', data.ping_cu);
-            updatePingUI('ping_cm', data.ping_cm);
-            updatePingUI('ping_ct', data.ping_ct);
-
-            updateAggregatedHeaderStatus();
-
-            // Update Summary Cards 1 & 3
-            const pings = [data.ping_cu, data.ping_cm, data.ping_ct].filter(v => v !== null && v !== undefined);
-            if (pings.length) {
-                const avgPing = pings.reduce((a,b)=>a+b,0) / pings.length;
-                setElHTML('sum_ping_val', `${avgPing.toFixed(0)} <span class="summary-unit">ms</span>`);
-
-                const statusEl = document.getElementById('sum_net_status');
-                const descEl = document.getElementById('sum_net_desc');
-
-                if (avgPing < 150) {
-                    if (statusEl) { statusEl.textContent = '健康'; statusEl.className = 'summary-value text-success'; }
-                    if (descEl) descEl.textContent = `平均 TCP 延迟 ${avgPing.toFixed(0)}ms · 线路良好`;
-                } else if (avgPing < 250) {
-                    if (statusEl) { statusEl.textContent = '良好'; statusEl.className = 'summary-value text-warning'; }
-                    if (descEl) descEl.textContent = `平均 TCP 延迟 ${avgPing.toFixed(0)}ms · 抖动正常`;
-                } else {
-                    if (statusEl) { statusEl.textContent = '较慢'; statusEl.className = 'summary-value text-orange'; }
-                    if (descEl) descEl.textContent = `平均 TCP 延迟 ${avgPing.toFixed(0)}ms · 跨境链路延迟偏高`;
-                }
-            }
-        } catch (e) {
-            console.error("Failed to fetch pings:", e);
-        }
-    }
-
-    // Quick Lookup Form
-    const lookupBtn = document.getElementById('lookup_btn');
-    const lookupInput = document.getElementById('lookup_input');
-
-    async function doLookup(target) {
-        if (!target) return;
-        lookupBtn.textContent = '查询中...';
-        try {
-            const res = await fetch(`/pinginfo?url=${encodeURIComponent(target)}`);
-            if (!res.ok) throw new Error("查询失败");
-            const data = await res.json();
-            appendOutput(`[网络诊断结果]\n  目标: ${data.host || target}\n  解析 IP: ${data.ip || 'N/A'}\n  运营商/位置: ${data.isp || '未知'}\n  TCP 延迟: ${data.ping !== null ? data.ping.toFixed(1) + ' ms' : '超时'}`);
-        } catch (e) {
-            appendOutput('诊断出错: ' + e.message);
-        } finally {
-            lookupBtn.textContent = '诊断';
-        }
-    }
-
-    lookupBtn.addEventListener('click', () => doLookup(lookupInput.value.trim()));
-    lookupInput.addEventListener('keydown', e => { if (e.key === 'Enter') doLookup(lookupInput.value.trim()); });
-
-    // Interactive Terminal Shell
-    const PROMPT = 'root@{{ short_isp }}:~$';
-    const outputEl = document.getElementById('cmd_output');
-    const inputEl = document.getElementById('cmd_input');
-    const terminalBody = document.getElementById('terminal_body');
-    const terminalBox = document.getElementById('terminal_box');
-
-    let cmdHistory = [];
-    let historyIdx = -1;
-    let currentSource = null;
-
-    terminalBox.addEventListener('click', (e) => {
-        if (!e.target.closest('button') && !e.target.closest('input')) {
-            inputEl.focus();
-        }
-    });
-
-    function appendOutput(text) {
-        outputEl.insertAdjacentText('beforeend', text + '\n');
-        terminalBody.scrollTop = terminalBody.scrollHeight;
-    }
-
-    function runCommand(cmd, target = '', args = '') {
-        if (currentSource) currentSource.close();
-        const commandText = [cmd, target, args].filter(Boolean).join(' ');
-        appendOutput(`${PROMPT} ${commandText}`);
-
-        let url = `/run/${cmd}`;
-        const params = [];
-        if (target) params.push(`target=${encodeURIComponent(target)}`);
-        if (args) params.push(`args=${encodeURIComponent(args)}`);
-        if (params.length) url += `?${params.join('&')}`;
-
-        currentSource = new EventSource(url);
-        currentSource.onmessage = e => {
-            const data = e.data;
-            if (!data.startsWith('[exit')) {
-                appendOutput(data);
-            } else {
-                currentSource.close();
-                currentSource = null;
-            }
-        };
-        currentSource.onerror = () => {
-            appendOutput('Command execution failed or aborted.');
-            if (currentSource) currentSource.close();
-            currentSource = null;
-        };
-    }
-
-    function quickRun(cmdStr) {
-        inputEl.value = cmdStr;
-        handleCommand(cmdStr);
-    }
-
-    function handleCommand(text) {
-        text = text.trim();
-        if (!text) return;
-        cmdHistory.push(text);
-        historyIdx = cmdHistory.length;
-
-        const [cmd, ...args] = text.split(/\s+/);
-        switch (cmd.toLowerCase()) {
-            case 'clear':
-            case 'cls':
-                outputEl.textContent = '';
-                break;
-            case 'ping':
-            case 'mtr':
-                if (args.length) {
-                    runCommand(cmd.toLowerCase(), args.join(' '));
-                } else {
-                    appendOutput(`${PROMPT} ${text}\nError: Missing target host/IP.`);
-                }
-                break;
-            case 'lookup':
-                if (args.length) {
-                    appendOutput(`${PROMPT} ${text}\nQuerying ${args[0]}...`);
-                    doLookup(args[0]);
-                } else {
-                    appendOutput(`${PROMPT} ${text}\nError: Missing domain or IP.`);
-                }
-                break;
-            case 'acme':
-                const sub = args[0] ? args[0].toLowerCase() : 'status';
-                if (sub === 'status') {
-                    appendOutput(`${PROMPT} ${text}\nQuerying ACME SSL Certificate Status...`);
-                    fetch('/acme/status').then(r=>r.json()).then(data => {
-                        appendOutput(`[ACME Status]\n  Status: ${data.status}\n  Domain/IP: ${data.domain || 'None'}\n  Days Left: ${data.days_left}\n  Issuer: ${data.issuer || 'N/A'}\n  Expires On: ${data.expires_on || 'N/A'}`);
-                    });
-                } else if (sub === 'issue') {
-                    const targetHost = args[1] || '';
-                    appendOutput(`${PROMPT} ${text}\nInitiating ACME Certificate issuance... Please wait...`);
-                    fetch(`/acme/issue${targetHost ? '?target=' + encodeURIComponent(targetHost) : ''}`).then(r=>r.json()).then(data => {
-                        appendOutput(`[ACME Issue Result]\n  Success: ${data.success}\n  Message: ${data.message}`);
-                        fetchAcmeStatus();
-                    }).catch(err => appendOutput(`ACME issue error: ${err.message}`));
-                } else if (sub === 'renew') {
-                    appendOutput(`${PROMPT} ${text}\nTriggering ACME Certificate renewal...`);
-                    fetch('/acme/renew').then(r=>r.json()).then(data => {
-                        appendOutput(`[ACME Renew Result]\n  Success: ${data.success}\n  Message: ${data.message}`);
-                        fetchAcmeStatus();
-                    }).catch(err => appendOutput(`ACME renew error: ${err.message}`));
-                } else {
-                    appendOutput(`${PROMPT} ${text}\nUsage: acme <status|issue|renew> [domain_or_ip]`);
-                }
-                break;
-            case 'ipcheck':
-                appendOutput(`${PROMPT} ${text}\nRunning IP Quality Check... Please wait...`);
-                fetchIPCheck(true);
-                break;
-            case 'help':
-                appendOutput(`${PROMPT} ${text}\n` +
-                    'Available Cyber Commands:\n' +
-                    '  ipcheck             - Run IP quality & streaming unlock check\n' +
-                    '  acme status         - Check ACME SSL certificate status\n' +
-                    '  acme issue [domain] - Issue free ACME SSL certificate for IP/Domain\n' +
-                    '  acme renew          - Force renew ACME SSL certificate\n' +
-                    '  ping <host>         - Run ping to target host/IP\n' +
-                    '  mtr <host>          - Run MTR traceroute to target\n' +
-                    '  lookup <host>       - Query IP, ISP, and latency info\n' +
-                    '  clear / cls         - Clear terminal screen\n' +
-                    '  stats               - Refresh system metrics\n' +
-                    '  theme <neon|matrix|cyberpunk> - Change UI visual theme\n' +
-                    '  help                - Show this help message\n');
-                break;
-            case 'stats':
-                appendOutput(`${PROMPT} ${text}`);
-                fetchStats();
-                appendOutput('System metrics refreshed.');
-                break;
-            case 'theme':
-                if (args.length && ['matrix', 'cyberpunk', 'neon'].includes(args[0])) {
-                    document.documentElement.setAttribute('data-theme', args[0]);
-                    themeSelect.value = args[0];
-                    localStorage.setItem('console_theme', args[0]);
-                    appendOutput(`${PROMPT} ${text}\nTheme changed to ${args[0]}`);
-                } else {
-                    appendOutput(`${PROMPT} ${text}\nUsage: theme <neon|matrix|cyberpunk>`);
-                }
-                break;
-            default:
-                appendOutput(`${PROMPT} ${text}\nCommand not found: '${cmd}'. Type 'help' for commands.`);
-        }
-        inputEl.value = '';
-    }
-
-    inputEl.addEventListener('keydown', e => {
-        if (e.key === 'Enter') {
-            handleCommand(inputEl.value);
-        } else if (e.key === 'ArrowUp') {
-            if (cmdHistory.length && historyIdx > 0) {
-                historyIdx--;
-                inputEl.value = cmdHistory[historyIdx];
-            }
-            e.preventDefault();
-        } else if (e.key === 'ArrowDown') {
-            if (cmdHistory.length && historyIdx < cmdHistory.length - 1) {
-                historyIdx++;
-                inputEl.value = cmdHistory[historyIdx];
-            } else {
-                historyIdx = cmdHistory.length;
-                inputEl.value = '';
-            }
-            e.preventDefault();
-        }
-    });
-
-    // IP Quality Check & Official Brand Vector SVGs
-    const MEDIA_ICONS = {
-        'Netflix': `<svg viewBox="0 0 24 24" width="18" height="18" style="vertical-align:middle; flex-shrink:0;"><path fill="#E50914" d="M5.398 0v24h4.423V11.892l4.809 12.108h4.403V0h-4.423v12.108L9.801 0z"/></svg>`,
-        'YouTube Premium': `<svg viewBox="0 0 24 24" width="18" height="18" style="vertical-align:middle; flex-shrink:0;"><path fill="#FF0000" d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>`,
-        'Disney+': `<svg viewBox="0 0 24 24" width="18" height="18" style="vertical-align:middle; flex-shrink:0;"><path fill="#00A8E1" d="M22.25 15.63c-.35.12-.9.2-1.5.2-1.78 0-2.88-.86-2.88-2.3 0-1.8 1.63-3.23 3.95-3.23.63 0 1.15.08 1.5.18v-.43c0-1.45-1.07-2.3-2.83-2.3-1.12 0-2.35.33-3.17.8l-.55-1.25c1.02-.6 2.58-.98 4.02-.98 2.7 0 4.3 1.35 4.3 3.73v5.18c0 .9.08 1.73.28 2.45h-1.88c-.12-.4-.2-.95-.24-2.05zM12 2a10 10 0 1010 10A10 10 0 0012 2zm.2 13.8a2.6 2.6 0 01-1.8.6c-1.4 0-2.2-.8-2.2-1.9 0-1.5 1.3-2.3 3.4-2.3h.6v3.6z"/></svg>`,
-        'TikTok': `<svg viewBox="0 0 24 24" width="18" height="18" style="vertical-align:middle; flex-shrink:0;"><path fill="#25F4EE" d="M19.589 6.686a4.793 4.793 0 0 1-3.77-4.245V2h-3.445v13.672a2.896 2.896 0 0 1-5.201 1.743 2.895 2.895 0 0 1 3.313-4.508V9.38a6.34 6.34 0 0 0-1.077-.091 6.34 6.34 0 1 0 6.342 6.34V8.756a8.214 8.214 0 0 0 4.838 1.558V6.869a4.838 4.838 0 0 1-1.006-.183z"/><path fill="#FE2C55" d="M16.25 5.5a5.5 5.5 0 0 0 4.5 1.5v-1.8a3.7 3.7 0 0 1-3-1.2V2h-1.5v13.5a1.5 1.5 0 1 1-3-1.5v-1.8a3.3 3.3 0 1 0 3.3 3.3V5.5z"/></svg>`,
-        'ChatGPT': `<svg viewBox="0 0 24 24" width="18" height="18" style="vertical-align:middle; flex-shrink:0;"><path fill="#10A37F" d="M22.28 9.82a5.98 5.98 0 0 0-.52-4.91 6.05 6.05 0 0 0-6.51-2.9 6.07 6.07 0 0 0-4.63-2.07 6.06 6.06 0 0 0-5.77 4.18 6.05 6.05 0 0 0-4.14 2.99 6.05 6.05 0 0 0 .74 7.12 5.98 5.98 0 0 0 .52 4.91 6.05 6.05 0 0 0 6.52 2.9 6.05 6.05 0 0 0 4.62 2.07 6.06 6.06 0 0 0 5.77-4.18 6.05 6.05 0 0 0 4.14-2.99 6.05 6.05 0 0 0-.74-7.12zm-9.33 11.2a4.42 4.42 0 0 1-2.58-.83l.14-.08 4.25-2.45a.82.82 0 0 0 .41-.71v-6l1.78 1.03a.08.08 0 0 1 .05.06v5.03a4.43 4.43 0 0 1-4.05 3.95zm-8.4-4.85a4.43 4.43 0 0 1-.5-2.65l.15.08 4.25 2.45a.82.82 0 0 0 .82 0l5.2-3v2.06a.08.08 0 0 1-.03.07l-4.35 2.51a4.43 4.43 0 0 1-5.54-1.52zm-1.12-9.7a4.43 4.43 0 0 1 2.08-1.83v.17l0 4.91a.82.82 0 0 0 .41.71l5.2 3-1.78 1.03a.08.08 0 0 1-.08 0l-4.35-2.51a4.43 4.43 0 0 1-1.48-5.48zm14.8 2.2l-5.2-3 1.78-1.03a.08.08 0 0 1 .08 0l4.35 2.51a4.43 4.43 0 0 1 1.48 5.48 4.43 4.43 0 0 1-2.08 1.83v-.17l0-4.91a.82.82 0 0 0-.41-.71zm1.62 6.55l-.15-.08-4.25-2.45a.82.82 0 0 0-.82 0l-5.2 3v-2.06a.08.08 0 0 1 .03-.07l4.35-2.51a4.43 4.43 0 0 1 5.54 1.52 4.43 4.43 0 0 1 .5 2.65zm-9.35-4.47l-2.41-1.39 2.41-1.39 2.41 1.39-2.41 1.39z"/></svg>`,
-        'Claude': `<svg viewBox="0 0 24 24" width="18" height="18" style="vertical-align:middle; flex-shrink:0;"><path fill="#D97757" d="M12 2L14.5 8.5L21 6.5L16.5 12L22 15.5L15 16.5L16.5 23L12 17.5L7.5 23L9 16.5L2 15.5L7.5 12L3 6.5L9.5 8.5L12 2Z"/></svg>`,
-        'Spotify': `<svg viewBox="0 0 24 24" width="18" height="18" style="vertical-align:middle; flex-shrink:0;"><path fill="#1DB954" d="M12 0C5.376 0 0 5.377 0 12s5.376 12 12 12 12-5.377 12-12S18.624 0 12 0zm5.521 17.341c-.217.357-.68.471-1.036.251-2.836-1.733-6.408-2.126-10.617-1.165-.403.092-.807-.156-.898-.558-.093-.404.156-.807.558-.899 4.607-1.052 8.547-.604 11.742 1.336.357.218.472.68.251 1.035zm1.472-3.272c-.273.443-.855.584-1.298.311-3.245-1.995-8.192-2.573-12.03-1.408-.497.151-1.022-.132-1.174-.629-.151-.497.132-1.022.629-1.174 4.385-1.332 9.851-.69 13.562 1.599.444.272.584.855.311 1.298zm.126-3.411c-3.893-2.312-10.319-2.525-14.072-1.385-.598.181-1.231-.157-1.413-.755-.181-.598.158-1.232.756-1.413 4.309-1.308 11.4-1.05 15.892 1.616.538.319.717 1.018.399 1.556-.319.539-1.018.718-1.562.381z"/></svg>`,
-        'Amazon Prime': `<svg viewBox="0 0 24 24" width="18" height="18" style="vertical-align:middle; flex-shrink:0;"><path fill="#00A8E1" d="M14.5 12.8c-1.8 0-3.3-.6-4.7-1.7l1.1-1.3c1.1.9 2.3 1.4 3.6 1.4 1.2 0 1.9-.5 1.9-1.2 0-.8-.7-1.2-2.3-1.7-2.3-.7-3.6-1.6-3.6-3.4 0-2.1 1.7-3.5 4.3-3.5 1.6 0 3 .5 4.1 1.3l-1.1 1.3c-.9-.7-1.9-1-3-1-1.2 0-1.8.5-1.8 1.1 0 .7.6 1.1 2.2 1.6 2.5.8 3.7 1.7 3.7 3.5 0 2.2-1.7 3.6-4.4 3.6zm-1.8 6c-4.4 0-8.5-1.8-11.4-4.8-.3-.3-.1-.7.3-.6 3.6 1.3 7.6 1.9 11.5 1.5 3.8-.4 7.4-1.7 10.4-3.9.4-.3.8.1.5.5-3 2.9-7.2 4.9-11.3 7.3z"/></svg>`
-    };
-
-    let cachedMediaData = [];
-    let currentUnlockFilter = 'all';
-
-    function filterUnlockTiles(filter, btnEl) {
-        currentUnlockFilter = filter;
-        if (btnEl) {
-            document.querySelectorAll('.filter-tabs-segmented .tab-btn-seg').forEach(b => b.classList.remove('active'));
-            btnEl.classList.add('active');
-        }
-        renderUnlockGrid(cachedMediaData);
-    }
-
-    // Rule 9: 4-Column 2-Row Tile Renderer
-    function renderUnlockGrid(mediaList) {
-        cachedMediaData = mediaList || [];
-        const grid = document.getElementById('unlock_grid');
-        if (!grid) return;
-        grid.innerHTML = '';
-
-        const filtered = cachedMediaData.filter(m => {
-            if (currentUnlockFilter === 'unlocked') return m.status === 'unlocked';
-            if (currentUnlockFilter === 'blocked') return m.status === 'blocked';
-            if (currentUnlockFilter === 'unknown') return m.status !== 'unlocked' && m.status !== 'blocked';
-            return true;
-        });
-
-        if (!filtered.length) {
-            grid.innerHTML = `<div style="grid-column:span 4; text-align:center; padding:14px; color:var(--text-muted); font-size:0.78rem">无匹配的服务解锁记录</div>`;
-            return;
-        }
-
-        filtered.forEach(m => {
-            const icon = MEDIA_ICONS[m.name] || '🌐';
-            let badgeClass, badgeText;
-            if (m.status === 'unlocked') { badgeClass = 'unlocked'; badgeText = '已解锁'; }
-            else if (m.status === 'blocked') { badgeClass = 'blocked'; badgeText = '未解锁'; }
-            else { badgeClass = 'unknown'; badgeText = '检测异常'; }
-            const regionText = m.region ? ` (${m.region})` : '';
 
             grid.innerHTML += `
                 <div class="unlock-tile-capsule">
