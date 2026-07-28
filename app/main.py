@@ -877,6 +877,79 @@ def tcp_ping(host: str):
         if ":" in host:
             host, port = host.rsplit(":", 1)
             port = int(port)
+        else:
+            port = 80
+        start = datetime.now()
+        with socket.create_connection((host, port), timeout=1):
+            end = datetime.now()
+        return (end - start).total_seconds() * 1000
+    except Exception:
+        return None
+
+
+def icmp_ping(ip: str):
+    try:
+        proc = subprocess.run(
+            ["ping", "-c", "1", "-W", "1", ip],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        if proc.returncode == 0:
+            for line in proc.stdout.splitlines():
+                if "time=" in line:
+                    try:
+                        return float(line.split("time=")[1].split(" ")[0])
+                    except Exception:
+                        pass
+    except Exception:
+        pass
+    return None
+
+
+@app.route("/pings")
+def pings():
+    client_ip = request.headers.get("X-Forwarded-For", request.remote_addr)
+    if client_ip and "," in client_ip:
+        client_ip = client_ip.split(",")[0].strip()
+
+    with ThreadPoolExecutor(max_workers=len(PING_TARGETS) + 1) as executor:
+        futures = {
+            executor.submit(tcp_ping, host): key
+            for key, host in PING_TARGETS.items()
+        }
+        if client_ip and client_ip != "127.0.0.1":
+            futures[executor.submit(icmp_ping, client_ip)] = "client_ping"
+        results = {key: future.result() for future, key in futures.items()}
+
+    if "client_ping" not in results:
+        results["client_ping"] = None
+    return jsonify(results)
+
+
+def humanize(seconds: int) -> str:
+    seconds = int(seconds)
+    years, seconds = divmod(seconds, 31536000)
+    months, seconds = divmod(seconds, 2592000)
+    days, seconds = divmod(seconds, 86400)
+    hours, seconds = divmod(seconds, 3600)
+    minutes, seconds = divmod(seconds, 60)
+    parts = []
+    if years:
+        parts.append(f"{years}年")
+    if months:
+        parts.append(f"{months}月")
+    if days:
+        parts.append(f"{days}天")
+    if hours:
+        parts.append(f"{hours}小时")
+    if minutes:
+        parts.append(f"{minutes}分")
+    if seconds or not parts:
+        parts.append(f"{seconds}秒")
+    return " ".join(parts)
+
+
 def humanize_bytes(size: float) -> str:
     if size is None:
         return "N/A"
