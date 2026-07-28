@@ -2841,375 +2841,62 @@ TEMPLATE = r"""
                 <span>KEYBOARD SHORTCUTS REFERENCE</span>
                 <button class="btn-cli-xs" onclick="closeKeyboardHelp()">[ ESC / CLOSE ]</button>
             </div>
+            <div class="modal-cli-header"><span>KEYBOARD SHORTCUTS</span><button class="btn-cli-xs" onclick="closeKeyboardHelp()">[ ESC ]</button></div>
             <div class="modal-cli-body">
-                <div class="shortcut-row"><span class="key-cap">R</span> <span>刷新当前监测数据 (Refresh Data)</span></div>
-                <div class="shortcut-row"><span class="key-cap">D</span> <span>切换并发起全链路诊断 (Full Diagnostics)</span></div>
-                <div class="shortcut-row"><span class="key-cap">L</span> <span>定位至实时事件日志 (Jump to Event Logs)</span></div>
-                <div class="shortcut-row"><span class="key-cap">T</span> <span>切换至目标监测列表 (Target Monitor)</span></div>
-                <div class="shortcut-row"><span class="key-cap">/</span> <span>聚焦搜索/过滤器输入框 (Focus Search)</span></div>
-                <div class="shortcut-row"><span class="key-cap">ESC</span> <span>关闭所有弹窗与抽屉 (Close Drawer)</span></div>
-                <div class="shortcut-row"><span class="key-cap">?</span> <span>打开本快捷键说明 (Show Help)</span></div>
+                <div class="shortcut-row"><span class="key-cap">R</span> <span>刷新数据</span></div>
+                <div class="shortcut-row"><span class="key-cap">D</span> <span>诊断模式</span></div>
+                <div class="shortcut-row"><span class="key-cap">/</span> <span>搜索日志</span></div>
             </div>
         </div>
     </div>
 
-    <!-- ── JAVASCRIPT LOGIC & ENGINE ── -->
     <script>
-    // ── Navigation & Tab Switcher ──
+    let autoScrollLogs = true;
+    let pingHistory = { ping_cu: [] };
+
     function switchNavTab(tabId, btn) {
         document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active-view'));
-        document.querySelectorAll('.nav-tab-btn').forEach(b => b.classList.remove('active'));
-        
-        const targetView = document.getElementById('tab_' + tabId);
-        if (targetView) targetView.classList.add('active-view');
-        
-        if (!btn) {
-            btn = Array.from(document.querySelectorAll('.nav-tab-btn')).find(b => b.getAttribute('onclick')?.includes(`'${tabId}'`));
-        }
-        if (btn) btn.classList.add('active');
-        
+        document.getElementById('tab_' + tabId).classList.add('active-view');
         localStorage.setItem('console_active_tab', tabId);
-        window.location.hash = tabId;
-
-        if (tabId === 'targets') fetchTargets();
-        if (tabId === 'diagnostics') loadDiagnosticResult();
     }
-
-    // ── Keyboard Shortcuts Listener ──
-    document.addEventListener('keydown', e => {
-        if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
-        const key = e.key.toUpperCase();
-        if (key === 'R') { fetchStats(); fetchPings(); }
-        else if (key === 'D') { switchNavTab('diagnostics'); startFullDiagnostics(); }
-        else if (key === 'L') { switchNavTab('overview'); document.getElementById('log_stream_box')?.scrollIntoView({behavior:'smooth'}); }
-        else if (key === 'T') { switchNavTab('targets'); }
-        else if (key === '/') { e.preventDefault(); document.getElementById('log_grep_input')?.focus(); }
-        else if (key === 'ESCAPE') { closeKeyboardHelp(); }
-        else if (e.key === '?') { showKeyboardHelp(); }
-    });
 
     function showKeyboardHelp() { document.getElementById('keyboard_modal').style.display = 'flex'; }
-    function closeKeyboardHelp(e) {
-        if (!e || e.target === document.getElementById('keyboard_modal') || e.target.tagName === 'BUTTON') {
-            document.getElementById('keyboard_modal').style.display = 'none';
-        }
+    function closeKeyboardHelp(e) { if (!e || e.target.id === 'keyboard_modal') document.getElementById('keyboard_modal').style.display = 'none'; }
+
+    function fetchStats() {
+        fetch('/stats').then(res => res.json()).then(data => {
+            const cpu = data.cpu_percent || 0;
+            const mem = data.memory_percent || 0;
+            const disk = data.disk_percent || 0;
+            const swap = data.swap_percent || 0;
+            document.getElementById('cpu_val')?.textContent = `${cpu.toFixed(0)}%`;
+            document.getElementById('mem_val')?.textContent = `${mem.toFixed(0)}%`;
+            document.getElementById('disk_val')?.textContent = `${disk.toFixed(0)}%`;
+            document.getElementById('swap_val')?.textContent = `${swap.toFixed(0)}%`;
+        }).catch(() => {});
     }
 
-    // ── Uptime Heatmap Generator (30 Days) ──
+    function fetchPings() {
+        fetch('/pings').then(res => res.json()).then(data => {
+            if (data.ping_cu !== undefined) {
+                pingHistory.ping_cu.push(data.ping_cu);
+                if (pingHistory.ping_cu.length > 60) pingHistory.ping_cu.shift();
+                const cur = pingHistory.ping_cu[pingHistory.ping_cu.length - 1];
+                document.getElementById('metric_latency').innerHTML = `${cur.toFixed(0)} <span class="unit">ms</span>`;
+            }
+        }).catch(() => {});
+    }
+
     function renderUptimeHeatmap() {
         const container = document.getElementById('heatmap_container');
         if (!container) return;
-        container.innerHTML = '';
-        for (let i = 29; i >= 0; i--) {
+        for (let i = 0; i < 30; i++) {
             const sq = document.createElement('div');
             sq.className = 'heatmap-sq sq-healthy';
-            if (i === 4) sq.className = 'heatmap-sq sq-warning';
-            sq.title = `Day -${i}: Uptime 99.98% | Incidents: 0`;
             container.appendChild(sq);
         }
     }
 
-    // ── Log Stream Management ──
-    let autoScrollLogs = true;
-    let currentLogFilter = 'all';
-
-    function toggleAutoScroll() {
-        autoScrollLogs = !autoScrollLogs;
-        document.getElementById('btn_autoscroll').textContent = `[ AUTO SCROLL: ${autoScrollLogs ? 'ON' : 'OFF'} ]`;
-    }
-
-    function clearLogView() {
-        const box = document.getElementById('log_stream_box');
-        if (box) box.innerHTML = '';
-    }
-
-    function filterLogs(level, btn) {
-        currentLogFilter = level;
-        if (btn) {
-            document.querySelectorAll('.btn-group-cli .btn-cli-sm').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-        }
-        applyLogGrep();
-    }
-
-    function applyLogGrep() {
-        const q = (document.getElementById('log_grep_input')?.value || '').toLowerCase();
-        document.querySelectorAll('.log-row').forEach(row => {
-            const text = row.textContent.toLowerCase();
-            const matchesQuery = !q || text.includes(q);
-            const matchesFilter = currentLogFilter === 'all' || text.includes(`[${currentLogFilter.toLowerCase()}]`);
-            row.style.display = (matchesQuery && matchesFilter) ? 'flex' : 'none';
-        });
-    }
-
-    function appendEventLog(level, msg) {
-        const box = document.getElementById('log_stream_box');
-        if (!box) return;
-        const timeStr = new Date().toTimeString().split(' ')[0];
-        const dateStr = new Date().toISOString().split('T')[0];
-        const row = document.createElement('div');
-        row.className = 'log-row';
-        row.innerHTML = `<span class="log-time">[${dateStr} ${timeStr}]</span> <span class="log-level level-${level.toLowerCase()}">[${level.toUpperCase()}]</span> <span class="log-msg">${msg}</span>`;
-        box.appendChild(row);
-        if (autoScrollLogs) box.scrollTop = box.scrollHeight;
-    }
-
-    // ── TCP Ping Canvas Renderer & Sparkline Chart ──
-    let pingRange = '1h';
-    const pingHistory = { client_ping: [], ping_cu: [], ping_cm: [], ping_ct: [] };
-
-    function setPingRange(range, btn) {
-        pingRange = range;
-        if (btn) {
-            btn.parentElement.querySelectorAll('.btn-cli-sm').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-        }
-        drawTcpingCanvas();
-    }
-
-    function drawTcpingCanvas() {
-        const canvas = document.getElementById('tcpingCanvas');
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        const dpr = window.devicePixelRatio || 1;
-        const rect = canvas.getBoundingClientRect();
-        
-        canvas.width = rect.width * dpr;
-        canvas.height = rect.height * dpr;
-        ctx.scale(dpr, dpr);
-
-        const w = rect.width;
-        const h = rect.height;
-
-        ctx.clearRect(0, 0, w, h);
-
-        // Draw Threshold Lines (-- warn: 100ms, -- crit: 200ms)
-        const warnY = h - (100 / 250) * h;
-        const critY = h - (200 / 250) * h;
-
-        ctx.strokeStyle = 'rgba(231,198,107,0.3)';
-        ctx.setLineDash([4, 4]);
-        ctx.beginPath(); ctx.moveTo(0, warnY); ctx.lineTo(w, warnY); ctx.stroke();
-        ctx.fillStyle = '#E7C66B'; ctx.font = '10px monospace'; ctx.fillText('-- WARN 100ms', 10, warnY - 4);
-
-        ctx.strokeStyle = 'rgba(240,120,120,0.3)';
-        ctx.beginPath(); ctx.moveTo(0, critY); ctx.lineTo(w, critY); ctx.stroke();
-        ctx.fillStyle = '#F07878'; ctx.fillText('-- CRIT 200ms', 10, critY - 4);
-        ctx.setLineDash([]);
-
-        // Draw Latency Line
-        const data = pingHistory.ping_cu.filter(v => v !== null && v !== undefined);
-        if (!data.length) return;
-
-        const step = w / Math.max(data.length - 1, 1);
-        ctx.strokeStyle = '#78E08F';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-
-        data.forEach((val, i) => {
-            const x = i * step;
-            const y = h - (Math.min(val, 250) / 250) * h;
-            if (i === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
-        });
-        ctx.stroke();
-    }
-
-    function exportPingCSV() {
-        let csv = "Index,CU_MS,CM_MS,CT_MS\n";
-        for (let i = 0; i < pingHistory.ping_cu.length; i++) {
-            csv += `${i},${pingHistory.ping_cu[i]||''},${pingHistory.ping_cm[i]||''},${pingHistory.ping_ct[i]||''}\n`;
-        }
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `tcping_export_${Date.now()}.csv`;
-        a.click();
-    }
-
-    // ── Target Store Management ──
-    async function fetchTargets() {
-        try {
-            const res = await fetch('/api/targets');
-            const targets = await res.json();
-            const tbody = document.getElementById('targets_tbody');
-            if (!tbody) return;
-            tbody.innerHTML = '';
-            targets.forEach(t => {
-                tbody.innerHTML += `
-                    <tr>
-                        <td><span class="badge-bracket ${t.enabled ? 'status-healthy' : 'status-critical'}">${t.enabled ? '[ ONLINE ]' : '[ OFF ]'}</span></td>
-                        <td style="font-weight:700">${t.name}</td>
-                        <td class="mono text-cyan">${t.target}</td>
-                        <td><span class="badge-bracket status-info">[ ${t.type.toUpperCase()} ]</span></td>
-                        <td class="mono">${t.freq}s</td>
-                        <td class="mono">&lt;${t.threshold_warn}ms / &lt;${t.threshold_crit}ms</td>
-                        <td>
-                            <button class="btn-cli-xs" onclick="removeTarget('${t.id}')">[ DELETE ]</button>
-                        </td>
-                    </tr>`;
-            });
-        } catch(e) {}
-    }
-
-    async function removeTarget(id) {
-        await fetch(`/api/targets?id=${id}`, { method: 'DELETE' });
-        fetchTargets();
-    }
-
-    async function addNewTargetPrompt() {
-        const name = prompt("请输入目标名称:", "香港服务器");
-        if (!name) return;
-        const target = prompt("请输入目标地址 (IP 或 域名:端口):", "hk.example.com:443");
-        if (!target) return;
-        await fetch('/api/targets', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ name, target, type: 'tcp', freq: 30, threshold_warn: 160, threshold_crit: 250, enabled: true })
-        });
-        fetchTargets();
-    }
-
-    async function applyPresetTemplate(type) {
-        let preset;
-        if (type === 'web') preset = { name: '自定义 Web 目标', target: 'github.com:443', type: 'https', freq: 30, threshold_warn: 200, threshold_crit: 500, enabled: true };
-        else if (type === 'dns') preset = { name: '自定义 DNS 目标', target: '1.1.1.1:53', type: 'dns', freq: 60, threshold_warn: 100, threshold_crit: 200, enabled: true };
-        else preset = { name: '自定义 VPS 目标', target: '37.114.48.47:80', type: 'tcp', freq: 30, threshold_warn: 160, threshold_crit: 250, enabled: true };
-        
-        await fetch('/api/targets', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(preset)
-        });
-        fetchTargets();
-        alert('已应用预设模板！');
-    }
-
-    // ── 12-Stage Diagnostics Engine ──
-    let lastDiagResult = null;
-
-    function renderDiagnosticResult(data) {
-        if (!data || !data.stages) return;
-        const grid = document.getElementById('diag_stages_grid');
-        const treeBox = document.getElementById('diag_tree_box');
-        const inputEl = document.getElementById('diag_target_input');
-
-        if (inputEl && data.target) inputEl.value = data.target;
-
-        if (grid) {
-            grid.innerHTML = '';
-            data.stages.forEach(s => {
-                let badgeClass = s.status === 'healthy' ? 'status-healthy' : (s.status === 'warning' ? 'status-warning' : 'status-critical');
-                let symbol = s.status === 'healthy' ? '✓' : (s.status === 'warning' ? '!' : '×');
-                if (s.status === 'skipped') { badgeClass = 'status-info'; symbol = '-'; }
-
-                grid.innerHTML += `
-                    <div class="diag-cli-item">
-                        <div>
-                            <span class="badge-bracket ${badgeClass}">[${symbol}] ${s.status.toUpperCase()}</span>
-                            <span style="margin-left:8px; font-weight:700; color:var(--text-primary)">阶段 ${s.stage.toString().padStart(2,'0')} · ${s.name}</span>
-                        </div>
-                        <div class="mono" style="color:var(--text-muted); font-size:0.75rem">${s.raw} (${s.duration}ms)</div>
-                    </div>`;
-            });
-        }
-
-        if (treeBox) {
-            treeBox.style.display = 'block';
-            document.getElementById('diag_root_cause').textContent = `诊断定性: ${data.root_cause}`;
-        }
-
-        lastDiagResult = data;
-        localStorage.setItem('console_last_diag_result', JSON.stringify(data));
-    }
-
-    async function loadDiagnosticResult() {
-        const cached = localStorage.getItem('console_last_diag_result');
-        if (cached) {
-            try { renderDiagnosticResult(JSON.parse(cached)); return; } catch(e) {}
-        }
-        try {
-            const res = await fetch('/api/diagnose/latest');
-            const data = await res.json();
-            renderDiagnosticResult(data);
-        } catch(e) {}
-    }
-
-    async function startFullDiagnostics() {
-        const inputEl = document.getElementById('diag_target_input');
-        const startBtn = document.getElementById('diag_start_btn');
-        const grid = document.getElementById('diag_stages_grid');
-        
-        const target = inputEl ? inputEl.value.trim() : 'github.com';
-        if (!target) return;
-
-        startBtn.disabled = true;
-        startBtn.textContent = '[ ⏱️ DIAGNOSING... ]';
-        grid.innerHTML = `<div class="cli-log-line text-cyan">> 正在按顺序发起 12 阶段网络与应用层全链路探测，请稍候...</div>`;
-
-        try {
-            const res = await fetch(`/api/diagnose/full?target=${encodeURIComponent(target)}`);
-            const data = await res.json();
-            renderDiagnosticResult(data);
-            appendEventLog('INFO', `full diagnostic executed target=${target} result=${data.overall_status}`);
-        } catch(e) {
-            alert('全链路诊断执行失败: ' + e.message);
-        } finally {
-            startBtn.disabled = false;
-            startBtn.textContent = '[> RUN FULL DIAGNOSTIC ]';
-        }
-    }
-
-    async function fetchDualStackDiag() {
-        try {
-            const res = await fetch('/api/diagnose/dualstack?target=google.com');
-            const data = await res.json();
-            if (data.ipv4) {
-                document.getElementById('ds_v4_ip').textContent = data.ipv4.ip || '37.114.48.47';
-                document.getElementById('ds_v4_lat').textContent = `${data.ipv4.tcp_ms} ms`;
-            }
-            if (data.ipv6) {
-                document.getElementById('ds_v6_ip').textContent = data.ipv6.ip || '2a0e:6a80:3:483::100';
-                document.getElementById('ds_v6_lat').textContent = `${data.ipv6.tcp_ms || 121} ms`;
-            }
-            if (data.recommendation) {
-                document.getElementById('ds_recommendation').textContent = `> ${data.recommendation}`;
-            }
-        } catch(e) {}
-    }
-
-    function exportDiagnosticReport() {
-        window.open('/api/report/export?format=markdown&mask=true', '_blank');
-    }
-
-    function exportReportFmt(fmt) {
-        window.open(`/api/report/export?format=${fmt}&mask=true`, '_blank');
-    }
-
-    // ── Telemetry Stats Fetcher ──
-    async function fetchStats() {
-        try {
-            const res = await fetch('/stats');
-            const data = await res.json();
-            
-            document.getElementById('nav_last_sync').textContent = new Date().toTimeString().split(' ')[0];
-            
-            const cpu = data.cpu_percent || 28;
-            const mem = data.memory_percent || 63;
-            const disk = data.disk_percent || 41;
-            const swap = data.swap_percent || 12;
-
-            document.getElementById('cpu_val').textContent = `${cpu.toFixed(0)}%`;
-            document.getElementById('mem_val').textContent = `${mem.toFixed(0)}%`;
-            document.getElementById('disk_val').textContent = `${disk.toFixed(0)}%`;
-            document.getElementById('swap_val').textContent = `${swap.toFixed(0)}%`;
-
-            document.getElementById('ascii_cpu_bar').textContent = generateAsciiBar(cpu);
-            document.getElementById('ascii_mem_bar').textContent = generateAsciiBar(mem);
-            document.getElementById('ascii_disk_bar').textContent = generateAsciiBar(disk);
-            document.getElementById('ascii_swap_bar').textContent = generateAsciiBar(swap);
-        } catch(e) {}
-    }
 
     function generateAsciiBar(pct) {
         const total = 12;
