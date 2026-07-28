@@ -1885,11 +1885,31 @@ TEMPLATE = r"""
     let pingHistory = [];
 
     function switchNavTab(tabId, btn) {
-        document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active-view'));
-        document.getElementById('tab_' + tabId).classList.add('active-view');
+        if (!tabId) return;
+        const targetView = document.getElementById('tab_' + tabId);
+        if (!targetView) return;
+
+        document.querySelectorAll('.tab-view').forEach(v => {
+            v.classList.remove('active-view');
+            v.style.display = 'none';
+        });
+        targetView.classList.add('active-view');
+        targetView.style.display = 'flex';
+
         document.querySelectorAll('.nav-tab-btn').forEach(b => b.classList.remove('active'));
+        if (!btn) {
+            btn = Array.from(document.querySelectorAll('.nav-tab-btn')).find(b => b.getAttribute('onclick') && b.getAttribute('onclick').includes(tabId));
+        }
         if (btn) btn.classList.add('active');
+
         localStorage.setItem('console_active_tab', tabId);
+        window.location.hash = tabId;
+
+        if (tabId === 'targets') {
+            fetchTargets();
+        } else if (tabId === 'overview') {
+            setTimeout(fetchPings, 50);
+        }
     }
 
     function showKeyboardHelp() { document.getElementById('keyboard_modal').style.display = 'flex'; }
@@ -1950,17 +1970,17 @@ TEMPLATE = r"""
                 if (emptyBox) emptyBox.style.display = 'none';
             }
 
-            document.getElementById('ping_stat_cur').textContent = stats.cur ? `${stats.cur} ms` : '- ms';
-            document.getElementById('ping_stat_avg').textContent = stats.avg ? `${stats.avg} ms` : '- ms';
-            document.getElementById('ping_stat_min').textContent = stats.min ? `${stats.min} ms` : '- ms';
-            document.getElementById('ping_stat_max').textContent = stats.max ? `${stats.max} ms` : '- ms';
-            document.getElementById('ping_stat_p95').textContent = stats.p95 ? `${stats.p95} ms` : '- ms';
-            document.getElementById('ping_stat_p99').textContent = stats.p99 ? `${stats.p99} ms` : '- ms';
+            document.getElementById('ping_stat_cur').textContent = stats.cur !== null && stats.cur !== undefined ? `${stats.cur} ms` : '- ms';
+            document.getElementById('ping_stat_avg').textContent = stats.avg !== null && stats.avg !== undefined ? `${stats.avg} ms` : '- ms';
+            document.getElementById('ping_stat_min').textContent = stats.min !== null && stats.min !== undefined ? `${stats.min} ms` : '- ms';
+            document.getElementById('ping_stat_max').textContent = stats.max !== null && stats.max !== undefined ? `${stats.max} ms` : '- ms';
+            document.getElementById('ping_stat_p95').textContent = stats.p95 !== null && stats.p95 !== undefined ? `${stats.p95} ms` : '- ms';
+            document.getElementById('ping_stat_p99').textContent = stats.p99 !== null && stats.p99 !== undefined ? `${stats.p99} ms` : '- ms';
             document.getElementById('ping_stat_jitter').textContent = `±${stats.jitter || 0}ms`;
             document.getElementById('ping_stat_loss').textContent = `${stats.loss || 0}%`;
 
-            document.getElementById('metric_latency').innerHTML = stats.cur ? `${stats.cur} <span class="unit">ms</span>` : `- <span class="unit">ms</span>`;
-            document.getElementById('metric_latency_sub').textContent = stats.avg ? `1h avg: ${stats.avg}ms` : '1h avg: -';
+            document.getElementById('metric_latency').innerHTML = stats.cur !== null && stats.cur !== undefined ? `${stats.cur} <span class="unit">ms</span>` : `- <span class="unit">ms</span>`;
+            document.getElementById('metric_latency_sub').textContent = stats.avg !== null && stats.avg !== undefined ? `1h avg: ${stats.avg}ms` : '1h avg: -';
             document.getElementById('metric_samples_sub').textContent = `${stats.total_samples || 0} samples`;
             document.getElementById('metric_jitter').innerHTML = `${stats.jitter || 0} <span class="unit">ms</span>`;
 
@@ -1972,16 +1992,19 @@ TEMPLATE = r"""
         const canvas = document.getElementById('tcpingCanvas');
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
-        const w = canvas.offsetWidth;
-        const h = canvas.offsetHeight;
+        const w = canvas.offsetWidth || (canvas.parentElement ? canvas.parentElement.offsetWidth : 800);
+        const h = canvas.offsetHeight || 260;
         canvas.width = w; canvas.height = h;
 
         ctx.clearRect(0, 0, w, h);
 
         if (!samples || samples.length === 0) return;
 
-        const maxLat = 220;
-        const padding = 24;
+        // Dynamically compute max latency so high latency values scale correctly inside canvas
+        const validLats = samples.map(s => s.latency).filter(l => l !== null && l !== undefined);
+        const maxSample = validLats.length > 0 ? Math.max(...validLats) : 100;
+        const maxLat = Math.max(220, Math.ceil(maxSample * 1.25));
+        const padding = 28;
 
         // Grid lines
         ctx.strokeStyle = 'rgba(140, 165, 145, 0.08)';
@@ -1994,15 +2017,19 @@ TEMPLATE = r"""
 
         // 100ms Warning threshold line
         const y100 = h - padding - (100 / maxLat) * (h - 2 * padding);
-        ctx.strokeStyle = 'rgba(231, 198, 107, 0.4)';
-        ctx.setLineDash([4, 4]);
-        ctx.beginPath(); ctx.moveTo(0, y100); ctx.lineTo(w, y100); ctx.stroke();
+        if (y100 >= padding && y100 <= h - padding) {
+            ctx.strokeStyle = 'rgba(231, 198, 107, 0.4)';
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath(); ctx.moveTo(0, y100); ctx.lineTo(w, y100); ctx.stroke();
+        }
 
         // 200ms Critical threshold line
         const y200 = h - padding - (200 / maxLat) * (h - 2 * padding);
-        ctx.strokeStyle = 'rgba(240, 120, 120, 0.4)';
-        ctx.beginPath(); ctx.moveTo(0, y200); ctx.lineTo(w, y200); ctx.stroke();
-        ctx.setLineDash([]);
+        if (y200 >= padding && y200 <= h - padding) {
+            ctx.strokeStyle = 'rgba(240, 120, 120, 0.4)';
+            ctx.beginPath(); ctx.moveTo(0, y200); ctx.lineTo(w, y200); ctx.stroke();
+            ctx.setLineDash([]);
+        }
 
         // Average line
         if (avgValue) {
@@ -2019,12 +2046,15 @@ TEMPLATE = r"""
         ctx.beginPath();
 
         const step = w / Math.max(1, samples.length - 1);
+        let firstPoint = true;
+
         samples.forEach((s, idx) => {
-            const x = idx * step;
-            const lat = s.latency || 0;
-            const y = h - padding - (lat / maxLat) * (h - 2 * padding);
-            if (idx === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
+            if (s.latency !== null && s.latency !== undefined) {
+                const x = idx * step;
+                const y = h - padding - (s.latency / maxLat) * (h - 2 * padding);
+                if (firstPoint) { ctx.moveTo(x, y); firstPoint = false; }
+                else ctx.lineTo(x, y);
+            }
         });
         ctx.stroke();
 
@@ -2032,12 +2062,13 @@ TEMPLATE = r"""
         samples.forEach((s, idx) => {
             const x = idx * step;
             const lat = s.latency;
-            if (lat === null) {
+            if (lat === null || lat === undefined) {
                 ctx.fillStyle = '#F07878';
                 ctx.beginPath(); ctx.arc(x, h - padding, 4, 0, Math.PI * 2); ctx.fill();
             } else {
                 ctx.fillStyle = '#78E08F';
-                ctx.beginPath(); ctx.arc(x, h - padding - (lat / maxLat) * (h - 2 * padding), 2, 0, Math.PI * 2); ctx.fill();
+                const y = h - padding - (lat / maxLat) * (h - 2 * padding);
+                ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
             }
         });
     }
@@ -2072,6 +2103,46 @@ TEMPLATE = r"""
         }
     }
 
+    async function fetchTargets() {
+        try {
+            const res = await fetch('/api/targets');
+            const targets = await res.json();
+            const tbody = document.getElementById('targets_tbody');
+            if (tbody && Array.isArray(targets)) {
+                tbody.innerHTML = targets.map(t => `
+                    <tr>
+                        <td><span class="badge-bracket ${t.enabled ? 'status-healthy' : 'status-warning'}">[ ${t.enabled ? 'ACTIVE' : 'DISABLED'} ]</span></td>
+                        <td class="font-bold">${t.name}</td>
+                        <td class="text-cyan">${t.target}</td>
+                        <td><span class="badge-bracket status-cyan">${(t.type || 'tcp').toUpperCase()}</span></td>
+                        <td>${t.freq || 30}s</td>
+                        <td><span class="text-warning">Warn: ${t.threshold_warn || 160}ms</span> / <span class="text-critical">Crit: ${t.threshold_crit || 250}ms</span></td>
+                        <td>
+                            <button class="btn-cli" onclick="toggleTarget('${t.id}')">[ ${t.enabled ? 'DISABLE' : 'ENABLE'} ]</button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        } catch(e) {}
+    }
+
+    async function toggleTarget(tid) {
+        try {
+            const res = await fetch('/api/targets');
+            const targets = await res.json();
+            const target = targets.find(t => t.id === tid);
+            if (target) {
+                target.enabled = !target.enabled;
+                await fetch('/api/targets', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(target)
+                });
+                fetchTargets();
+            }
+        } catch(e) {}
+    }
+
     async function renderUptimeHeatmap() {
         const container = document.getElementById('heatmap_container');
         if (!container) return;
@@ -2104,7 +2175,8 @@ TEMPLATE = r"""
         }
 
         try {
-            const target = document.getElementById('diag_target_input').value || 'github.com';
+            const targetInput = document.getElementById('diag_target_input');
+            const target = (targetInput && targetInput.value) ? targetInput.value : 'github.com';
             const res = await fetch(`/api/diagnose/full?target=${target}`);
             const data = await res.json();
             
@@ -2136,11 +2208,27 @@ TEMPLATE = r"""
     function toggleAutoScroll() {}
     function clearLogView() { document.getElementById('log_stream_box').innerHTML = ''; }
 
+    // Keyboard Shortcuts Listener
+    window.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        const key = e.key.toUpperCase();
+        if (key === 'R') { fetchSummary(); fetchPings(); fetchStats(); }
+        else if (key === 'D') { switchNavTab('diagnostics'); }
+        else if (key === 'L') { switchNavTab('events'); }
+        else if (key === 'T') { switchNavTab('targets'); }
+        else if (key === '?') { showKeyboardHelp(); }
+        else if (key === 'ESCAPE') { closeKeyboardHelp(); }
+    });
+
     // Init loops
     fetchSummary();
     fetchPings();
     fetchStats();
     renderUptimeHeatmap();
+
+    // Restore active tab
+    const initialTab = window.location.hash.replace('#','') || localStorage.getItem('console_active_tab') || 'overview';
+    switchNavTab(initialTab);
 
     setInterval(fetchSummary, 10000);
     setInterval(fetchPings, 15000);
