@@ -1887,7 +1887,9 @@ Try typing 'acme status' or 'acme issue 您的域名.com' or 'ping 8.8.8.8'
                     <span class="prompt-text">root@{{ short_isp }}:~$</span>
                     <input type="text" id="cmd_input" class="terminal-input" placeholder="输入域名、IP 或命令开始诊断 (例如: ping 8.8.8.8 或 acme status)..." autofocus autocomplete="off" />
                 </div>
-        </div> <!-- End tab_overview -->
+            </div> <!-- terminal-body -->
+        </div> <!-- terminal-card -->
+    </div> <!-- End tab_overview -->
 
         <!-- TAB 2: TARGET MONITOR -->
         <div id="tab_targets" class="tab-view">
