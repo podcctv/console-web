@@ -172,6 +172,8 @@ def get_public_ip():
 
 
 PING_TARGETS = {
+    "ping_cloudflare": "1.1.1.1:53",
+    "ping_google": "8.8.8.8:53",
     "ping_cu": "zj-cu-v4.ip.zstaticcdn.com:80",
     "ping_cm": "zj-cm-v4.ip.zstaticcdn.com:80",
     "ping_ct": "zj-ct-v4.ip.zstaticcdn.com:80",
@@ -880,7 +882,7 @@ def tcp_ping(host: str):
         else:
             port = 80
         start = datetime.now()
-        with socket.create_connection((host, port), timeout=1):
+        with socket.create_connection((host, port), timeout=2.5):
             end = datetime.now()
         return (end - start).total_seconds() * 1000
     except Exception:
@@ -890,7 +892,7 @@ def tcp_ping(host: str):
 def icmp_ping(ip: str):
     try:
         proc = subprocess.run(
-            ["ping", "-c", "1", "-W", "1", ip],
+            ["ping", "-c", "1", "-W", "2", ip],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
@@ -910,6 +912,33 @@ def icmp_ping(ip: str):
 from datetime import timedelta
 
 ping_samples_ring = []  # Ring buffer for TCP ping samples: {"time": str, "timestamp": float, "latency": float_or_none}
+
+def _ping_sampler_loop():
+    """Background daemon thread to record ping telemetry continuously."""
+    while True:
+        try:
+            sample_lat = None
+            for key, host in PING_TARGETS.items():
+                res = tcp_ping(host)
+                if res is not None:
+                    sample_lat = res
+                    break
+            now_ts = time.time()
+            now_str = datetime.now().strftime("%H:%M:%S")
+            ping_samples_ring.append({
+                "time": now_str,
+                "timestamp": now_ts,
+                "latency": sample_lat,
+                "loss": 0 if sample_lat is not None else 100
+            })
+            if len(ping_samples_ring) > 1200:
+                ping_samples_ring.pop(0)
+        except Exception as e:
+            logger.warning("Ping sampler daemon iteration error: %s", e)
+        time.sleep(15)
+
+_ping_thread = threading.Thread(target=_ping_sampler_loop, daemon=True)
+_ping_thread.start()
 
 @app.route("/api/status/summary")
 def api_status_summary():
@@ -998,8 +1027,8 @@ def pings():
     if "client_ping" not in results:
         results["client_ping"] = None
 
-    # Record sample in ring buffer
-    main_lat = results.get("ping_cu") or results.get("ping_cm") or results.get("ping_ct")
+    # Record sample in ring buffer using first valid numerical result
+    main_lat = next((v for k, v in results.items() if k != "client_ping" and isinstance(v, (int, float))), None)
     now_ts = time.time()
     now_str = datetime.now().strftime("%H:%M:%S")
     ping_samples_ring.append({
