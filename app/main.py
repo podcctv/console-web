@@ -889,83 +889,31 @@ def humanize_bytes(size: float) -> str:
 
 TEMPLATE = r"""
 <!DOCTYPE html>
-<html lang="zh-CN" data-theme="neon">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>{{ hostname }} - Cyber Operations Dashboard</title>
+    <title>NETWATCH Network Operations Terminal</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=PingFang+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         /* ═══════════════════════════════════════════════════════════
-           PRECISION NETWORK OPERATIONS CONSOLE — Design System v3
-           Keywords: 精密 · 克制 · 深邃 · 专业 · 仪器感 · 层次感
+           NETWATCH — Network Status Terminal (Design Tokens)
+           面向网络工程师与服务器运维人员的实时网络检测终端
            ═══════════════════════════════════════════════════════════ */
-
         :root {
-            /* ── Depth Background Layers ── */
-            --bg-deep: #040810;
-            --bg-page: #050B14;
-            --bg-surface: rgba(12, 23, 38, 0.82);
-            --bg-surface-elevated: rgba(16, 29, 45, 0.88);
-            --bg-hover: rgba(22, 40, 62, 0.92);
-            --bg-input: rgba(8, 17, 29, 0.9);
-            --bg-inset: rgba(4, 10, 20, 0.6);
+            --bg-page: #050706;
+            --bg-panel: #080B09;
+            --bg-panel-raised: #0B100C;
+            --bg-input: #070A08;
 
-            /* ── Precision Borders ── */
-            --border-subtle: rgba(135, 175, 215, 0.07);
-            --border-default: rgba(135, 175, 215, 0.12);
-            --border-active: rgba(87, 168, 255, 0.35);
+            --text-primary: #D7E2D9;
+            --text-secondary: #91A095;
+            --text-muted: #5D6A60;
+            --text-dim: #414A43;
 
-            /* ── Typography ── */
-            --text-primary: #E8F0F8;
-            --text-secondary: #91A1B5;
-            --text-muted: #5F7085;
-            --text-dim: #3D4F63;
-
-            /* ── Semantic Color Tokens (Precision Palette) ── */
-            --accent: #57A8FF;
-            --accent-soft: rgba(87, 168, 255, 0.10);
-            --cyan: #4ED6D0;
-            --cyan-soft: rgba(78, 214, 208, 0.10);
-            --success: #42D392;
-            --success-soft: rgba(66, 211, 146, 0.10);
-            --warning: #F6B94A;
-            --warning-soft: rgba(246, 185, 74, 0.10);
-            --orange: #F09442;
-            --orange-soft: rgba(240, 148, 66, 0.10);
-            --danger: #FF6675;
-            --danger-soft: rgba(255, 102, 117, 0.10);
-
-            /* backward compat aliases */
-            --info: var(--accent);
-            --info-soft: var(--accent-soft);
-
-            /* ── Layout ── */
-            --radius-lg: 16px;
-            --radius-md: 12px;
-            --radius-sm: 8px;
-            --radius-xs: 6px;
-            --radius-card: var(--radius-lg);
-            --radius-control: var(--radius-xs);
-
-            /* ── Typography Systems ── */
-            --font-ui: "Inter", "SF Pro Display", "MiSans", -apple-system, BlinkMacSystemFont, sans-serif;
-            --font-mono: "JetBrains Mono", "IBM Plex Mono", "Consolas", monospace;
-        }
-
-        /* ── Alternative Themes (kept but refined) ── */
-        [data-theme="matrix"] {
-            --accent: #36e27b; --accent-soft: rgba(54,226,123,0.10);
-            --bg-surface: rgba(8,20,14,0.82); --bg-surface-elevated: rgba(13,28,21,0.88);
-            --bg-hover: rgba(16,38,28,0.92); --bg-input: rgba(6,16,12,0.9);
-            --border-subtle: rgba(80,200,140,0.07); --border-default: rgba(80,200,140,0.12);
-            --border-active: rgba(54,226,123,0.35);
-        }
-        [data-theme="cyberpunk"] {
-            --accent: #ff0077; --accent-soft: rgba(255,0,119,0.10);
-            --bg-surface: rgba(18,9,28,0.82); --bg-surface-elevated: rgba(26,13,40,0.88);
+            --status-success: #78E08F;
             --bg-hover: rgba(34,18,53,0.92); --bg-input: rgba(12,6,22,0.9);
             --border-subtle: rgba(200,80,160,0.07); --border-default: rgba(200,80,160,0.12);
             --border-active: rgba(255,0,119,0.35);
