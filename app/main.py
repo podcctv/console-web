@@ -857,7 +857,7 @@ TEMPLATE = r"""
         }
 
         .pixel-bar {
-            flex: 1; min-width: 4px; max-width: 8px; border-radius: 1px 1px 0 0;
+            flex: 1; min-width: 2px; border-radius: 1px 1px 0 0;
             transition: height 0.2s ease;
         }
 
@@ -1697,7 +1697,7 @@ Try typing 'acme status' or 'acme issue 您的域名.com' or 'ping 8.8.8.8'
 
     // Latency Ping History & Precision Sparkline Calculation
     const pingHistory = { client_ping: [], ping_cu: [], ping_cm: [], ping_ct: [] };
-    const MAX_BARS = 42;
+    const MAX_BARS = 60;
 
     function renderPixelBars(key) {
         const container = document.getElementById(key + '_bars');
