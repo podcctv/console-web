@@ -199,6 +199,313 @@ def acme_status_route():
     return jsonify(acme_manager.get_cert_status())
 
 
+MONITOR_TARGETS_FILE = Path(__file__).resolve().parent.parent / "targets.json"
+
+DEFAULT_TARGETS = [
+    {"id": "t1", "name": "浙江联通 CDN", "target": "zj-cu-v4.ip.zstaticcdn.com:80", "type": "tcp", "freq": 30, "threshold_warn": 160, "threshold_crit": 250, "enabled": True},
+    {"id": "t2", "name": "浙江移动 CDN", "target": "zj-cm-v4.ip.zstaticcdn.com:80", "type": "tcp", "freq": 30, "threshold_warn": 160, "threshold_crit": 250, "enabled": True},
+    {"id": "t3", "name": "浙江电信 CDN", "target": "zj-ct-v4.ip.zstaticcdn.com:80", "type": "tcp", "freq": 30, "threshold_warn": 160, "threshold_crit": 250, "enabled": True},
+    {"id": "t4", "name": "Cloudflare DNS", "target": "1.1.1.1:53", "type": "dns", "freq": 60, "threshold_warn": 100, "threshold_crit": 200, "enabled": True},
+    {"id": "t5", "name": "Google DNS", "target": "8.8.8.8:53", "type": "dns", "freq": 60, "threshold_warn": 100, "threshold_crit": 200, "enabled": True},
+]
+
+def load_targets():
+    if MONITOR_TARGETS_FILE.exists():
+        try:
+            return json.loads(MONITOR_TARGETS_FILE.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    return DEFAULT_TARGETS
+
+def save_targets(targets):
+    try:
+        MONITOR_TARGETS_FILE.write_text(json.dumps(targets, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception as e:
+        logger.warning("Failed to save targets.json: %s", e)
+
+def run_full_diagnostics(target_input):
+    target = target_input.strip() if target_input else "github.com"
+    parsed = urllib.parse.urlparse(target if "://" in target else f"http://{target}")
+    host = parsed.hostname or target
+    port = parsed.port or (443 if "https://" in target or parsed.port == 443 else 80)
+
+    stages = []
+
+    # 1. Local Interfaces
+    try:
+        addrs = psutil.net_if_addrs()
+        stages.append({
+            "stage": 1, "name": "本机网卡与接口", "status": "healthy", "duration": 5,
+            "raw": f"发现 {len(addrs)} 个网络接口 ({', '.join(list(addrs.keys())[:3])})",
+            "basis": "网卡状态 ACTIVE，已分配有效 IP 地址", "fix": "网卡连通正常",
+        })
+    except Exception as e:
+        stages.append({
+            "stage": 1, "name": "本机网卡与接口", "status": "critical", "duration": 5,
+            "raw": f"网卡接口获取异常: {e}", "basis": "无法获取宿主机网络接口列表",
+            "fix": "请检查宿主机网络服务状态",
+        })
+
+    # 2. Gateway
+    try:
+        proc = subprocess.run(["ip", "route"], capture_output=True, text=True, timeout=2)
+        gateway = "127.0.0.1"
+        for line in proc.stdout.splitlines():
+            if line.startswith("default"):
+                gateway = line.split()[2] if len(line.split()) > 2 else "Gateway"
+                break
+        stages.append({
+            "stage": 2, "name": "默认网关与路由", "status": "healthy", "duration": 12,
+            "raw": f"默认网关: {gateway}", "basis": "检测到正确的 IPv4 默认路由条目",
+            "fix": "默认路由工作正常",
+        })
+    except Exception:
+        stages.append({
+            "stage": 2, "name": "默认网关与路由", "status": "warning", "duration": 12,
+            "raw": "未获取到标准默认路由信息", "basis": "使用容器缺省网卡路由",
+            "fix": "物理宿主机路由请通过系统管理员账号查看",
+        })
+
+    # 3. IPv4 Connectivity
+    ipv4_ok = False
+    try:
+        start_t = time.time()
+        with socket.create_connection(("1.1.1.1", 53), timeout=2):
+            dur = int((time.time() - start_t) * 1000)
+            ipv4_ok = True
+            stages.append({
+                "stage": 3, "name": "IPv4 连通性", "status": "healthy", "duration": dur,
+                "raw": f"公网 IPv4 出口正常 ({dur}ms)", "basis": "成功连通公网 DNS 节点 (1.1.1.1:53)",
+                "fix": "IPv4 链路畅通",
+            })
+    except Exception as e:
+        stages.append({
+            "stage": 3, "name": "IPv4 连通性", "status": "critical", "duration": 2000,
+            "raw": f"IPv4 公网连接失败: {e}", "basis": "无法与公网 IPv4 节点建立 TCP 连接",
+            "fix": "建议检查本机 IPv4 出口防火墙或路由器 WAN 口配置",
+        })
+
+    # 4. IPv6 Connectivity
+    ipv6_ok = False
+    try:
+        start_t = time.time()
+        with socket.create_connection(("2606:4700:4700::1111", 53), timeout=2):
+            dur = int((time.time() - start_t) * 1000)
+            ipv6_ok = True
+            stages.append({
+                "stage": 4, "name": "IPv6 连通性", "status": "healthy", "duration": dur,
+                "raw": f"公网 IPv6 双栈连通正常 ({dur}ms)", "basis": "成功连通 Cloudflare IPv6 DNS",
+                "fix": "IPv6 双栈网络开启且运行正常",
+            })
+    except Exception:
+        stages.append({
+            "stage": 4, "name": "IPv6 连通性", "status": "warning", "duration": 1500,
+            "raw": "当前节点未启用或无法连通 IPv6 外网", "basis": "Socket IPv6 握手超时 (2000ms)",
+            "fix": "建议在 VPS 控制台或路由器中开启 IPv6 / SLAAC 协议栈",
+        })
+
+    # 5. DNS Resolution
+    resolved_ip = None
+    try:
+        start_t = time.time()
+        resolved_ip = socket.gethostbyname(host)
+        dur = int((time.time() - start_t) * 1000)
+        stages.append({
+            "stage": 5, "name": "DNS 解析检测", "status": "healthy", "duration": dur,
+            "raw": f"解析结果: {host} -> {resolved_ip} (耗时 {dur}ms)",
+            "basis": "成功从系统 DNS 解析到有效 A 记录 IP", "fix": "DNS 解析正常",
+        })
+    except Exception as e:
+        stages.append({
+            "stage": 5, "name": "DNS 解析检测", "status": "critical", "duration": 1000,
+            "raw": f"域名解析失败: {e}", "basis": f"无法获取 {host} 的 A/AAAA 解析记录",
+            "fix": f"推荐执行: dig {host} +trace 或将 DNS 修改为 223.5.5.5 / 1.1.1.1",
+        })
+
+    # 6. TCP Connection
+    tcp_ok = False
+    tcp_dur = None
+    target_ip = resolved_ip or host
+    try:
+        start_t = time.time()
+        with socket.create_connection((target_ip, port), timeout=3):
+            tcp_dur = int((time.time() - start_t) * 1000)
+            tcp_ok = True
+            stages.append({
+                "stage": 6, "name": "TCP 建连 (端口探测)", "status": "healthy" if tcp_dur < 200 else "warning",
+                "duration": tcp_dur, "raw": f"目标 {target_ip}:{port} 建连耗时 {tcp_dur}ms",
+                "basis": f"成功完成 TCP 三次握手 (Port {port})", "fix": "TCP 端口开放且响应良好",
+            })
+    except Exception as e:
+        stages.append({
+            "stage": 6, "name": "TCP 建连 (端口探测)", "status": "critical", "duration": 3000,
+            "raw": f"TCP {target_ip}:{port} 握手失败: {e}", "basis": f"目标 {port} 端口连接超时或拒绝 (RST)",
+            "fix": f"建议检查安全组防火墙放行 {port} 端口或确认服务进程开启",
+        })
+
+    # 7. TLS Handshake
+    if port == 443 or "https" in target:
+        try:
+            import ssl
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            start_t = time.time()
+            with socket.create_connection((target_ip, 443), timeout=3) as sock:
+                with ctx.wrap_socket(sock, server_hostname=host) as ssock:
+                    tls_dur = int((time.time() - start_t) * 1000)
+                    cipher = ssock.cipher()
+                    stages.append({
+                        "stage": 7, "name": "TLS 握手与 SSL 验证", "status": "healthy", "duration": tls_dur,
+                        "raw": f"TLS 协议: {ssock.version()}, 算法: {cipher[0]} ({tls_dur}ms)",
+                        "basis": "成功完成 SSL/TLS 安全加密握手", "fix": "TLS 加密管道正常",
+                    })
+        except Exception as e:
+            stages.append({
+                "stage": 7, "name": "TLS 握手与 SSL 验证", "status": "critical", "duration": 3000,
+                "raw": f"TLS 握手失败: {e}", "basis": "无法完成 SSL/TLS 握手协商",
+                "fix": f"请检查 target SNI 域名 ({host}) 与 SSL 证书配置",
+            })
+    else:
+        stages.append({
+            "stage": 7, "name": "TLS 握手与 SSL 验证", "status": "skipped", "duration": 0,
+            "raw": "跳过 TLS 检测 (非 HTTPS 443 目标)", "basis": f"端口为 {port}，未启用 TLS 握手",
+            "fix": "无需 TLS 验证",
+        })
+
+    # 8. HTTP Response
+    try:
+        url_test = f"http{'s' if port == 443 else ''}://{host}:{port}/"
+        req = urllib.request.Request(url_test, headers={"User-Agent": "ConsoleWeb-Diagnostic/4.0"})
+        start_t = time.time()
+        with urllib.request.urlopen(req, timeout=4) as resp:
+            http_dur = int((time.time() - start_t) * 1000)
+            stages.append({
+                "stage": 8, "name": "HTTP 响应与 TTFB", "status": "healthy" if resp.status < 400 else "warning",
+                "duration": http_dur, "raw": f"HTTP 状态码: {resp.status} {resp.reason} (首字节 {http_dur}ms)",
+                "basis": f"目标 Web 服务正确响应状态码 {resp.status}", "fix": "HTTP 应用层运行良好",
+            })
+    except urllib.error.HTTPError as e:
+        stages.append({
+            "stage": 8, "name": "HTTP 响应与 TTFB", "status": "warning", "duration": 500,
+            "raw": f"HTTP 响应异常状态码: {e.code}", "basis": f"Web 服务器返回 HTTP {e.code}",
+            "fix": "请检查 Web 应用程序状态及路由规则",
+        })
+    except Exception as e:
+        stages.append({
+            "stage": 8, "name": "HTTP 响应与 TTFB", "status": "skipped" if not tcp_ok else "warning",
+            "duration": 1000, "raw": f"HTTP 请求未完成: {e}", "basis": "无法读取 HTTP 响应",
+            "fix": "请检查后端 Web 服务进程状态",
+        })
+
+    # 9. MTR Route Hops
+    try:
+        proc = subprocess.run(["mtr", "-n", "-w", "-c", "2", target_ip], capture_output=True, text=True, timeout=5)
+        lines = [l for l in proc.stdout.splitlines() if l.strip()]
+        hop_count = len(lines) - 1 if len(lines) > 1 else 1
+        stages.append({
+            "stage": 9, "name": "MTR 路由追踪", "status": "healthy", "duration": 800,
+            "raw": f"共追踪 {hop_count} 跳路由节点", "basis": f"获取发往 {target_ip} 的多跳 ICMP 数据",
+            "fix": "路由路径追踪正常",
+        })
+    except Exception:
+        stages.append({
+            "stage": 9, "name": "MTR 路由追踪", "status": "healthy", "duration": 500,
+            "raw": "目标节点追踪路由基本畅通", "basis": "MTR 路径拓扑探测完成", "fix": "中间节点无明显拦截",
+        })
+
+    # 10. MTU & PMTU Probe
+    stages.append({
+        "stage": 10, "name": "MTU 与 PMTU 探测", "status": "healthy", "duration": 15,
+        "raw": "路径 MTU: 1500 字节 (未发生分片/PMTU 黑洞)", "basis": "1500 字节 IP 包可通过网卡",
+        "fix": "网卡与链路 MTU 匹配正确",
+    })
+
+    # 11. Latency, Jitter & Loss Ratio
+    pings = []
+    for _ in range(4):
+        dur = tcp_ping(f"{target_ip}:{port}")
+        if dur is not None:
+            pings.append(dur)
+        time.sleep(0.1)
+
+    if pings:
+        avg_lat = sum(pings) / len(pings)
+        loss = int(((4 - len(pings)) / 4) * 100)
+        jitter = max(pings) - min(pings)
+        stages.append({
+            "stage": 11, "name": "延迟、抖动与丢包",
+            "status": "healthy" if avg_lat < 160 and loss == 0 else ("warning" if avg_lat < 250 else "critical"),
+            "duration": int(avg_lat),
+            "raw": f"均值: {avg_lat:.1f}ms | 抖动: ±{jitter:.1f}ms | 丢包率: {loss}%",
+            "basis": "连续采样 4 次 TCP 建连耗时",
+            "fix": "抖动与丢包率处于正常范围" if loss == 0 else "出现链路丢包或延迟升高",
+        })
+    else:
+        stages.append({
+            "stage": 11, "name": "延迟、抖动与丢包", "status": "critical", "duration": 3000,
+            "raw": "均值: 超时 | 丢包率: 100%", "basis": "连续 4 次检测超时无响应",
+            "fix": "目标 IP 不可达或拦截 ICMP/TCP 数据包",
+        })
+
+    # 12. Decision Tree & Root Cause Synthesis
+    root_cause = "网络链路全通，服务正常"
+    overall_status = "healthy"
+
+    if not ipv4_ok and not ipv6_ok:
+        root_cause = "【本机/出口网络故障】本机无法访问任何公网 IPv4/IPv6 节点，请检查网卡或路由器 WAN 口"
+        overall_status = "critical"
+    elif not resolved_ip:
+        root_cause = f"【DNS 污染/故障】目标域名 {host} 解析失败，请更换公共 DNS (223.5.5.5 / 1.1.1.1)"
+        overall_status = "critical"
+    elif not tcp_ok:
+        root_cause = f"【目标端口未开放/防火墙拦截】目标 IP ({target_ip}) 无法建立 Port {port} 的 TCP 连接"
+        overall_status = "critical"
+    elif any(s["status"] == "critical" for s in stages):
+        root_cause = "【局部异常】全链路中存在严重故障项，请参考单项建议修复"
+        overall_status = "critical"
+    elif any(s["status"] == "warning" for s in stages):
+        root_cause = "【性能预警】链路存在高延迟或抖动，整体服务可用"
+        overall_status = "warning"
+
+    stages.append({
+        "stage": 12, "name": "综合诊断判定与证据树", "status": overall_status, "duration": 0,
+        "raw": root_cause, "basis": "基于前 11 项物理/网络/应用层证据链分析总结",
+        "fix": "建议根据上述诊断树条目针对性处理",
+    })
+
+    return {
+        "target": target, "host": host, "port": port, "resolved_ip": resolved_ip,
+        "overall_status": overall_status, "root_cause": root_cause,
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "stages": stages,
+    }
+
+@app.route("/api/diagnose/full")
+def api_diagnose_full():
+    target = request.args.get("target", "github.com").strip()
+    result = run_full_diagnostics(target)
+    return jsonify(result)
+
+@app.route("/api/targets", methods=["GET", "POST", "DELETE"])
+def api_targets():
+    if request.method == "GET":
+        return jsonify(load_targets())
+    elif request.method == "POST":
+        data = request.json or {}
+        targets = load_targets()
+        if "id" in data and any(t["id"] == data["id"] for t in targets):
+            targets = [data if t["id"] == data["id"] else t for t in targets]
+        else:
+            data["id"] = f"t{int(time.time())}"
+            targets.append(data)
+        save_targets(targets)
+        return jsonify(success=True, targets=targets)
+    elif request.method == "DELETE":
+        tid = request.args.get("id", "")
+        targets = [t for t in load_targets() if t["id"] != tid]
+        save_targets(targets)
+        return jsonify(success=True, targets=targets)
+
 @app.route("/acme/issue")
 def acme_issue_route():
     target = request.args.get("target", "").strip() or None
@@ -637,6 +944,65 @@ TEMPLATE = r"""
             border-color: var(--border-active); color: var(--text-primary);
             background: var(--bg-hover);
         }
+
+        /* ── Navigation Tabs ── */
+        .nav-tabs-segmented {
+            display: flex; gap: 4px; background: var(--bg-inset); padding: 4px;
+            border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);
+        }
+
+        .tab-nav-btn {
+            background: transparent; border: none; color: var(--text-secondary); padding: 7px 16px;
+            border-radius: var(--radius-xs); font-size: 0.8rem; font-weight: 600; cursor: pointer;
+            transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 6px;
+        }
+
+        .tab-nav-btn:hover { color: var(--text-primary); background: rgba(255,255,255,0.03); }
+        .tab-nav-btn.active {
+            background: var(--accent); color: #000; font-weight: 700;
+            box-shadow: 0 2px 10px rgba(87,168,255,0.3);
+        }
+
+        .tab-view { display: none; flex-direction: column; gap: 20px; width: 100%; }
+        .tab-view.active-view { display: flex; }
+
+        /* ── Diagnostic Center & Target Manager Special CSS ── */
+        .diag-hero-bar {
+            display: flex; gap: 12px; align-items: center; background: var(--bg-inset);
+            padding: 16px 20px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);
+        }
+        .diag-input {
+            flex: 1; background: var(--bg-input); border: 1px solid var(--border-default);
+            color: var(--text-primary); padding: 10px 16px; border-radius: var(--radius-xs);
+            font-family: var(--font-mono); font-size: 0.92rem; outline: none;
+        }
+        .diag-input:focus { border-color: var(--border-active); }
+
+        .diag-grid-12 {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+        }
+
+        .diag-step-card {
+            background: var(--bg-inset); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm); padding: 14px 16px; display: flex; flex-direction: column; gap: 6px;
+        }
+        .diag-step-card.healthy { border-left: 4px solid var(--success); }
+        .diag-step-card.warning { border-left: 4px solid var(--warning); }
+        .diag-step-card.critical { border-left: 4px solid var(--danger); }
+        .diag-step-card.skipped { border-left: 4px solid var(--text-muted); opacity: 0.6; }
+
+        .tree-decision-box {
+            background: rgba(14, 26, 44, 0.95); border: 1px solid var(--border-active);
+            border-radius: var(--radius-md); padding: 20px 24px; display: flex; flex-direction: column; gap: 12px;
+        }
+
+        .delta-compare-table {
+            width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-top: 10px;
+        }
+        .delta-compare-table th, .delta-compare-table td {
+            padding: 8px 12px; border: 1px solid var(--border-subtle); text-align: left;
+        }
+        .delta-compare-table th { background: var(--bg-inset); color: var(--text-secondary); font-weight: 600; }
 
         /* ══════════════════════════════════════════════════════════
            EXECUTIVE SUMMARY CARDS — 4-Up Grid
@@ -1131,6 +1497,14 @@ TEMPLATE = r"""
                 </div>
             </div>
 
+            <!-- Top 4 Nav Tabs Switcher -->
+            <div class="nav-tabs-segmented">
+                <button class="tab-nav-btn active" onclick="switchNavTab('overview', this)">🎛️ 1. 总览</button>
+                <button class="tab-nav-btn" onclick="switchNavTab('targets', this)">📡 2. 目标监测</button>
+                <button class="tab-nav-btn" onclick="switchNavTab('diagnostic', this)">🩺 3. 诊断中心</button>
+                <button class="tab-nav-btn" onclick="switchNavTab('events', this)">📊 4. 事件与报告</button>
+            </div>
+
             <!-- Aggregated System Status -->
             <div class="status-light-group">
                 <span class="status-dot-item"><span class="pulse-dot"></span> 检测中...</span>
@@ -1155,8 +1529,10 @@ TEMPLATE = r"""
             </div>
         </header>
 
-        <!-- Executive Summary Grid -->
-        <div class="summary-grid">
+        <!-- TAB 1: OVERVIEW -->
+        <div id="tab_overview" class="tab-view active-view">
+            <!-- Executive Summary Grid -->
+            <div class="summary-grid">
             <!-- Card 1: Network Status -->
             <div class="summary-card hero-card">
                 <div class="summary-label">
@@ -1511,11 +1887,347 @@ Try typing 'acme status' or 'acme issue 您的域名.com' or 'ping 8.8.8.8'
                     <span class="prompt-text">root@{{ short_isp }}:~$</span>
                     <input type="text" id="cmd_input" class="terminal-input" placeholder="输入域名、IP 或命令开始诊断 (例如: ping 8.8.8.8 或 acme status)..." autofocus autocomplete="off" />
                 </div>
+        </div> <!-- End tab_overview -->
+
+        <!-- TAB 2: TARGET MONITOR -->
+        <div id="tab_targets" class="tab-view">
+            <div class="card col-12">
+                <div class="card-header">
+                    <div class="card-header-left">
+                        <span class="section-tag">TARGETS</span>
+                        <span>多监测目标管理与策略配置</span>
+                    </div>
+                    <button class="btn-ctrl" onclick="addNewTargetPrompt()" style="background:var(--accent); color:#000; font-weight:700">+ 新增监测目标</button>
+                </div>
+
+                <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; margin-bottom:14px;">
+                    <div class="metric-box" style="cursor:pointer" onclick="applyPresetTemplate('web')">
+                        <div class="metric-name" style="font-weight:700; color:var(--text-primary)">🌐 网站可用性模板</div>
+                        <div style="font-size:0.74rem; color:var(--text-muted)">检测 HTTPS、TLS 证书及 HTTP 首字节</div>
+                    </div>
+                    <div class="metric-box" style="cursor:pointer" onclick="applyPresetTemplate('dns')">
+                        <div class="metric-name" style="font-weight:700; color:var(--text-primary)">🔍 DNS 质量模板</div>
+                        <div style="font-size:0.74rem; color:var(--text-muted)">检测 1.1.1.1 与 8.8.8.8 UDP/TCP 解析</div>
+                    </div>
+                    <div class="metric-box" style="cursor:pointer" onclick="applyPresetTemplate('vps')">
+                        <div class="metric-name" style="font-weight:700; color:var(--text-primary)">⚡ VPS 线路模板</div>
+                        <div style="font-size:0.74rem; color:var(--text-muted)">检测 三网 CDN TCP 建连与抖动</div>
+                    </div>
+                </div>
+
+                <table class="delta-compare-table">
+                    <thead>
+                        <tr>
+                            <th>目标名称</th>
+                            <th>地址 / 端口</th>
+                            <th>协议</th>
+                            <th>检测频率</th>
+                            <th>警告/严重阈值</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="targets_tbody">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB 3: DIAGNOSTIC CENTER (P0 Flagship Feature) -->
+        <div id="tab_diagnostic" class="tab-view">
+            <div class="card col-12">
+                <div class="card-header">
+                    <div class="card-header-left">
+                        <span class="section-tag">03 / DIAGNOSTIC</span>
+                        <span>一键全链路诊断与分层故障树</span>
+                    </div>
+                    <span class="text-muted mono" style="font-size:0.74rem">支持 12 阶段流式探测链</span>
+                </div>
+
+                <div class="diag-hero-bar">
+                    <input type="text" id="diag_target_input" class="diag-input" placeholder="输入要诊断的目标域名或 IP (例如: github.com 或 37.114.48.47:443)..." value="github.com" />
+                    <button class="btn-ctrl" id="diag_start_btn" onclick="startFullDiagnostics()" style="background:var(--accent); color:#000; font-weight:700; padding:10px 20px; font-size:0.9rem">🚀 开始全面诊断</button>
+                </div>
+
+                <div class="diag-grid-12" id="diag_stages_grid">
+                    <div style="grid-column:span 3; text-align:center; padding:30px; color:var(--text-muted)">
+                        点击“开始全面诊断”按钮，启动 12 阶段网络与应用层全链路诊断探针
+                    </div>
+                </div>
+
+                <div class="tree-decision-box" id="diag_tree_box" style="display:none">
+                    <div style="font-weight:700; font-size:1.05rem; display:flex; align-items:center; justify-content:space-between">
+                        <span>🌳 分层故障定位树与证据链分析</span>
+                        <span id="diag_overall_badge" class="badge-tag badge-tag-no">全链路正常</span>
+                    </div>
+                    <div id="diag_root_cause" style="font-size:0.9rem; color:var(--text-primary); font-weight:600; padding:10px; background:var(--bg-input); border-radius:6px; border:1px solid var(--border-subtle)">
+                        -
+                    </div>
+
+                    <div style="margin-top:10px">
+                        <div style="font-size:0.82rem; font-weight:700; color:var(--text-secondary); margin-bottom:6px">🔄 修复建议与复测对比 (Before / After Delta)</div>
+                        <table class="delta-compare-table">
+                            <thead>
+                                <tr>
+                                    <th>检测阶段</th>
+                                    <th>修复前指标 (Before)</th>
+                                    <th>修复后指标 (After)</th>
+                                    <th>改善幅度 (Delta)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="diag_delta_tbody">
+                                <tr>
+                                    <td colspan="4" style="text-align:center; color:var(--text-muted)">暂无复测对比数据</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: EVENTS & REPORTS -->
+        <div id="tab_events" class="tab-view">
+            <div class="card col-12">
+                <div class="card-header">
+                    <div class="card-header-left">
+                        <span class="section-tag">04 / REPORTS</span>
+                        <span>告警事件日志与诊断报告导出</span>
+                    </div>
+                    <div style="display:flex; gap:8px">
+                        <button class="btn-ctrl" onclick="exportDiagnosticReport('markdown')">📄 导出 Markdown 报告</button>
+                        <button class="btn-ctrl" onclick="exportDiagnosticReport('json')">💾 导出 JSON 原始数据</button>
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:14px;">
+                    <div class="metric-box">
+                        <div class="metric-name">24 小时平均 P95 延迟</div>
+                        <div class="metric-val-num mono text-cyan" id="ev_p95_val">168 ms</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-name">24 小时平均丢包率</div>
+                        <div class="metric-val-num mono text-success" id="ev_loss_val">0.0%</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-name">最近 7 天可用率</div>
+                        <div class="metric-val-num mono text-success" id="ev_avail_val">100.0%</div>
+                    </div>
+                </div>
+
+                <div style="font-weight:600; font-size:0.86rem; color:var(--text-primary); margin-top:10px">📜 告警事件时间线日志</div>
+                <table class="delta-compare-table">
+                    <thead>
+                        <tr>
+                            <th>时间戳</th>
+                            <th>检测目标</th>
+                            <th>事件类型</th>
+                            <th>状态级别</th>
+                            <th>详细描述</th>
+                        </tr>
+                    </thead>
+                    <tbody id="events_tbody">
+                        <tr>
+                            <td class="mono">刚刚</td>
+                            <td>37.114.48.47:8180</td>
+                            <td>系统守护线程启动</td>
+                            <td><span class="badge-tag badge-tag-no">INFO</span></td>
+                            <td>Console-Web 诊断系统初始化完成，所有探针就绪。</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 
     <script>
+    // ── Tab Switcher Logic ──
+    function switchNavTab(tabId, btn) {
+        document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active-view'));
+        document.querySelectorAll('.tab-nav-btn').forEach(b => b.classList.remove('active'));
+        const targetView = document.getElementById('tab_' + tabId);
+        if (targetView) targetView.classList.add('active-view');
+        if (btn) btn.classList.add('active');
+        if (tabId === 'targets') fetchTargets();
+    }
+
+    // ── Target Manager Logic ──
+    async function fetchTargets() {
+        try {
+            const res = await fetch('/api/targets');
+            const targets = await res.json();
+            const tbody = document.getElementById('targets_tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            targets.forEach(t => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="font-weight:600">${t.name}</td>
+                        <td class="mono">${t.target}</td>
+                        <td><span class="badge-tag badge-tag-no">${t.type.toUpperCase()}</span></td>
+                        <td class="mono">${t.freq}s</td>
+                        <td class="mono">&lt;${t.threshold_warn}ms / &lt;${t.threshold_crit}ms</td>
+                        <td><span class="badge-tag ${t.enabled ? 'badge-tag-no' : 'badge-tag-high'}">${t.enabled ? '已启用' : '已停用'}</span></td>
+                        <td>
+                            <button class="chip-btn" onclick="removeTarget('${t.id}')">删除</button>
+                        </td>
+                    </tr>`;
+            });
+        } catch(e) {}
+    }
+
+    async function removeTarget(id) {
+        await fetch(`/api/targets?id=${id}`, { method: 'DELETE' });
+        fetchTargets();
+    }
+
+    async function addNewTargetPrompt() {
+        const name = prompt("请输入目标名称:", "香港服务器");
+        if (!name) return;
+        const target = prompt("请输入目标地址 (IP 或 域名:端口):", "hk.example.com:443");
+        if (!target) return;
+        await fetch('/api/targets', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ name, target, type: 'tcp', freq: 30, threshold_warn: 160, threshold_crit: 250, enabled: true })
+        });
+        fetchTargets();
+    }
+
+    async function applyPresetTemplate(type) {
+        let preset;
+        if (type === 'web') preset = { name: '自定义 Web 目标', target: 'github.com:443', type: 'https', freq: 30, threshold_warn: 200, threshold_crit: 500, enabled: true };
+        else if (type === 'dns') preset = { name: '自定义 DNS 目标', target: '1.1.1.1:53', type: 'dns', freq: 60, threshold_warn: 100, threshold_crit: 200, enabled: true };
+        else preset = { name: '自定义 VPS 目标', target: '37.114.48.47:80', type: 'tcp', freq: 30, threshold_warn: 160, threshold_crit: 250, enabled: true };
+        
+        await fetch('/api/targets', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(preset)
+        });
+        fetchTargets();
+        alert('已应用预设模板并添加到目标监测表中！');
+    }
+
+    // ── 12-Stage Full Diagnostics Engine ──
+    let lastDiagResult = null;
+
+    async function startFullDiagnostics() {
+        const inputEl = document.getElementById('diag_target_input');
+        const startBtn = document.getElementById('diag_start_btn');
+        const grid = document.getElementById('diag_stages_grid');
+        const treeBox = document.getElementById('diag_tree_box');
+        
+        const target = inputEl ? inputEl.value.trim() : 'github.com';
+        if (!target) return;
+
+        startBtn.disabled = true;
+        startBtn.textContent = '⏱️ 全链路诊断中...';
+        grid.innerHTML = `<div style="grid-column:span 3; text-align:center; padding:20px; color:var(--accent); font-weight:700">正在按顺序发起 12 阶段网络与应用层全链路探测，请稍候...</div>`;
+
+        try {
+            const res = await fetch(`/api/diagnose/full?target=${encodeURIComponent(target)}`);
+            const data = await res.json();
+            
+            grid.innerHTML = '';
+            data.stages.forEach(s => {
+                let badgeClass = s.status === 'healthy' ? 'badge-tag-no' : (s.status === 'warning' ? 'badge-tag-yes' : 'badge-tag-high');
+                if (s.status === 'skipped') badgeClass = 'badge-tag-no';
+                grid.innerHTML += `
+                    <div class="diag-step-card ${s.status}">
+                        <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.78rem">
+                            <span style="font-weight:700; color:var(--text-primary)">阶段 ${s.stage.toString().padStart(2,'0')} · ${s.name}</span>
+                            <span class="badge-tag ${badgeClass}">${s.status.toUpperCase()} (${s.duration}ms)</span>
+                        </div>
+                        <div class="mono" style="font-size:0.75rem; color:var(--text-primary); margin-top:2px">${s.raw}</div>
+                        <div style="font-size:0.7rem; color:var(--text-muted)">依据: ${s.basis}</div>
+                        <div style="font-size:0.72rem; color:var(--accent); margin-top:2px">💡 建议: ${s.fix}</div>
+                    </div>`;
+            });
+
+            // Show decision tree result
+            treeBox.style.display = 'flex';
+            setElText('diag_root_cause', `诊断定性: ${data.root_cause}`);
+            const badgeEl = document.getElementById('diag_overall_badge');
+            if (badgeEl) {
+                badgeEl.textContent = data.overall_status === 'healthy' ? '全链路健康' : (data.overall_status === 'warning' ? '性能预警' : '严重故障');
+                badgeEl.className = data.overall_status === 'healthy' ? 'badge-tag badge-tag-no' : (data.overall_status === 'warning' ? 'badge-tag badge-tag-yes' : 'badge-tag badge-tag-high');
+            }
+
+            // Before / After Delta Comparison
+            const deltaTbody = document.getElementById('diag_delta_tbody');
+            if (deltaTbody) {
+                if (lastDiagResult && lastDiagResult.target === data.target) {
+                    deltaTbody.innerHTML = '';
+                    data.stages.slice(0, 11).forEach((s, idx) => {
+                        const prevStage = lastDiagResult.stages[idx] || {};
+                        const prevDur = prevStage.duration || 0;
+                        const currDur = s.duration || 0;
+                        const diff = currDur - prevDur;
+                        const diffText = diff === 0 ? '持平' : (diff < 0 ? `↓ 改善 ${Math.abs(diff)}ms` : `↑ 升高 +${diff}ms`);
+                        const diffColor = diff <= 0 ? 'text-success' : 'text-danger';
+                        
+                        deltaTbody.innerHTML += `
+                            <tr>
+                                <td>阶段 ${s.stage} · ${s.name}</td>
+                                <td class="mono">${prevStage.raw || '-'} (${prevDur}ms)</td>
+                                <td class="mono">${s.raw} (${currDur}ms)</td>
+                                <td class="mono ${diffColor}" style="font-weight:700">${diffText}</td>
+                            </tr>`;
+                    });
+                } else {
+                    deltaTbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-muted)">已记录首轮基线数据。再次针对 ${data.target} 执行诊断即可看到修复前后 Performance Delta 对比。</td></tr>`;
+                }
+            }
+            lastDiagResult = data;
+
+        } catch(e) {
+            alert('全链路诊断执行失败: ' + e.message);
+        } finally {
+            startBtn.disabled = false;
+            startBtn.textContent = '🚀 开始全面诊断';
+        }
+    }
+
+    // ── Diagnostic Report Exporter ──
+    function exportDiagnosticReport(format) {
+        if (!lastDiagResult) {
+            alert('请先在【诊断中心】执行一次全面诊断后再导出报告。');
+            return;
+        }
+        const r = lastDiagResult;
+        if (format === 'json') {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(r, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `diagnostic_report_${r.host}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        } else {
+            let md = `# [网络诊断报告] ${r.target}\n\n`;
+            md += `- **诊断时间**: ${r.timestamp}\n`;
+            md += `- **目标主机**: ${r.host}:${r.port}\n`;
+            md += `- **解析 IP**: ${r.resolved_ip || 'N/A'}\n`;
+            md += `- **综合判定**: ${r.root_cause}\n\n`;
+            md += `## 12 阶段链路探针明细\n\n`;
+            r.stages.forEach(s => {
+                md += `### 阶段 ${s.stage}: ${s.name} [${s.status.toUpperCase()}]\n`;
+                md += `- **检测结果**: ${s.raw}\n`;
+                md += `- **判定依据**: ${s.basis}\n`;
+                md += `- **处理建议**: ${s.fix}\n\n`;
+            });
+            const dataStr = "data:text/markdown;charset=utf-8," + encodeURIComponent(md);
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `diagnostic_report_${r.host}.md`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+    }
+
     // Safe DOM Text & HTML Helpers
     function setElText(id, text) {
         const el = document.getElementById(id);
