@@ -397,227 +397,316 @@ TEMPLATE = r"""
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        /* ═══════════════════════════════════════════════════════════
+           PRECISION NETWORK OPERATIONS CONSOLE — Design System v3
+           Keywords: 精密 · 克制 · 深邃 · 专业 · 仪器感 · 层次感
+           ═══════════════════════════════════════════════════════════ */
+
         :root {
-            /* Premium Sci-Fi Ambient Palette */
-            --bg-page: radial-gradient(ellipse at 50% -10%, #0c1527 0%, #050811 75%);
-            --bg-surface: rgba(11, 18, 32, 0.75);
-            --bg-surface-elevated: rgba(16, 26, 45, 0.85);
-            --bg-hover: rgba(22, 36, 62, 0.9);
-            --bg-input: rgba(7, 12, 22, 0.85);
+            /* ── Depth Background Layers ── */
+            --bg-deep: #040810;
+            --bg-page: #050B14;
+            --bg-surface: rgba(12, 23, 38, 0.82);
+            --bg-surface-elevated: rgba(16, 29, 45, 0.88);
+            --bg-hover: rgba(22, 40, 62, 0.92);
+            --bg-input: rgba(8, 17, 29, 0.9);
+            --bg-inset: rgba(4, 10, 20, 0.6);
 
-            /* Subdued Muted Borders & Highlighting */
-            --border-subtle: rgba(0, 217, 255, 0.08);
-            --border-default: rgba(0, 217, 255, 0.14);
-            --border-active: rgba(0, 217, 255, 0.45);
+            /* ── Precision Borders ── */
+            --border-subtle: rgba(135, 175, 215, 0.07);
+            --border-default: rgba(135, 175, 215, 0.12);
+            --border-active: rgba(87, 168, 255, 0.35);
 
-            /* Typography & Primary Colors */
-            --text-primary: #e8f2f8;
-            --text-secondary: #94a8b8;
-            --text-muted: #586e7e;
+            /* ── Typography ── */
+            --text-primary: #E8F0F8;
+            --text-secondary: #91A1B5;
+            --text-muted: #5F7085;
+            --text-dim: #3D4F63;
 
-            /* Semantic Color Tokens */
-            --accent: #00d9ff;
-            --accent-soft: rgba(0, 217, 255, 0.12);
-            --info: #00d9ff;
-            --info-soft: rgba(0, 217, 255, 0.12);
-            --warning: #f59e0b;
-            --warning-soft: rgba(245, 158, 11, 0.12);
-            --orange: #f97316;
-            --orange-soft: rgba(249, 115, 22, 0.12);
-            --danger: #ef4444;
-            --danger-soft: rgba(239, 68, 68, 0.12);
-            --success: #10b981;
-            --success-soft: rgba(16, 185, 129, 0.12);
+            /* ── Semantic Color Tokens (Precision Palette) ── */
+            --accent: #57A8FF;
+            --accent-soft: rgba(87, 168, 255, 0.10);
+            --cyan: #4ED6D0;
+            --cyan-soft: rgba(78, 214, 208, 0.10);
+            --success: #42D392;
+            --success-soft: rgba(66, 211, 146, 0.10);
+            --warning: #F6B94A;
+            --warning-soft: rgba(246, 185, 74, 0.10);
+            --orange: #F09442;
+            --orange-soft: rgba(240, 148, 66, 0.10);
+            --danger: #FF6675;
+            --danger-soft: rgba(255, 102, 117, 0.10);
 
-            /* Layout Tokens */
-            --radius-card: 10px;
-            --radius-control: 6px;
+            /* backward compat aliases */
+            --info: var(--accent);
+            --info-soft: var(--accent-soft);
 
-            /* Typography Systems */
-            --font-ui: "Inter", "MiSans", "HarmonyOS Sans SC", -apple-system, BlinkMacSystemFont, sans-serif;
+            /* ── Layout ── */
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --radius-sm: 8px;
+            --radius-xs: 6px;
+            --radius-card: var(--radius-lg);
+            --radius-control: var(--radius-xs);
+
+            /* ── Typography Systems ── */
+            --font-ui: "Inter", "SF Pro Display", "MiSans", -apple-system, BlinkMacSystemFont, sans-serif;
             --font-mono: "JetBrains Mono", "IBM Plex Mono", "Consolas", monospace;
         }
 
+        /* ── Alternative Themes (kept but refined) ── */
         [data-theme="matrix"] {
-            --bg-page: radial-gradient(ellipse at 50% -10%, #06140b 0%, #040906 75%);
-            --bg-surface: rgba(8, 17, 13, 0.75);
-            --bg-surface-elevated: rgba(13, 26, 20, 0.85);
-            --bg-hover: rgba(16, 34, 26, 0.9);
-            --bg-input: rgba(9, 21, 14, 0.85);
-
-            --border-subtle: rgba(93, 255, 167, 0.08);
-            --border-default: rgba(93, 255, 167, 0.14);
-            --border-active: rgba(71, 255, 148, 0.45);
-
-            --text-primary: #e8f3ed;
-            --text-secondary: #8da496;
-            --text-muted: #52665a;
-
-            --accent: #36e27b;
-            --accent-soft: rgba(54, 226, 123, 0.10);
+            --accent: #36e27b; --accent-soft: rgba(54,226,123,0.10);
+            --bg-surface: rgba(8,20,14,0.82); --bg-surface-elevated: rgba(13,28,21,0.88);
+            --bg-hover: rgba(16,38,28,0.92); --bg-input: rgba(6,16,12,0.9);
+            --border-subtle: rgba(80,200,140,0.07); --border-default: rgba(80,200,140,0.12);
+            --border-active: rgba(54,226,123,0.35);
         }
-
         [data-theme="cyberpunk"] {
-            --bg-page: radial-gradient(ellipse at 50% -10%, #1a0826 0%, #07040e 75%);
-            --bg-surface: rgba(18, 9, 28, 0.75);
-            --bg-surface-elevated: rgba(26, 13, 40, 0.85);
-            --bg-hover: rgba(34, 18, 53, 0.9);
-            --bg-input: rgba(15, 7, 26, 0.85);
-
-            --border-subtle: rgba(255, 0, 119, 0.08);
-            --border-default: rgba(255, 0, 119, 0.14);
-            --border-active: rgba(255, 0, 119, 0.45);
-
-            --text-primary: #ffe5f7;
-            --text-secondary: #9c84b8;
-            --text-muted: #614c7a;
-
-            --accent: #ff0077;
-            --accent-soft: rgba(255, 0, 119, 0.10);
+            --accent: #ff0077; --accent-soft: rgba(255,0,119,0.10);
+            --bg-surface: rgba(18,9,28,0.82); --bg-surface-elevated: rgba(26,13,40,0.88);
+            --bg-hover: rgba(34,18,53,0.92); --bg-input: rgba(12,6,22,0.9);
+            --border-subtle: rgba(200,80,160,0.07); --border-default: rgba(200,80,160,0.12);
+            --border-active: rgba(255,0,119,0.35);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { min-height: 100%; background: var(--bg-page); color: var(--text-primary); font-family: var(--font-ui); -webkit-font-smoothing: antialiased; }
+        /* ── Reset & Base ── */
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html, body {
+            min-height: 100vh;
+            color: var(--text-primary);
+            font-family: var(--font-ui);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
 
         body {
-            display: flex; flex-direction: column; align-items: center; padding: 24px 0;
+            display: flex; flex-direction: column; align-items: center;
+            padding: 20px 0 40px;
+            /* 3-Layer Ambient Background */
+            background:
+                radial-gradient(circle at 50% -8%, rgba(40, 95, 170, 0.13), transparent 44%),
+                linear-gradient(180deg, #07101d 0%, #050b14 48%, #040810 100%);
             background-attachment: fixed;
         }
 
-        /* 1680px Master Container across ALL modules */
+        /* Subtle tech grid texture overlay */
+        body::before {
+            content: '';
+            position: fixed; inset: 0;
+            background-image:
+                linear-gradient(rgba(120, 170, 220, 0.022) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(120, 170, 220, 0.022) 1px, transparent 1px);
+            background-size: 32px 32px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* First-load top scan line (one-shot) */
+        body::after {
+            content: '';
+            position: fixed; top: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(87,168,255,0.5), transparent);
+            animation: scanOnce 1.2s ease-out forwards;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        @keyframes scanOnce {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(100vh); }
+        }
+
+        /* ── 1680–1720px Master Container ── */
         .page-container {
             width: min(1680px, calc(100% - 48px));
             margin-inline: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 18px;
+            display: flex; flex-direction: column;
+            gap: 20px;
+            position: relative; z-index: 1;
         }
 
+        @media (min-width: 1600px) {
+            .page-container { width: min(1720px, calc(100% - 64px)); }
+        }
+        @media (max-width: 1200px) {
+            .page-container { width: calc(100% - 32px); }
+        }
+
+        /* ── Utility Classes ── */
         .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
         .text-success { color: var(--success); }
         .text-warning { color: var(--warning); }
         .text-orange { color: var(--orange); }
         .text-danger { color: var(--danger); }
-        .text-info { color: var(--info); }
+        .text-info { color: var(--accent); }
+        .text-cyan { color: var(--cyan); }
         .text-muted { color: var(--text-muted); }
 
-        /* Top Navigation Header (12 Columns) */
+        /* ── Staggered Entrance Animation ── */
+        @keyframes fadeSlideIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .page-container > * {
+            animation: fadeSlideIn 0.28s ease-out both;
+        }
+        .page-container > *:nth-child(1) { animation-delay: 0s; }
+        .page-container > *:nth-child(2) { animation-delay: 0.04s; }
+        .page-container > *:nth-child(3) { animation-delay: 0.08s; }
+        .page-container > *:nth-child(4) { animation-delay: 0.12s; }
+        .page-container > *:nth-child(5) { animation-delay: 0.16s; }
+        .page-container > *:nth-child(6) { animation-delay: 0.20s; }
+        .page-container > *:nth-child(7) { animation-delay: 0.24s; }
+
+        /* ══════════════════════════════════════════════════════════
+           HEADER BAR — System Identity & Status
+           ══════════════════════════════════════════════════════════ */
         .header-bar {
             width: 100%;
-            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;
-            background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-card);
-            padding: 14px 24px; backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
-            position: relative; overflow: hidden; box-shadow: 0 6px 28px rgba(0,0,0,0.5);
+            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;
+            background: linear-gradient(145deg, rgba(14, 26, 44, 0.85), rgba(8, 16, 30, 0.92));
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-lg);
+            padding: 16px 28px;
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            position: relative; overflow: hidden;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.03), 0 8px 32px rgba(0,0,0,0.4);
         }
 
-        .header-bar::before, .summary-card::before, .card::before, .ipcheck-card::before, .streaming-card::before, .terminal-card::before {
-            content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px;
-            background: linear-gradient(90deg, rgba(0, 217, 255, 0.45), rgba(0, 217, 255, 0.08) 60%, transparent);
+        /* Shared top-edge highlight for cards */
+        .header-bar::before, .summary-card::before, .card::before,
+        .ipcheck-card::before, .streaming-card::before, .terminal-card::before {
+            content: ""; position: absolute; top: 0; left: 24px; right: 24px; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(87, 168, 255, 0.22), transparent);
             pointer-events: none;
         }
 
         .brand-group {
-            display: flex; align-items: center; gap: 12px; font-size: 1.15rem; font-weight: 700; color: var(--text-primary);
+            display: flex; align-items: center; gap: 14px;
         }
 
         .brand-icon {
             display: inline-flex; align-items: center; justify-content: center;
-            width: 34px; height: 34px; border-radius: var(--radius-control); background: var(--accent-soft);
-            border: 1px solid var(--border-default); color: var(--accent); font-family: var(--font-mono); font-weight: 700;
+            width: 36px; height: 36px; border-radius: var(--radius-sm);
+            background: var(--accent-soft); border: 1px solid var(--border-default);
+            color: var(--accent); font-family: var(--font-mono); font-weight: 700; font-size: 0.85rem;
         }
 
-        .status-light-group { display: flex; align-items: center; gap: 18px; }
+        .brand-title {
+            font-size: 1.1rem; font-weight: 700; color: var(--text-primary);
+            letter-spacing: 0.04em;
+        }
+
+        .brand-sub {
+            font-size: 0.76rem; font-weight: 400; color: var(--text-muted);
+            margin-left: 2px;
+        }
+
+        .status-light-group { display: flex; align-items: center; gap: 20px; }
 
         .status-dot-item {
-            display: inline-flex; align-items: center; gap: 7px; font-size: 0.8rem; font-weight: 500; color: var(--text-secondary);
+            display: inline-flex; align-items: center; gap: 7px;
+            font-size: 0.78rem; font-weight: 500; color: var(--text-secondary);
         }
 
         .pulse-dot {
-            width: 7px; height: 7px; border-radius: 50%; background: var(--success);
-            box-shadow: 0 0 6px var(--success); animation: pulse 2.4s ease-in-out infinite;
+            width: 7px; height: 7px; border-radius: 50%;
+            background: var(--success); box-shadow: 0 0 6px rgba(66,211,146,0.5);
+            animation: pulse 2.8s ease-in-out infinite;
         }
-
-        .pulse-dot.dot-warning { background: var(--warning); box-shadow: 0 0 6px var(--warning); }
-        .pulse-dot.dot-orange { background: var(--orange); box-shadow: 0 0 6px var(--orange); }
+        .pulse-dot.dot-warning { background: var(--warning); box-shadow: 0 0 6px rgba(246,185,74,0.5); }
+        .pulse-dot.dot-orange { background: var(--orange); box-shadow: 0 0 6px rgba(240,148,66,0.5); }
+        .pulse-dot.dot-danger { background: var(--danger); box-shadow: 0 0 6px rgba(255,102,117,0.5); }
 
         @keyframes pulse {
-            0% { opacity: 0.75; transform: scale(0.95); }
-            50% { opacity: 1; transform: scale(1.25); }
-            100% { opacity: 0.75; transform: scale(0.95); }
+            0%, 100% { opacity: 0.7; transform: scale(0.9); }
+            50% { opacity: 1; transform: scale(1.2); }
         }
 
-        .controls-group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .controls-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
         .btn-ctrl, .select-input {
-            background: var(--bg-input); border: 1px solid var(--border-default); color: var(--text-primary);
-            padding: 6px 14px; border-radius: var(--radius-control); font-family: var(--font-ui); font-size: 0.8rem;
-            cursor: pointer; transition: all 0.2s ease; outline: none; display: inline-flex; align-items: center; gap: 6px;
+            background: var(--bg-input); border: 1px solid var(--border-default); color: var(--text-secondary);
+            padding: 7px 14px; border-radius: var(--radius-xs); font-family: var(--font-ui); font-size: 0.78rem;
+            cursor: pointer; transition: all 0.2s ease; outline: none;
+            display: inline-flex; align-items: center; gap: 5px;
         }
-
         .btn-ctrl:hover, .select-input:hover {
-            border-color: var(--border-active); background: var(--bg-hover); box-shadow: 0 2px 12px rgba(0, 217, 255, 0.16);
+            border-color: var(--border-active); color: var(--text-primary);
+            background: var(--bg-hover);
         }
 
-        /* 4 Flagship Executive Summary Cards in 1 Row (128-136px Height) */
+        /* ══════════════════════════════════════════════════════════
+           EXECUTIVE SUMMARY CARDS — 4-Up Grid
+           ══════════════════════════════════════════════════════════ */
         .summary-grid {
             width: 100%;
-            display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 18px;
+            display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 16px;
         }
 
         .summary-card {
-            height: 132px;
-            background: var(--bg-surface);
+            min-height: 138px;
+            background: linear-gradient(145deg, rgba(14, 26, 44, 0.82), rgba(8, 16, 30, 0.92));
             border: 1px solid var(--border-default);
-            border-radius: var(--radius-card);
-            padding: 16px 20px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
+            border-radius: var(--radius-lg);
+            padding: 20px 24px;
+            display: flex; flex-direction: column; justify-content: space-between;
             transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
             position: relative; overflow: hidden;
-            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.03), 0 10px 30px rgba(0,0,0,0.35);
         }
 
         .summary-card:hover {
-            background: var(--bg-surface-elevated); border-color: var(--border-active);
-            transform: translateY(-2px); box-shadow: 0 10px 32px rgba(0, 217, 255, 0.14);
+            transform: translateY(-2px);
+            border-color: var(--border-active);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 14px 40px rgba(0,0,0,0.4);
         }
 
         .summary-card.hero-card {
-            background: linear-gradient(135deg, var(--bg-surface), var(--bg-surface-elevated));
-            border-color: rgba(0, 217, 255, 0.35);
+            background: linear-gradient(145deg, rgba(18, 32, 52, 0.88), rgba(10, 20, 36, 0.94));
+            border-color: rgba(87, 168, 255, 0.22);
         }
 
         .summary-label {
-            font-size: 0.78rem; font-weight: 500; color: var(--text-secondary); display: flex; justify-content: space-between; align-items: center;
+            font-size: 0.76rem; font-weight: 500; color: var(--text-muted);
+            display: flex; justify-content: space-between; align-items: center;
+            text-transform: uppercase; letter-spacing: 0.04em;
+        }
+
+        .summary-label .label-tag {
+            font-size: 0.65rem; font-weight: 600; color: var(--text-dim);
+            font-family: var(--font-mono);
         }
 
         .summary-value {
-            font-size: 2.35rem; font-weight: 700; color: var(--text-primary); line-height: 1.05;
-            display: flex; align-items: baseline; gap: 8px; letter-spacing: -0.5px;
+            font-size: 1.85rem; font-weight: 700; color: var(--text-primary); line-height: 1.1;
+            display: flex; align-items: baseline; gap: 6px;
+            letter-spacing: -0.02em; font-variant-numeric: tabular-nums;
         }
 
-        .summary-unit { font-size: 0.95rem; font-weight: 500; color: var(--text-muted); }
+        .summary-unit { font-size: 0.88rem; font-weight: 500; color: var(--text-muted); }
 
         .summary-desc {
-            font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            font-size: 0.74rem; color: var(--text-muted);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
 
         .btn-copy {
-            background: transparent; border: 1px solid var(--border-subtle); color: var(--text-secondary); cursor: pointer;
-            padding: 2px 8px; border-radius: 4px; font-size: 0.72rem; transition: all 0.15s ease;
+            background: transparent; border: 1px solid var(--border-subtle); color: var(--text-muted); cursor: pointer;
+            padding: 2px 8px; border-radius: 4px; font-size: 0.68rem; transition: all 0.15s ease;
         }
-
         .btn-copy:hover { color: var(--accent); border-color: var(--border-default); background: var(--accent-soft); }
 
-        /* 12-Column Responsive Dashboard Grid */
+        /* ══════════════════════════════════════════════════════════
+           12-COLUMN DASHBOARD GRID
+           ══════════════════════════════════════════════════════════ */
         .dashboard-grid {
             width: 100%;
-            display: grid;
-            grid-template-columns: repeat(12, minmax(0, 1fr));
-            gap: 16px;
+            display: grid; grid-template-columns: repeat(12, minmax(0, 1fr));
+            gap: 18px;
         }
 
         .col-12 { grid-column: span 12; }
@@ -626,322 +715,381 @@ TEMPLATE = r"""
 
         .card {
             width: 100%;
-            background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-card);
-            padding: 18px 20px; display: flex; flex-direction: column; gap: 16px; transition: all 0.25s ease;
-            position: relative; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            background: linear-gradient(145deg, rgba(14, 26, 44, 0.82), rgba(8, 16, 30, 0.92));
+            border: 1px solid var(--border-default); border-radius: var(--radius-lg);
+            padding: 22px 26px;
+            display: flex; flex-direction: column; gap: 16px;
+            transition: all 0.25s ease;
+            position: relative; overflow: hidden;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.03), 0 10px 30px rgba(0,0,0,0.3);
         }
 
-        .card:hover { border-color: var(--border-active); box-shadow: 0 6px 24px rgba(0, 217, 255, 0.08); }
+        .card:hover { border-color: rgba(135, 175, 215, 0.18); }
 
         .card-header {
             display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px solid var(--border-subtle); padding-bottom: 10px; font-weight: 600;
-            font-size: 0.92rem; color: var(--text-primary);
+            border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px;
         }
 
-        .card-header-left { display: flex; align-items: center; gap: 8px; }
+        .card-header-left {
+            display: flex; align-items: center; gap: 10px;
+            font-weight: 600; font-size: 0.9rem; color: var(--text-primary);
+        }
 
-        /* Precision Metric Gauges */
+        .card-header-left .section-tag {
+            font-size: 0.65rem; color: var(--text-dim); font-family: var(--font-mono);
+            font-weight: 600; letter-spacing: 0.06em;
+        }
+
+        /* ── Metric Gauges ── */
         .metrics-triple {
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
         }
 
         .metric-box {
-            background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-control);
-            padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; transition: border-color 0.2s ease;
+            background: var(--bg-inset); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
+            padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;
+            transition: border-color 0.2s ease;
         }
-
         .metric-box:hover { border-color: var(--border-default); }
 
         .metric-header {
             display: flex; justify-content: space-between; align-items: center; font-size: 0.76rem;
         }
-
         .metric-name { color: var(--text-secondary); font-weight: 500; }
-        .metric-badge { font-size: 0.68rem; font-weight: 600; padding: 1px 6px; border-radius: 4px; }
+        .metric-badge { font-size: 0.66rem; font-weight: 600; padding: 2px 7px; border-radius: 4px; }
         .badge-normal { background: var(--success-soft); color: var(--success); }
         .badge-warn { background: var(--warning-soft); color: var(--warning); }
         .badge-danger { background: var(--danger-soft); color: var(--danger); }
 
-        .metric-val-num { font-size: 1.25rem; font-weight: 700; color: var(--text-primary); }
+        .metric-val-num { font-size: 1.35rem; font-weight: 700; color: var(--text-primary); }
 
         .progress-track {
-            height: 6px; background: rgba(0, 217, 255, 0.08); border-radius: 3px; overflow: hidden; position: relative; margin-top: 2px;
+            height: 5px; background: rgba(135,175,215,0.06); border-radius: 3px;
+            overflow: hidden; position: relative; margin-top: 2px;
         }
-
         .progress-fill {
-            height: 100%; width: 0%; background: linear-gradient(90deg, rgba(0, 217, 255, 0.6), var(--info)); border-radius: 3px;
-            position: relative; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            height: 100%; width: 0%; border-radius: 3px; position: relative;
+            background: linear-gradient(90deg, rgba(87,168,255,0.5), var(--accent));
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
-
         .progress-fill::after {
-            content: ""; position: absolute; right: 0; top: 0; bottom: 0; width: 3px;
-            background: #fff; border-radius: 2px; box-shadow: 0 0 6px var(--info);
+            content: ""; position: absolute; right: 0; top: -1px; bottom: -1px; width: 3px;
+            background: #fff; border-radius: 2px; box-shadow: 0 0 6px var(--accent);
         }
-
-        .progress-fill.warn { background: linear-gradient(90deg, rgba(245, 158, 11, 0.6), var(--warning)); }
+        .progress-fill.warn { background: linear-gradient(90deg, rgba(246,185,74,0.5), var(--warning)); }
         .progress-fill.warn::after { box-shadow: 0 0 6px var(--warning); }
-        .progress-fill.danger { background: linear-gradient(90deg, rgba(239, 68, 68, 0.6), var(--danger)); }
+        .progress-fill.danger { background: linear-gradient(90deg, rgba(255,102,117,0.5), var(--danger)); }
         .progress-fill.danger::after { box-shadow: 0 0 6px var(--danger); }
 
-        /* System Info Matrix */
-        .info-subgroups { display: flex; flex-direction: column; gap: 12px; }
+        /* ── System Info Matrix ── */
+        .info-subgroups { display: flex; flex-direction: column; gap: 14px; }
 
         .info-subgroup-title {
-            font-size: 0.74rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;
-            letter-spacing: 0.5px; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;
+            font-size: 0.7rem; font-weight: 600; color: var(--text-dim);
+            text-transform: uppercase; letter-spacing: 0.06em;
+            margin-bottom: 4px; display: flex; align-items: center; gap: 8px;
+            padding-bottom: 6px; border-bottom: 1px solid var(--border-subtle);
+        }
+        .info-subgroup-title .idx-tag {
+            font-family: var(--font-mono); font-size: 0.62rem; color: var(--text-dim);
         }
 
         .info-list-matrix {
-            display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 16px; font-size: 0.78rem;
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 2px 18px; font-size: 0.8rem;
         }
 
         .info-row {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 5px 8px; border-radius: 4px; transition: background 0.15s ease;
+            padding: 6px 10px; border-radius: var(--radius-xs); transition: background 0.15s ease;
         }
-
         .info-row:hover { background: var(--bg-hover); }
-        .info-key { color: var(--text-secondary); font-size: 0.76rem; }
+        .info-key { color: var(--text-muted); font-size: 0.76rem; }
         .info-val { color: var(--text-primary); font-weight: 600; text-align: right; word-break: break-all; }
 
-        /* Refined TCP Ping Sparkline Monitor */
-        .ping-grid { display: flex; flex-direction: column; gap: 10px; }
+        /* ══════════════════════════════════════════════════════════
+           TCP PING PRECISION SPARKLINE MONITOR
+           ══════════════════════════════════════════════════════════ */
+        .ping-grid { display: flex; flex-direction: column; gap: 12px; }
 
         .ping-item {
-            height: 102px;
-            background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-control);
-            padding: 10px 14px; display: flex; flex-direction: column; justify-content: space-between; transition: border-color 0.2s ease;
+            min-height: 108px;
+            background: var(--bg-inset); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            padding: 12px 16px;
+            display: flex; flex-direction: column; justify-content: space-between;
+            transition: border-color 0.2s ease;
         }
-
         .ping-item:hover { border-color: var(--border-default); }
 
         .ping-item-header {
             display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem;
         }
 
-        .ping-title { font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 6px; }
-        .ping-meta { font-size: 0.72rem; color: var(--text-muted); display: flex; gap: 12px; }
-        .ping-value { font-weight: 700; font-size: 0.98rem; }
-
-        .pixel-bar-container {
-            display: flex; align-items: flex-end; gap: 2px; height: 34px;
-            padding: 2px 4px; background: rgba(0,0,0,0.35); border-radius: 4px;
-            border: 1px solid var(--border-subtle); overflow: hidden; position: relative;
+        .ping-title {
+            font-weight: 600; color: var(--text-primary);
+            display: flex; align-items: center; gap: 8px;
+        }
+        .ping-title .carrier-dot {
+            width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
         }
 
+        .ping-meta { font-size: 0.7rem; color: var(--text-muted); display: flex; gap: 12px; }
+        .ping-value { font-weight: 700; font-size: 1.05rem; }
+
+        .pixel-bar-container {
+            display: flex; align-items: flex-end; gap: 2px; height: 36px;
+            padding: 3px 5px;
+            background: rgba(4, 10, 20, 0.5);
+            border-radius: var(--radius-xs);
+            border: 1px solid rgba(135,175,215,0.05);
+            overflow: hidden; position: relative;
+        }
+
+        /* Threshold reference lines inside sparkline */
         .pixel-bar-container::before {
-            content: ''; position: absolute; left: 4px; right: 4px; bottom: 17px;
-            border-top: 1px dashed rgba(255,255,255,0.06);
+            content: ''; position: absolute; left: 5px; right: 5px; bottom: 50%;
+            border-top: 1px dashed rgba(135,175,215,0.06);
+        }
+        .pixel-bar-container::after {
+            content: ''; position: absolute; left: 5px; right: 5px; bottom: 75%;
+            border-top: 1px dashed rgba(255,102,117,0.08);
         }
 
         .pixel-bar {
             flex: 1; min-width: 4px; max-width: 8px; border-radius: 1px 1px 0 0;
-            transition: height 0.2s ease, background 0.2s ease;
+            transition: height 0.2s ease;
         }
 
-        .pixel-bar.px-cyan { background: var(--info); }
+        .pixel-bar.px-cyan   { background: var(--accent); }
         .pixel-bar.px-yellow { background: var(--warning); }
         .pixel-bar.px-orange { background: var(--orange); }
-        .pixel-bar.px-red { background: var(--danger); }
-        .pixel-bar.px-timeout { background: var(--danger); min-height: 2px; }
-        .pixel-bar.px-empty { background: rgba(255,255,255,0.02); min-height: 2px; }
+        .pixel-bar.px-red    { background: var(--danger); }
+        .pixel-bar.px-timeout { background: var(--danger); min-height: 2px; opacity: 0.6; }
+        .pixel-bar.px-empty  { background: rgba(135,175,215,0.03); min-height: 2px; }
 
-        /* IP Quality Full-Width Panel */
+        /* ══════════════════════════════════════════════════════════
+           IP QUALITY PANEL
+           ══════════════════════════════════════════════════════════ */
         .ipcheck-card {
             width: 100%; grid-column: span 12;
-            background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-card);
-            padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; transition: border-color 0.2s ease;
-            position: relative; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            background: linear-gradient(145deg, rgba(14, 26, 44, 0.82), rgba(8, 16, 30, 0.92));
+            border: 1px solid var(--border-default); border-radius: var(--radius-lg);
+            padding: 22px 26px; display: flex; flex-direction: column; gap: 16px;
+            transition: border-color 0.2s ease;
+            position: relative; overflow: hidden;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.03), 0 10px 30px rgba(0,0,0,0.3);
         }
-
-        .ipcheck-card:hover { border-color: var(--border-active); }
+        .ipcheck-card:hover { border-color: rgba(135,175,215,0.18); }
 
         .ipcheck-info-row {
-            display: grid; grid-template-columns: 4fr 3fr 5fr; gap: 16px;
+            display: grid; grid-template-columns: 4fr 3fr 5fr; gap: 18px;
         }
 
         .ipcheck-section {
-            background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-control);
-            padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; transition: border-color 0.2s ease;
+            background: var(--bg-inset); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            padding: 14px 16px; display: flex; flex-direction: column; gap: 6px;
+            transition: border-color 0.2s ease;
         }
-
         .ipcheck-section:hover { border-color: var(--border-default); }
 
         .ipcheck-section-title {
-            font-size: 0.78rem; font-weight: 600; color: var(--text-secondary);
-            border-bottom: 1px solid var(--border-subtle); padding-bottom: 6px; margin-bottom: 2px;
-            display: flex; align-items: center; gap: 6px;
+            font-size: 0.76rem; font-weight: 600; color: var(--text-muted);
+            border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px; margin-bottom: 2px;
+            display: flex; align-items: center; gap: 8px;
+            text-transform: uppercase; letter-spacing: 0.03em;
         }
 
         .ipcheck-row {
             display: flex; justify-content: space-between; align-items: center;
-            font-size: 0.76rem; padding: 3px 0;
+            font-size: 0.78rem; padding: 4px 0;
         }
-
-        .ipcheck-label { color: var(--text-secondary); min-width: 88px; }
+        .ipcheck-label { color: var(--text-muted); min-width: 90px; font-size: 0.74rem; }
         .ipcheck-val { color: var(--text-primary); font-weight: 600; text-align: right; word-break: break-word; }
 
         .risk-score-display {
-            display: flex; justify-content: space-between; align-items: baseline; margin-top: 2px;
+            display: flex; justify-content: space-between; align-items: baseline; margin-top: 4px;
         }
-        .risk-score-num { font-size: 1.6rem; font-weight: 700; font-family: var(--font-mono); }
+        .risk-score-num {
+            font-size: 2rem; font-weight: 700; font-family: var(--font-mono);
+            color: var(--text-primary);
+        }
 
         .risk-bar-segmented {
-            display: flex; gap: 3px; height: 7px; border-radius: 4px; overflow: hidden; margin-top: 4px;
+            display: flex; gap: 3px; height: 6px; border-radius: 4px; overflow: hidden; margin-top: 6px;
         }
-
-        .risk-segment { flex: 1; height: 100%; background: rgba(255,255,255,0.06); transition: background 0.3s ease; }
-        .risk-segment.active-green { background: var(--success); }
+        .risk-segment { flex: 1; height: 100%; background: rgba(135,175,215,0.06); transition: background 0.3s ease; border-radius: 2px; }
+        .risk-segment.active-green  { background: var(--success); }
         .risk-segment.active-yellow { background: var(--warning); }
         .risk-segment.active-orange { background: var(--orange); }
-        .risk-segment.active-red { background: var(--danger); }
+        .risk-segment.active-red    { background: var(--danger); }
 
         .risk-factors-container {
-            display: flex; flex-direction: column; gap: 4px; margin-top: 6px; background: rgba(0,0,0,0.25);
-            padding: 8px 10px; border-radius: 4px; border: 1px solid var(--border-subtle);
+            display: flex; flex-direction: column; gap: 5px; margin-top: 8px;
+            background: var(--bg-inset); padding: 10px 12px; border-radius: var(--radius-xs);
+            border: 1px solid var(--border-subtle);
         }
-
         .risk-factor-row {
-            display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; color: var(--text-secondary);
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 0.73rem; color: var(--text-muted);
         }
 
         .risk-advice-box {
-            font-size: 0.74rem; color: var(--text-secondary); line-height: 1.45; margin-top: 6px;
-            padding: 8px 10px; background: rgba(0, 217, 255, 0.04); border-radius: 4px; border: 1px solid var(--border-subtle);
+            font-size: 0.74rem; color: var(--text-muted); line-height: 1.5; margin-top: 8px;
+            padding: 10px 12px; background: rgba(87,168,255,0.04); border-radius: var(--radius-xs);
+            border: 1px solid var(--border-subtle);
         }
 
         /* Tag Badges */
         .badge-tag {
             display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 4px;
-            font-size: 0.72rem; font-weight: 600; font-family: var(--font-ui);
+            font-size: 0.7rem; font-weight: 600;
         }
-        .badge-tag-yes { background: var(--warning-soft); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.25); }
-        .badge-tag-no { background: var(--success-soft); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.25); }
-        .badge-tag-high { background: var(--danger-soft); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.25); }
+        .badge-tag-yes  { background: var(--warning-soft); color: var(--warning); border: 1px solid rgba(246,185,74,0.2); }
+        .badge-tag-no   { background: var(--success-soft); color: var(--success); border: 1px solid rgba(66,211,146,0.2); }
+        .badge-tag-high { background: var(--danger-soft);  color: var(--danger);  border: 1px solid rgba(255,102,117,0.2); }
 
-        /* Streaming & AI Matrix */
+        /* ══════════════════════════════════════════════════════════
+           STREAMING & AI MATRIX
+           ══════════════════════════════════════════════════════════ */
         .streaming-card {
             width: 100%; grid-column: span 12;
-            background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-card);
-            padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; transition: border-color 0.2s ease;
-            position: relative; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            background: linear-gradient(145deg, rgba(14, 26, 44, 0.82), rgba(8, 16, 30, 0.92));
+            border: 1px solid var(--border-default); border-radius: var(--radius-lg);
+            padding: 22px 26px; display: flex; flex-direction: column; gap: 16px;
+            transition: border-color 0.2s ease;
+            position: relative; overflow: hidden;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.03), 0 10px 30px rgba(0,0,0,0.3);
         }
 
         .unlock-header-right { display: flex; align-items: center; gap: 10px; }
 
         .filter-tabs-segmented {
-            display: flex; gap: 2px; background: var(--bg-input); padding: 3px;
-            border-radius: var(--radius-control); border: 1px solid var(--border-subtle);
+            display: flex; gap: 2px; background: var(--bg-inset); padding: 3px;
+            border-radius: var(--radius-xs); border: 1px solid var(--border-subtle);
         }
-
         .tab-btn-seg {
-            background: transparent; border: none; color: var(--text-secondary); padding: 4px 14px;
-            border-radius: 4px; font-size: 0.74rem; font-weight: 500; cursor: pointer; transition: all 0.2s ease;
+            background: transparent; border: none; color: var(--text-muted); padding: 5px 14px;
+            border-radius: 4px; font-size: 0.73rem; font-weight: 500; cursor: pointer;
+            transition: all 0.2s ease;
         }
-
         .tab-btn-seg:hover { color: var(--text-primary); }
-        .tab-btn-seg.active { background: var(--accent); color: #000; font-weight: 700; box-shadow: 0 1px 6px rgba(0, 217, 255, 0.3); }
+        .tab-btn-seg.active {
+            background: var(--accent); color: #000; font-weight: 700;
+            box-shadow: 0 1px 8px rgba(87,168,255,0.25);
+        }
 
         .unlock-grid {
-            width: 100%; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px;
+            width: 100%; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px;
         }
 
         .unlock-tile-capsule {
-            background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-control);
-            padding: 10px 12px; display: flex; flex-direction: column; gap: 6px;
-            transition: border-color 0.2s ease, background 0.2s ease; font-size: 0.78rem;
+            background: var(--bg-inset); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;
+            transition: border-color 0.2s ease, background 0.2s ease; font-size: 0.8rem;
         }
-
         .unlock-tile-capsule:hover { border-color: var(--border-default); background: var(--bg-hover); }
-        .unlock-tile-top { display: flex; align-items: center; justify-content: space-between; font-weight: 600; color: var(--text-primary); }
+        .unlock-tile-top {
+            display: flex; align-items: center; justify-content: space-between;
+            font-weight: 600; color: var(--text-primary);
+        }
         .unlock-tile-bottom { display: flex; align-items: center; justify-content: space-between; font-size: 0.72rem; }
 
         .unlock-badge {
             display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px; border-radius: 4px;
-            font-size: 0.7rem; font-weight: 600; white-space: nowrap;
+            font-size: 0.68rem; font-weight: 600; white-space: nowrap;
         }
+        .unlock-badge.unlocked { background: var(--success-soft); color: var(--success); border: 1px solid rgba(66,211,146,0.2); }
+        .unlock-badge.blocked  { background: var(--danger-soft);  color: var(--danger);  border: 1px solid rgba(255,102,117,0.2); }
+        .unlock-badge.unknown  { background: var(--warning-soft); color: var(--warning); border: 1px solid rgba(246,185,74,0.2); }
 
-        .unlock-badge.unlocked { background: var(--success-soft); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.25); }
-        .unlock-badge.blocked { background: var(--danger-soft); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.25); }
-        .unlock-badge.unknown { background: var(--warning-soft); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.25); }
-
-        /* Embedded Professional Terminal */
+        /* ══════════════════════════════════════════════════════════
+           EMBEDDED TERMINAL
+           ══════════════════════════════════════════════════════════ */
         .terminal-card {
             width: 100%; grid-column: span 12;
-            background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-card);
+            background: linear-gradient(145deg, rgba(14, 26, 44, 0.82), rgba(8, 16, 30, 0.92));
+            border: 1px solid var(--border-default); border-radius: var(--radius-lg);
             padding: 0; overflow: hidden; display: flex; flex-direction: column;
-            height: 280px; min-height: 220px; max-height: 600px; transition: height 0.2s ease;
-            position: relative; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            height: 300px; min-height: 240px; max-height: 620px; transition: height 0.2s ease;
+            position: relative;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.03), 0 10px 30px rgba(0,0,0,0.3);
         }
-
-        .terminal-card.expanded { height: 480px; }
+        .terminal-card.expanded { height: 520px; }
 
         .terminal-toolbar-two-tier {
-            display: flex; flex-direction: column; background: var(--bg-surface-elevated);
+            display: flex; flex-direction: column;
+            background: rgba(10, 20, 34, 0.6);
             border-bottom: 1px solid var(--border-subtle);
         }
-
         .toolbar-top-tier {
-            padding: 8px 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+            padding: 10px 18px; display: flex; justify-content: space-between; align-items: center;
+            flex-wrap: wrap; gap: 10px;
         }
-
         .toolbar-bottom-tier {
-            padding: 6px 14px; border-top: 1px dashed var(--border-subtle); display: flex; gap: 6px; flex-wrap: wrap; align-items: center; background: rgba(0,0,0,0.15);
+            padding: 7px 18px; border-top: 1px solid var(--border-subtle);
+            display: flex; gap: 6px; flex-wrap: wrap; align-items: center;
+            background: rgba(4, 10, 20, 0.4);
         }
 
         .terminal-header-left { display: flex; align-items: center; gap: 12px; }
         .terminal-dots { display: flex; gap: 6px; }
         .win-dot { width: 10px; height: 10px; border-radius: 50%; }
-        .win-red { background: #ff5f56; }
+        .win-red    { background: #ff5f56; }
         .win-yellow { background: #ffbd2e; }
-        .win-green { background: #27c93f; }
+        .win-green  { background: #27c93f; }
 
         .terminal-lookup-bar { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 240px; max-width: 420px; }
 
         .lookup-input-inline {
-            flex: 1; min-width: 0; background: var(--bg-input); border: 1px solid var(--border-subtle); color: var(--text-primary);
-            padding: 4px 10px; border-radius: var(--radius-control); font-family: var(--font-mono); font-size: 0.78rem; outline: none;
+            flex: 1; min-width: 0; background: var(--bg-input); border: 1px solid var(--border-subtle);
+            color: var(--text-primary); padding: 5px 12px; border-radius: var(--radius-xs);
+            font-family: var(--font-mono); font-size: 0.78rem; outline: none;
         }
-
         .lookup-input-inline:focus { border-color: var(--border-active); }
 
         .lookup-btn-inline {
-            background: var(--accent); color: #000; border: none; padding: 4px 12px;
-            border-radius: var(--radius-control); font-weight: 700; font-family: var(--font-ui); font-size: 0.75rem; cursor: pointer;
-            transition: opacity 0.2s ease;
+            background: var(--accent); color: #000; border: none; padding: 5px 14px;
+            border-radius: var(--radius-xs); font-weight: 700; font-family: var(--font-ui);
+            font-size: 0.75rem; cursor: pointer; transition: opacity 0.2s ease;
         }
         .lookup-btn-inline:hover { opacity: 0.88; }
 
         .chip-btn {
-            background: transparent; border: 1px solid var(--border-subtle); color: var(--text-secondary);
-            padding: 2px 8px; border-radius: 4px; font-size: 0.72rem; font-family: var(--font-ui); cursor: pointer; transition: all 0.15s ease;
+            background: transparent; border: 1px solid var(--border-subtle); color: var(--text-muted);
+            padding: 3px 10px; border-radius: 4px; font-size: 0.71rem;
+            font-family: var(--font-ui); cursor: pointer; transition: all 0.15s ease;
         }
-
         .chip-btn:hover { color: var(--text-primary); border-color: var(--border-default); background: var(--bg-hover); }
 
         .terminal-body {
-            flex: 1; padding: 12px 14px; overflow-y: auto; font-family: var(--font-mono); font-size: 0.82rem; line-height: 1.5;
-            display: flex; flex-direction: column; gap: 6px; word-break: break-word; background: var(--bg-page);
+            flex: 1; padding: 14px 18px; overflow-y: auto; font-family: var(--font-mono); font-size: 0.82rem;
+            line-height: 1.55; display: flex; flex-direction: column; gap: 6px; word-break: break-word;
+            background: var(--bg-deep);
         }
 
         #cmd_output { white-space: pre-wrap; color: var(--text-primary); }
 
         .terminal-input-line { display: flex; align-items: center; gap: 8px; margin-top: 4px; min-width: 0; }
-        .prompt-text { color: var(--info); font-weight: 600; white-space: nowrap; }
+        .prompt-text { color: var(--accent); font-weight: 600; white-space: nowrap; }
 
         .terminal-input {
-            flex: 1; min-width: 0; background: transparent; border: none; outline: none; color: var(--text-primary);
-            font-family: var(--font-mono); font-size: 0.82rem; caret-color: var(--accent);
+            flex: 1; min-width: 0; background: transparent; border: none; outline: none;
+            color: var(--text-primary); font-family: var(--font-mono); font-size: 0.82rem;
+            caret-color: var(--accent);
         }
 
-        /* Scrollbars */
-        ::-webkit-scrollbar { width: 5px; height: 5px; }
-        ::-webkit-scrollbar-track { background: var(--bg-page); }
-        ::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
+        /* ── Scrollbars ── */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(135,175,215,0.15); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(135,175,215,0.3); }
 
-        /* Responsive Breakpoints */
+        /* ══════════════════════════════════════════════════════════
+           RESPONSIVE BREAKPOINTS
+           ══════════════════════════════════════════════════════════ */
         @media (min-width: 1024px) and (max-width: 1279px) {
             .summary-grid { grid-template-columns: repeat(2, 1fr); }
             .col-7, .col-5 { grid-column: span 6; }
@@ -949,8 +1097,8 @@ TEMPLATE = r"""
         }
 
         @media (max-width: 1023px) {
-            .page-container { width: calc(100% - 24px); }
-            .summary-grid { grid-template-columns: 1fr; }
+            .page-container { width: calc(100% - 24px); gap: 14px; }
+            .summary-grid { grid-template-columns: repeat(2, 1fr); }
             .dashboard-grid { grid-template-columns: 1fr; }
             .col-7, .col-5 { grid-column: span 12; }
             .metrics-triple { grid-template-columns: 1fr; }
@@ -960,26 +1108,33 @@ TEMPLATE = r"""
         }
 
         @media (max-width: 640px) {
+            .summary-grid { grid-template-columns: 1fr; }
             .unlock-grid { grid-template-columns: 1fr; }
+            .header-bar { padding: 12px 16px; }
+            .summary-card { padding: 16px 18px; min-height: 120px; }
         }
     </style>
+
+
 </head>
 <body>
-    <!-- Rule 1: Unified Page Container -->
+
+    <!-- Precision Network Operations Console -->
     <div class="page-container">
-        <!-- Top Navigation Header -->
+        <!-- System Identity Header -->
         <header class="header-bar">
             <div class="brand-group">
                 <span class="brand-icon">&gt;_</span>
-                <span>NODE SEEKER</span>
-                <span class="text-muted" style="font-size:0.76rem; font-weight:normal">| {{ hostname }}</span>
+                <div>
+                    <span class="brand-title">NODE SEEKER</span>
+                    <span class="brand-sub">| {{ hostname }}</span>
+                </div>
             </div>
 
-            <!-- Group 2: Lightweight Status Dots -->
+            <!-- Aggregated System Status -->
             <div class="status-light-group">
-                <span class="status-dot-item"><span class="pulse-dot"></span> 系统在线</span>
+                <span class="status-dot-item"><span class="pulse-dot"></span> 检测中...</span>
                 <span class="status-dot-item" id="acme_badge"><span class="pulse-dot dot-warning"></span> HTTP 运行中</span>
-                <span class="status-dot-item"><span class="pulse-dot dot-orange"></span> 实时同步</span>
             </div>
 
             <!-- Group 3: Right Controls -->
@@ -1000,59 +1155,59 @@ TEMPLATE = r"""
             </div>
         </header>
 
-        <!-- Rule 2 & 3: Restored 4 Uniform Summary Cards (104-124px Height) -->
+        <!-- Executive Summary Grid -->
         <div class="summary-grid">
-            <!-- Hero Summary Card 1 -->
+            <!-- Card 1: Network Status -->
             <div class="summary-card hero-card">
                 <div class="summary-label">
                     <span>综合网络状态</span>
-                    <span id="sum_net_dot" class="pulse-dot"></span>
+                    <span class="label-tag">01 / STATUS</span>
                 </div>
-                <div class="summary-value" id="sum_net_status">健康</div>
-                <div class="summary-desc" id="sum_net_desc">平均 TCP 延迟检测中...</div>
+                <div class="summary-value text-success" id="sum_net_status">检测中</div>
+                <div class="summary-desc" id="sum_net_desc">等待初始 TCP Ping 检测...</div>
             </div>
 
-            <!-- Summary Card 2: Public Egress IP -->
+            <!-- Card 2: Public Egress IP -->
             <div class="summary-card">
                 <div class="summary-label">
                     <span>公网出口 IP</span>
-                    <button class="btn-copy" onclick="copyIP()" title="复制出口 IP">📋 复制</button>
+                    <button class="btn-copy" onclick="copyIP()" title="复制出口 IP">复制</button>
                 </div>
-                <div class="summary-value mono" id="sum_ip_val" style="font-size:1.4rem">37.114.48.47</div>
-                <div class="summary-desc" id="sum_ip_desc">德国 · ROETH &amp; BECK GbR</div>
+                <div class="summary-value mono text-info" id="sum_ip_val" style="font-size:1.45rem">---.---.---.---</div>
+                <div class="summary-desc" id="sum_ip_desc">IP 信息加载中...</div>
             </div>
 
-            <!-- Summary Card 3: Avg TCP Latency -->
+            <!-- Card 3: Avg TCP Latency -->
             <div class="summary-card">
                 <div class="summary-label">
                     <span>平均 TCP 延迟</span>
-                    <span style="font-size:0.72rem" class="text-muted">40s 均值</span>
+                    <span class="label-tag">03 / LATENCY</span>
                 </div>
-                <div class="summary-value mono" id="sum_ping_val">- <span class="summary-unit">ms</span></div>
+                <div class="summary-value mono text-cyan" id="sum_ping_val">- <span class="summary-unit">ms</span></div>
                 <div class="summary-desc" id="sum_ping_desc">边缘节点延迟计算中...</div>
             </div>
 
-            <!-- Summary Card 4: IP Risk Score -->
+            <!-- Card 4: IP Risk Score -->
             <div class="summary-card">
                 <div class="summary-label">
                     <span>IP 风险评分</span>
-                    <span style="font-size:0.72rem" class="text-muted">Scamalytics</span>
+                    <span class="label-tag">04 / RISK</span>
                 </div>
                 <div class="summary-value mono" id="sum_risk_val">- <span class="summary-unit">/ 100</span></div>
                 <div class="summary-desc" id="sum_risk_desc">欺诈风险体检中...</div>
             </div>
         </div>
 
-        <!-- Rule 2 & 5: 12-Column Dashboard Grid -->
+        <!-- 12-Column Dashboard Grid -->
         <div class="dashboard-grid">
             <!-- Left Column: System Telemetry Panel (7 Columns) -->
             <div class="card col-7">
                 <div class="card-header">
                     <div class="card-header-left">
-                        <span>🖥️</span>
+                        <span class="section-tag">01</span>
                         <span>系统资源与节点网络</span>
                     </div>
-                    <span id="load_val" class="mono text-muted" style="font-size:0.76rem">Load: -</span>
+                    <span id="load_val" class="mono text-muted" style="font-size:0.74rem">Load: -</span>
                 </div>
 
                 <!-- Triple Indicator Gauges -->
@@ -1094,11 +1249,11 @@ TEMPLATE = r"""
                 <!-- System Info Sub-Groups with Split LAN & Public IPs -->
                 <div class="info-subgroups">
                     <div>
-                        <div class="info-subgroup-title">⚡ 运行状态</div>
+                        <div class="info-subgroup-title"><span class="idx-tag">A</span> 运行状态</div>
                         <div class="info-list-matrix">
                             <div class="info-row">
                                 <span class="info-key">网络速率 (上/下)</span>
-                                <span class="info-val mono text-success" id="net_io">-</span>
+                                <span class="info-val mono" id="net_io">-</span>
                             </div>
                             <div class="info-row">
                                 <span class="info-key">服务器公网 IP</span>
@@ -1124,7 +1279,7 @@ TEMPLATE = r"""
                     </div>
 
                     <div>
-                        <div class="info-subgroup-title">⚙️ 系统参数</div>
+                        <div class="info-subgroup-title"><span class="idx-tag">B</span> 系统参数</div>
                         <div class="info-list-matrix">
                             <div class="info-row">
                                 <span class="info-key">宿主机运行时间</span>
@@ -1159,21 +1314,21 @@ TEMPLATE = r"""
             <div class="card col-5">
                 <div class="card-header">
                     <div class="card-header-left">
-                        <span>📡</span>
-                        <span>边缘网络延迟 (TCP Ping)</span>
+                        <span class="section-tag">02</span>
+                        <span>边缘网络延迟 · TCP Ping</span>
                     </div>
-                    <div style="font-size:0.72rem; display:flex; gap:8px" class="mono text-muted">
+                    <div style="font-size:0.68rem; display:flex; gap:10px" class="mono text-muted">
                         <span class="text-info">● &lt;80ms</span>
                         <span class="text-warning">● &lt;160ms</span>
                         <span class="text-orange">● &lt;250ms</span>
-                        <span class="text-danger">● &ge;250ms</span>
+                        <span class="text-danger">● ≥250ms</span>
                     </div>
                 </div>
 
                 <div class="ping-grid">
                     <div class="ping-item" id="client_ping_item">
                         <div class="ping-item-header">
-                            <span class="ping-title">📍 本地 Client 延迟</span>
+                            <span class="ping-title"><span class="carrier-dot" style="background:var(--accent)"></span> 本地 Client 延迟</span>
                             <div class="ping-value mono text-info" id="client_ping_val">-</div>
                         </div>
                         <div class="ping-meta mono">
@@ -1185,7 +1340,7 @@ TEMPLATE = r"""
 
                     <div class="ping-item">
                         <div class="ping-item-header">
-                            <span class="ping-title">🟢 浙江联通 Ping</span>
+                            <span class="ping-title"><span class="carrier-dot" style="background:var(--success)"></span> 浙江联通 Ping</span>
                             <div class="ping-value mono" id="ping_cu_val">-</div>
                         </div>
                         <div class="ping-meta mono">
@@ -1197,7 +1352,7 @@ TEMPLATE = r"""
 
                     <div class="ping-item">
                         <div class="ping-item-header">
-                            <span class="ping-title">🔵 浙江移动 Ping</span>
+                            <span class="ping-title"><span class="carrier-dot" style="background:var(--cyan)"></span> 浙江移动 Ping</span>
                             <div class="ping-value mono" id="ping_cm_val">-</div>
                         </div>
                         <div class="ping-meta mono">
@@ -1209,7 +1364,7 @@ TEMPLATE = r"""
 
                     <div class="ping-item">
                         <div class="ping-item-header">
-                            <span class="ping-title">🟡 浙江电信 Ping</span>
+                            <span class="ping-title"><span class="carrier-dot" style="background:var(--warning)"></span> 浙江电信 Ping</span>
                             <div class="ping-value mono" id="ping_ct_val">-</div>
                         </div>
                         <div class="ping-meta mono">
@@ -1226,7 +1381,7 @@ TEMPLATE = r"""
         <div class="ipcheck-card" id="ipcheck_card">
             <div class="card-header">
                 <div class="card-header-left">
-                    <span>📊</span>
+                    <span class="section-tag">03</span>
                     <span>IP 质量体检与欺诈风控</span>
                 </div>
                 <span class="text-muted mono" style="font-size:0.74rem" id="ipc_time">更新时间: 刚刚</span>
@@ -1235,7 +1390,7 @@ TEMPLATE = r"""
             <div class="ipcheck-info-row">
                 <!-- Column 1: Basic Info (4 Columns) -->
                 <div class="ipcheck-section">
-                    <div class="ipcheck-section-title">🌍 基础网络信息</div>
+                    <div class="ipcheck-section-title">基础网络信息</div>
                     <div class="ipcheck-row"><span class="ipcheck-label">IP 地址</span><span class="ipcheck-val mono" id="ipc_ip">37.114.48.47</span></div>
                     <div class="ipcheck-row"><span class="ipcheck-label">ASN 编号</span><span class="ipcheck-val mono" id="ipc_asn">AS208643</span></div>
                     <div class="ipcheck-row"><span class="ipcheck-label">所属组织</span><span class="ipcheck-val" id="ipc_org">ROETH &amp; BECK GbR</span></div>
@@ -1247,7 +1402,7 @@ TEMPLATE = r"""
 
                 <!-- Column 2: IP Attributes (3 Columns) -->
                 <div class="ipcheck-section">
-                    <div class="ipcheck-section-title">🏷️ IP 属性与标记</div>
+                    <div class="ipcheck-section-title">IP 属性与标记</div>
                     <div class="ipcheck-row"><span class="ipcheck-label">IP 类型</span><span class="ipcheck-val" id="ipc_type">-</span></div>
                     <div class="ipcheck-row"><span class="ipcheck-label">代理 Proxy</span><span class="ipcheck-val" id="ipc_proxy">-</span></div>
                     <div class="ipcheck-row"><span class="ipcheck-label">VPN 节点</span><span class="ipcheck-val" id="ipc_vpn">-</span></div>
@@ -1258,7 +1413,7 @@ TEMPLATE = r"""
 
                 <!-- Column 3: Risk Factor Analysis (5 Columns) -->
                 <div class="ipcheck-section">
-                    <div class="ipcheck-section-title">⚠️ 欺诈风险分析</div>
+                    <div class="ipcheck-section-title">欺诈风险分析</div>
                     <div class="risk-score-display">
                         <span class="risk-score-num" id="ipc_risk_score">66</span>
                         <span class="badge-tag badge-tag-yes" id="ipc_risk_label">中高风险</span>
@@ -1292,7 +1447,7 @@ TEMPLATE = r"""
         <div class="streaming-card">
             <div class="card-header">
                 <div class="card-header-left">
-                    <span>🎬</span>
+                    <span class="section-tag">04</span>
                     <span>流媒体 &amp; AI 服务解锁检测</span>
                 </div>
                 <div class="unlock-header-right">
@@ -1686,20 +1841,16 @@ Try typing 'acme status' or 'acme issue 您的域名.com' or 'ping 8.8.8.8'
 
                 const statusEl = document.getElementById('sum_net_status');
                 const descEl = document.getElementById('sum_net_desc');
-                const dotEl = document.getElementById('sum_net_dot');
 
                 if (avgPing < 150) {
                     if (statusEl) { statusEl.textContent = '健康'; statusEl.className = 'summary-value text-success'; }
                     if (descEl) descEl.textContent = `平均 TCP 延迟 ${avgPing.toFixed(0)}ms · 线路良好`;
-                    if (dotEl) dotEl.className = 'pulse-dot';
                 } else if (avgPing < 250) {
                     if (statusEl) { statusEl.textContent = '良好'; statusEl.className = 'summary-value text-warning'; }
                     if (descEl) descEl.textContent = `平均 TCP 延迟 ${avgPing.toFixed(0)}ms · 抖动正常`;
-                    if (dotEl) dotEl.className = 'pulse-dot dot-warning';
                 } else {
                     if (statusEl) { statusEl.textContent = '较慢'; statusEl.className = 'summary-value text-orange'; }
                     if (descEl) descEl.textContent = `平均 TCP 延迟 ${avgPing.toFixed(0)}ms · 跨境链路延迟偏高`;
-                    if (dotEl) dotEl.className = 'pulse-dot dot-orange';
                 }
             }
         } catch (e) {
