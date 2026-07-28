@@ -480,10 +480,21 @@ def run_full_diagnostics(target_input):
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "stages": stages,
     }
 
+_latest_diag_cache = {"result": None}
+
 @app.route("/api/diagnose/full")
 def api_diagnose_full():
     target = request.args.get("target", "github.com").strip()
     result = run_full_diagnostics(target)
+    _latest_diag_cache["result"] = result
+    return jsonify(result)
+
+@app.route("/api/diagnose/latest")
+def api_diagnose_latest():
+    if _latest_diag_cache["result"]:
+        return jsonify(_latest_diag_cache["result"])
+    result = run_full_diagnostics("github.com")
+    _latest_diag_cache["result"] = result
     return jsonify(result)
 
 @app.route("/api/targets", methods=["GET", "POST", "DELETE"])
@@ -2050,8 +2061,17 @@ Try typing 'acme status' or 'acme issue 您的域名.com' or 'ping 8.8.8.8'
         document.querySelectorAll('.tab-nav-btn').forEach(b => b.classList.remove('active'));
         const targetView = document.getElementById('tab_' + tabId);
         if (targetView) targetView.classList.add('active-view');
+        
+        if (!btn) {
+            btn = Array.from(document.querySelectorAll('.tab-nav-btn')).find(b => b.getAttribute('onclick')?.includes(`'${tabId}'`));
+        }
         if (btn) btn.classList.add('active');
+        
+        localStorage.setItem('console_active_tab', tabId);
+        window.location.hash = tabId;
+
         if (tabId === 'targets') fetchTargets();
+        if (tabId === 'diagnostic') loadDiagnosticResult();
     }
 
     // ── Target Manager Logic ──
@@ -2115,23 +2135,15 @@ Try typing 'acme status' or 'acme issue 您的域名.com' or 'ping 8.8.8.8'
     // ── 12-Stage Full Diagnostics Engine ──
     let lastDiagResult = null;
 
-    async function startFullDiagnostics() {
-        const inputEl = document.getElementById('diag_target_input');
-        const startBtn = document.getElementById('diag_start_btn');
+    function renderDiagnosticResult(data) {
+        if (!data || !data.stages) return;
         const grid = document.getElementById('diag_stages_grid');
         const treeBox = document.getElementById('diag_tree_box');
-        
-        const target = inputEl ? inputEl.value.trim() : 'github.com';
-        if (!target) return;
+        const inputEl = document.getElementById('diag_target_input');
 
-        startBtn.disabled = true;
-        startBtn.textContent = '⏱️ 全链路诊断中...';
-        grid.innerHTML = `<div style="grid-column:span 3; text-align:center; padding:20px; color:var(--accent); font-weight:700">正在按顺序发起 12 阶段网络与应用层全链路探测，请稍候...</div>`;
+        if (inputEl && data.target) inputEl.value = data.target;
 
-        try {
-            const res = await fetch(`/api/diagnose/full?target=${encodeURIComponent(target)}`);
-            const data = await res.json();
-            
+        if (grid) {
             grid.innerHTML = '';
             data.stages.forEach(s => {
                 let badgeClass = s.status === 'healthy' ? 'badge-tag-no' : (s.status === 'warning' ? 'badge-tag-yes' : 'badge-tag-high');
@@ -2147,8 +2159,9 @@ Try typing 'acme status' or 'acme issue 您的域名.com' or 'ping 8.8.8.8'
                         <div style="font-size:0.72rem; color:var(--accent); margin-top:2px">💡 建议: ${s.fix}</div>
                     </div>`;
             });
+        }
 
-            // Show decision tree result
+        if (treeBox) {
             treeBox.style.display = 'flex';
             setElText('diag_root_cause', `诊断定性: ${data.root_cause}`);
             const badgeEl = document.getElementById('diag_overall_badge');
@@ -2156,34 +2169,69 @@ Try typing 'acme status' or 'acme issue 您的域名.com' or 'ping 8.8.8.8'
                 badgeEl.textContent = data.overall_status === 'healthy' ? '全链路健康' : (data.overall_status === 'warning' ? '性能预警' : '严重故障');
                 badgeEl.className = data.overall_status === 'healthy' ? 'badge-tag badge-tag-no' : (data.overall_status === 'warning' ? 'badge-tag badge-tag-yes' : 'badge-tag badge-tag-high');
             }
+        }
 
-            // Before / After Delta Comparison
-            const deltaTbody = document.getElementById('diag_delta_tbody');
-            if (deltaTbody) {
-                if (lastDiagResult && lastDiagResult.target === data.target) {
-                    deltaTbody.innerHTML = '';
-                    data.stages.slice(0, 11).forEach((s, idx) => {
-                        const prevStage = lastDiagResult.stages[idx] || {};
-                        const prevDur = prevStage.duration || 0;
-                        const currDur = s.duration || 0;
-                        const diff = currDur - prevDur;
-                        const diffText = diff === 0 ? '持平' : (diff < 0 ? `↓ 改善 ${Math.abs(diff)}ms` : `↑ 升高 +${diff}ms`);
-                        const diffColor = diff <= 0 ? 'text-success' : 'text-danger';
-                        
-                        deltaTbody.innerHTML += `
-                            <tr>
-                                <td>阶段 ${s.stage} · ${s.name}</td>
-                                <td class="mono">${prevStage.raw || '-'} (${prevDur}ms)</td>
-                                <td class="mono">${s.raw} (${currDur}ms)</td>
-                                <td class="mono ${diffColor}" style="font-weight:700">${diffText}</td>
-                            </tr>`;
-                    });
-                } else {
-                    deltaTbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-muted)">已记录首轮基线数据。再次针对 ${data.target} 执行诊断即可看到修复前后 Performance Delta 对比。</td></tr>`;
-                }
+        // Before / After Delta Comparison
+        const deltaTbody = document.getElementById('diag_delta_tbody');
+        if (deltaTbody) {
+            if (lastDiagResult && lastDiagResult.target === data.target) {
+                deltaTbody.innerHTML = '';
+                data.stages.slice(0, 11).forEach((s, idx) => {
+                    const prevStage = lastDiagResult.stages[idx] || {};
+                    const prevDur = prevStage.duration || 0;
+                    const currDur = s.duration || 0;
+                    const diff = currDur - prevDur;
+                    const diffText = diff === 0 ? '持平' : (diff < 0 ? `↓ 改善 ${Math.abs(diff)}ms` : `↑ 升高 +${diff}ms`);
+                    const diffColor = diff <= 0 ? 'text-success' : 'text-danger';
+                    
+                    deltaTbody.innerHTML += `
+                        <tr>
+                            <td>阶段 ${s.stage} · ${s.name}</td>
+                            <td class="mono">${prevStage.raw || '-'} (${prevDur}ms)</td>
+                            <td class="mono">${s.raw} (${currDur}ms)</td>
+                            <td class="mono ${diffColor}" style="font-weight:700">${diffText}</td>
+                        </tr>`;
+                });
+            } else {
+                deltaTbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-muted)">已记录基线数据 (${data.timestamp || '刚刚'})。再次诊断 ${data.target} 即可看到 Before/After Delta。</td></tr>`;
             }
-            lastDiagResult = data;
+        }
 
+        lastDiagResult = data;
+        localStorage.setItem('console_last_diag_result', JSON.stringify(data));
+    }
+
+    async function loadDiagnosticResult() {
+        const cached = localStorage.getItem('console_last_diag_result');
+        if (cached) {
+            try {
+                renderDiagnosticResult(JSON.parse(cached));
+                return;
+            } catch(e) {}
+        }
+        try {
+            const res = await fetch('/api/diagnose/latest');
+            const data = await res.json();
+            renderDiagnosticResult(data);
+        } catch(e) {}
+    }
+
+    async function startFullDiagnostics() {
+        const inputEl = document.getElementById('diag_target_input');
+        const startBtn = document.getElementById('diag_start_btn');
+        const grid = document.getElementById('diag_stages_grid');
+        
+        const target = inputEl ? inputEl.value.trim() : 'github.com';
+        if (!target) return;
+
+        startBtn.disabled = true;
+        startBtn.textContent = '⏱️ 全链路诊断中...';
+        grid.innerHTML = `<div style="grid-column:span 3; text-align:center; padding:20px; color:var(--accent); font-weight:700">正在按顺序发起 12 阶段网络与应用层全链路探测，请稍候...</div>`;
+
+        try {
+            const res = await fetch(`/api/diagnose/full?target=${encodeURIComponent(target)}`);
+            const data = await res.json();
+            renderDiagnosticResult(data);
         } catch(e) {
             alert('全链路诊断执行失败: ' + e.message);
         } finally {
@@ -2942,6 +2990,11 @@ Try typing 'acme status' or 'acme issue 您的域名.com' or 'ping 8.8.8.8'
     fetchPings();
     fetchIPCheck(); // Default fetch on page load
     updateTimers();
+
+    // Restore active tab and diagnostic results across page refreshes
+    const initialTab = window.location.hash.replace('#','') || localStorage.getItem('console_active_tab') || 'overview';
+    switchNavTab(initialTab);
+    loadDiagnosticResult();
     </script>
 </body>
 </html>
