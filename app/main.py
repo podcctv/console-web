@@ -877,79 +877,6 @@ def tcp_ping(host: str):
         if ":" in host:
             host, port = host.rsplit(":", 1)
             port = int(port)
-        else:
-            port = 80
-        start = datetime.now()
-        with socket.create_connection((host, port), timeout=1):
-            end = datetime.now()
-        return (end - start).total_seconds() * 1000
-    except Exception:
-        return None
-
-
-def icmp_ping(ip: str):
-    try:
-        proc = subprocess.run(
-            ["ping", "-c", "1", "-W", "1", ip],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
-        if proc.returncode == 0:
-            for line in proc.stdout.splitlines():
-                if "time=" in line:
-                    try:
-                        return float(line.split("time=")[1].split(" ")[0])
-                    except Exception:
-                        pass
-    except Exception:
-        pass
-    return None
-
-
-@app.route("/pings")
-def pings():
-    client_ip = request.headers.get("X-Forwarded-For", request.remote_addr)
-    if client_ip and "," in client_ip:
-        client_ip = client_ip.split(",")[0].strip()
-
-    with ThreadPoolExecutor(max_workers=len(PING_TARGETS) + 1) as executor:
-        futures = {
-            executor.submit(tcp_ping, host): key
-            for key, host in PING_TARGETS.items()
-        }
-        if client_ip and client_ip != "127.0.0.1":
-            futures[executor.submit(icmp_ping, client_ip)] = "client_ping"
-        results = {key: future.result() for future, key in futures.items()}
-
-    if "client_ping" not in results:
-        results["client_ping"] = None
-    return jsonify(results)
-
-
-def humanize(seconds: int) -> str:
-    seconds = int(seconds)
-    years, seconds = divmod(seconds, 31536000)
-    months, seconds = divmod(seconds, 2592000)
-    days, seconds = divmod(seconds, 86400)
-    hours, seconds = divmod(seconds, 3600)
-    minutes, seconds = divmod(seconds, 60)
-    parts = []
-    if years:
-        parts.append(f"{years}年")
-    if months:
-        parts.append(f"{months}月")
-    if days:
-        parts.append(f"{days}天")
-    if hours:
-        parts.append(f"{hours}小时")
-    if minutes:
-        parts.append(f"{minutes}分")
-    if seconds or not parts:
-        parts.append(f"{seconds}秒")
-    return " ".join(parts)
-
-
 def humanize_bytes(size: float) -> str:
     if size is None:
         return "N/A"
@@ -1959,92 +1886,6 @@ TEMPLATE = r"""
                     <div class="card-header-left">
                         <span class="section-tag">02</span>
                         <span>边缘网络延迟 · TCP Ping</span>
-                    </div>
-                    <div style="font-size:0.68rem; display:flex; gap:10px" class="mono text-muted">
-                        <span class="text-info">● &lt;80ms</span>
-                        <span class="text-warning">● &lt;160ms</span>
-                        <span class="text-orange">● &lt;250ms</span>
-                        <span class="text-danger">● ≥250ms</span>
-                    </div>
-                </div>
-
-                <div class="ping-grid">
-                    <div class="ping-item" id="client_ping_item">
-                        <div class="ping-item-header">
-                            <span class="ping-title"><span class="carrier-dot" style="background:var(--accent)"></span> 本地 Client 延迟</span>
-                            <div class="ping-value mono text-info" id="client_ping_val">-</div>
-                        </div>
-                        <div class="ping-meta mono">
-                            <span id="client_ping_stat">均值: - | 抖动: -</span>
-                            <span id="client_ping_trend" class="text-muted">~ 稳定</span>
-                        </div>
-                        <div class="pixel-bar-container" id="client_ping_bars"></div>
-                    </div>
-
-                    <div class="ping-item">
-                        <div class="ping-item-header">
-                            <span class="ping-title"><span class="carrier-dot" style="background:var(--success)"></span> 浙江联通 Ping</span>
-                            <div class="ping-value mono" id="ping_cu_val">-</div>
-                        </div>
-                        <div class="ping-meta mono">
-                            <span id="ping_cu_stat">均值: - | 抖动: -</span>
-                            <span id="ping_cu_trend" class="text-muted">~ 稳定</span>
-                        </div>
-                        <div class="pixel-bar-container" id="ping_cu_bars"></div>
-                    </div>
-
-                    <div class="ping-item">
-                        <div class="ping-item-header">
-                            <span class="ping-title"><span class="carrier-dot" style="background:var(--cyan)"></span> 浙江移动 Ping</span>
-                            <div class="ping-value mono" id="ping_cm_val">-</div>
-                        </div>
-                        <div class="ping-meta mono">
-                            <span id="ping_cm_stat">均值: - | 抖动: -</span>
-                            <span id="ping_cm_trend" class="text-muted">~ 稳定</span>
-                        </div>
-                        <div class="pixel-bar-container" id="ping_cm_bars"></div>
-                    </div>
-
-                    <div class="ping-item">
-                        <div class="ping-item-header">
-                            <span class="ping-title"><span class="carrier-dot" style="background:var(--warning)"></span> 浙江电信 Ping</span>
-                            <div class="ping-value mono" id="ping_ct_val">-</div>
-                        </div>
-                        <div class="ping-meta mono">
-                            <span id="ping_ct_stat">均值: - | 抖动: -</span>
-                            <span id="ping_ct_trend" class="text-muted">~ 稳定</span>
-                        </div>
-                        <div class="pixel-bar-container" id="ping_ct_bars"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Rule 8: IP Quality Full-Width Card (12 Columns, 4:3:5 Internal Grid) -->
-        <div class="ipcheck-card" id="ipcheck_card">
-            <div class="card-header">
-                <div class="card-header-left">
-                    <span class="section-tag">03</span>
-                    <span>IP 质量体检与欺诈风控</span>
-                </div>
-                <span class="text-muted mono" style="font-size:0.74rem" id="ipc_time">更新时间: 刚刚</span>
-            </div>
-
-            <div class="ipcheck-info-row">
-                <!-- Column 1: Basic Info (4 Columns) -->
-                <div class="ipcheck-section">
-                    <div class="ipcheck-section-title">基础网络信息</div>
-                    <div class="ipcheck-row"><span class="ipcheck-label">IP 地址</span><span class="ipcheck-val mono" id="ipc_ip">37.114.48.47</span></div>
-                    <div class="ipcheck-row"><span class="ipcheck-label">ASN 编号</span><span class="ipcheck-val mono" id="ipc_asn">AS208643</span></div>
-                    <div class="ipcheck-row"><span class="ipcheck-label">所属组织</span><span class="ipcheck-val" id="ipc_org">ROETH &amp; BECK GbR</span></div>
-                    <div class="ipcheck-row"><span class="ipcheck-label">ISP 运营商</span><span class="ipcheck-val" id="ipc_isp">ROETH &amp; BECK GbR</span></div>
-                    <div class="ipcheck-row"><span class="ipcheck-label">国家/地区</span><span class="ipcheck-val" id="ipc_country">🇩🇪 德国</span></div>
-                    <div class="ipcheck-row"><span class="ipcheck-label">城市</span><span class="ipcheck-val" id="ipc_city">Berlin</span></div>
-                    <div class="ipcheck-row"><span class="ipcheck-label">时区</span><span class="ipcheck-val mono" id="ipc_tz">Europe/Berlin</span></div>
-                </div>
-
-                <!-- Column 2: IP Attributes (3 Columns) -->
-                <div class="ipcheck-section">
 TEMPLATE = r"""
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -2841,11 +2682,14 @@ TEMPLATE = r"""
                 <span>KEYBOARD SHORTCUTS REFERENCE</span>
                 <button class="btn-cli-xs" onclick="closeKeyboardHelp()">[ ESC / CLOSE ]</button>
             </div>
-            <div class="modal-cli-header"><span>KEYBOARD SHORTCUTS</span><button class="btn-cli-xs" onclick="closeKeyboardHelp()">[ ESC ]</button></div>
             <div class="modal-cli-body">
-                <div class="shortcut-row"><span class="key-cap">R</span> <span>刷新数据</span></div>
-                <div class="shortcut-row"><span class="key-cap">D</span> <span>诊断模式</span></div>
-                <div class="shortcut-row"><span class="key-cap">/</span> <span>搜索日志</span></div>
+                <div class="shortcut-row"><span class="key-cap">R</span> <span>刷新当前监测数据 (Refresh Data)</span></div>
+                <div class="shortcut-row"><span class="key-cap">D</span> <span>切换并发起全链路诊断 (Full Diagnostics)</span></div>
+                <div class="shortcut-row"><span class="key-cap">L</span> <span>定位至实时事件日志 (Jump to Event Logs)</span></div>
+                <div class="shortcut-row"><span class="key-cap">T</span> <span>切换至目标监测列表 (Target Monitor)</span></div>
+                <div class="shortcut-row"><span class="key-cap">/</span> <span>聚焦搜索/过滤器输入框 (Focus Search)</span></div>
+                <div class="shortcut-row"><span class="key-cap">ESC</span> <span>关闭所有弹窗与抽屉 (Close Drawer)</span></div>
+                <div class="shortcut-row"><span class="key-cap">?</span> <span>打开本快捷键说明 (Show Help)</span></div>
             </div>
         </div>
     </div>
