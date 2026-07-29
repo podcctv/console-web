@@ -227,6 +227,14 @@
         }
         .btn-cli-primary:hover { background: rgba(120, 224, 143, 0.22); box-shadow: 0 0 12px rgba(120, 224, 143, 0.25); }
 
+        /* ── Cyber Theme Selector ── */
+        .theme-btn {
+            width: 11px; height: 11px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.3);
+            cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease; outline: none; padding: 0; display: inline-block;
+        }
+        .theme-btn:hover { transform: scale(1.35); }
+        .theme-btn.active { transform: scale(1.35); border-color: #fff; box-shadow: 0 0 6px currentColor; }
+
         /* ── 3-Column Hero Section Layout ── */
         .hero-grid-3col {
             display: grid; grid-template-columns: 280px 1fr 220px; gap: 20px; align-items: stretch;
@@ -498,6 +506,16 @@
                     [ 🚀 NEW: <span id="latest_ver_num">v3.4.0</span> - UPDATE NOW ]
                 </button>
             </span>
+            <!-- Theme Accent Selector & Sound Toggle -->
+            <div style="display:flex; align-items:center; gap:6px; margin-left:4px;">
+                <div class="theme-selector-group" style="display:inline-flex; gap:4px; align-items:center; background:var(--bg-input); border:1px solid var(--border-tier2); padding:3px 6px; border-radius:var(--radius-sm);" title="Choose Cyber Accent Color">
+                    <button class="theme-btn active" id="theme_btn_green" style="background:#78E08F;" onclick="setCyberTheme('green')" title="Matrix Green"></button>
+                    <button class="theme-btn" id="theme_btn_cyan" style="background:#8BE9FD;" onclick="setCyberTheme('cyan')" title="Neon Cyan"></button>
+                    <button class="theme-btn" id="theme_btn_magenta" style="background:#FF79C6;" onclick="setCyberTheme('magenta')" title="Synthwave Magenta"></button>
+                    <button class="theme-btn" id="theme_btn_amber" style="background:#FFB86C;" onclick="setCyberTheme('amber')" title="Solarized Amber"></button>
+                </div>
+                <button class="btn-cli" id="sound_toggle_btn" onclick="toggleCyberSound()" style="font-size:0.72rem; padding:2px 6px;" title="Toggle Cyber Audio Feedback">[ 🔊 SOUND: ON ]</button>
+            </div>
         </div>
 
         <div class="nav-tabs-cli">
@@ -520,6 +538,20 @@
 
     <!-- ── MAIN WORKSPACE CONTAINER ── -->
     <main class="page-container">
+
+        <!-- ── VT100 INTERACTIVE QUICK COMMAND BAR ── -->
+        <div style="background:var(--bg-tier2); border:1px solid var(--border-tier2); border-radius:var(--radius-md); padding:10px 16px; margin-bottom:20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; font-family:var(--font-mono); font-size:0.8rem;">
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                <span class="text-muted" style="font-weight:700; color:var(--text-secondary);">$ quick-cmd ></span>
+                <button class="btn-cli" onclick="execQuickCmd('ping_all')" title="Refresh all telemetry data">[ $ ping --all ]</button>
+                <button class="btn-cli" onclick="execQuickCmd('diagnose')" title="Run full diagnostic suite">[ $ diagnose --full ]</button>
+                <button class="btn-cli" onclick="execQuickCmd('export_report')" title="Export diagnostic report">[ $ export --report ]</button>
+                <button class="btn-cli" onclick="execQuickCmd('check_update')" title="Check version updates">[ $ check --version ]</button>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px;" class="text-muted">
+                <span>SHORTCUTS: <b class="text-success">[ R ]</b> Refresh <b class="text-success">[ D ]</b> Diag <b class="text-success">[ ? ]</b> Help</span>
+            </div>
+        </div>
 
         <!-- ═══════════════════════════════════════════════════════════
              TAB 1: OVERVIEW ($ overview)
@@ -2173,7 +2205,122 @@
         }
     }
 
+    /* ── 🎨 CYBER THEME SWITCHER ── */
+    const CYBER_THEMES = {
+        green: { primary: '#78E08F', rgb: '120, 224, 143', name: 'Matrix Green' },
+        cyan: { primary: '#8BE9FD', rgb: '139, 233, 253', name: 'Neon Cyan' },
+        magenta: { primary: '#FF79C6', rgb: '255, 121, 198', name: 'Synthwave Magenta' },
+        amber: { primary: '#FFB86C', rgb: '255, 184, 108', name: 'Solarized Amber' }
+    };
+
+    function setCyberTheme(themeName) {
+        const t = CYBER_THEMES[themeName] || CYBER_THEMES.green;
+        const root = document.documentElement;
+
+        root.style.setProperty('--status-success', t.primary);
+        root.style.setProperty('--border-active', t.primary);
+
+        document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+        const btn = document.getElementById(`theme_btn_${themeName}`);
+        if (btn) btn.classList.add('active');
+
+        localStorage.setItem('netwatch_cyber_theme', themeName);
+        showToast(`🎨 Theme switched to ${t.name}`);
+        playCyberSound('click');
+    }
+
+    function initSavedTheme() {
+        const savedTheme = localStorage.getItem('netwatch_cyber_theme') || 'green';
+        setCyberTheme(savedTheme);
+    }
+
+    /* ── 🔊 WEB AUDIO SYNTHESIZER SOUND FX ── */
+    let audioCtx = null;
+    let soundEnabled = localStorage.getItem('netwatch_sound_enabled') !== 'false';
+
+    function toggleCyberSound() {
+        soundEnabled = !soundEnabled;
+        localStorage.setItem('netwatch_sound_enabled', soundEnabled);
+        const btn = document.getElementById('sound_toggle_btn');
+        if (btn) {
+            btn.textContent = soundEnabled ? '[ 🔊 SOUND: ON ]' : '[ 🔇 SOUND: OFF ]';
+        }
+        showToast(soundEnabled ? '🔊 Cyber audio feedback enabled' : '🔇 Audio feedback muted');
+        if (soundEnabled) playCyberSound('click');
+    }
+
+    function initSoundBtn() {
+        const btn = document.getElementById('sound_toggle_btn');
+        if (btn) {
+            btn.textContent = soundEnabled ? '[ 🔊 SOUND: ON ]' : '[ 🔇 SOUND: OFF ]';
+        }
+    }
+
+    function playCyberSound(type = 'click') {
+        if (!soundEnabled) return;
+        try {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'click') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, now);
+                osc.frequency.exponentialRampToValueAtTime(400, now + 0.04);
+                gain.gain.setValueAtTime(0.12, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+                osc.start(now);
+                osc.stop(now + 0.04);
+            } else if (type === 'success') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(520, now);
+                osc.frequency.setValueAtTime(780, now + 0.06);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+                osc.start(now);
+                osc.stop(now + 0.12);
+            } else if (type === 'alert') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(320, now);
+                osc.frequency.setValueAtTime(220, now + 0.08);
+                gain.gain.setValueAtTime(0.12, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+                osc.start(now);
+                osc.stop(now + 0.16);
+            }
+        } catch(e) {}
+    }
+
+    /* ── 💻 QUICK COMMAND EXECUTION ── */
+    function execQuickCmd(action) {
+        playCyberSound('click');
+        if (action === 'ping_all') {
+            showToast('⚡ Executing $ ping --all ...');
+            fetchSummary(); fetchPings(); fetchStats();
+        } else if (action === 'diagnose') {
+            switchNavTab('diagnostics');
+            showToast('🔍 Navigated to Diagnostics pipeline');
+            startFullDiagnostics();
+        } else if (action === 'export_report') {
+            exportReportFmt('markdown');
+        } else if (action === 'check_update') {
+            manualCheckVersion();
+        }
+    }
+
     // Init loops
+    initSavedTheme();
+    initSoundBtn();
     fetchSummary();
     fetchPings();
     fetchStats();
