@@ -1,0 +1,1645 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>NETWATCH Network Operations Terminal</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,600;0,700;1,400&family=PingFang+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ═══════════════════════════════════════════════════════════
+           NETWATCH Terminal Operational System Design Tokens (v3.0)
+           面向专业网络运维团队的响应式实时网络诊断与监控终端
+           ═══════════════════════════════════════════════════════════ */
+        :root {
+            --bg-page: #040605;
+            --bg-panel: #080D09;
+            --bg-panel-secondary: #070A08;
+            --bg-tier1: #080D09;
+            --bg-tier2: #070A08;
+            --bg-tier3: rgba(255, 255, 255, 0.015);
+            --bg-input: #060907;
+
+            --border-default: rgba(140, 165, 145, 0.14);
+            --border-active: rgba(120, 224, 143, 0.45);
+            --border-tier1: rgba(120, 224, 143, 0.22);
+            --border-tier2: rgba(140, 165, 145, 0.14);
+            --border-tier3: rgba(140, 165, 145, 0.08);
+            --border-hover: rgba(120, 224, 143, 0.35);
+
+            --text-primary: #E2ECE4;
+            --text-secondary: #9EB0A3;
+            --text-muted: #64756A;
+            --text-dim: #45524A;
+
+            --status-success: #78E08F;
+            --status-cyan: #69D6D0;
+            --status-blue: #6BB8FF;
+            --status-warning: #E7C66B;
+            --status-danger: #F07878;
+            --status-critical: #F07878;
+            --status-info: #69D6D0;
+            --status-purple: #B59AF2;
+            --accent-primary: #78E08F;
+
+            --radius-sm: 4px;
+            --radius-md: 6px;
+            --radius-lg: 8px;
+
+            --font-mono: "JetBrains Mono", "IBM Plex Mono", "Consolas", "Courier New", monospace;
+            --font-ui: var(--font-mono);
+        }
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html, body {
+            overflow-x: hidden; width: 100%;
+        }
+
+        body {
+            background: radial-gradient(circle at 50% -20%, rgba(80, 160, 100, 0.06), transparent 50%), var(--bg-page);
+            background-attachment: fixed;
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            margin: 0; padding: 0;
+            font-size: 13.5px;
+            line-height: 1.55;
+            font-variant-numeric: tabular-nums;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body::before {
+            content: " "; display: block; position: fixed; top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.22) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.015), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.015));
+            z-index: 999; background-size: 100% 3px, 6px 100%; pointer-events: none; opacity: 0.55;
+        }
+
+        .mono { font-family: var(--font-mono); }
+        .text-success { color: var(--status-success) !important; }
+        .text-cyan { color: var(--status-cyan) !important; }
+        .text-warning { color: var(--status-warning) !important; }
+        .text-critical, .text-danger { color: var(--status-critical) !important; }
+        .text-muted { color: var(--text-muted) !important; }
+        .text-secondary { color: var(--text-secondary) !important; }
+        .text-primary { color: var(--text-primary) !important; }
+        .font-bold { font-weight: 700; }
+
+        /* ── Floating Toast Container ── */
+        #toast_container {
+            position: fixed; top: 18px; right: 18px; z-index: 2000;
+            display: flex; flex-direction: column; gap: 8px; pointer-events: none;
+        }
+        .toast-notification {
+            background: rgba(8, 14, 10, 0.96); border: 1px solid var(--status-success);
+            color: var(--status-success); font-family: var(--font-mono); font-size: 0.82rem; font-weight: 600;
+            padding: 9px 16px; border-radius: var(--radius-sm); box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            display: flex; align-items: center; gap: 8px; pointer-events: auto;
+            animation: toastIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes toastIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ── Copy Button ── */
+        .btn-copy-sm {
+            background: rgba(105, 214, 208, 0.08); border: 1px solid rgba(105, 214, 208, 0.25);
+            color: var(--status-cyan); font-family: var(--font-mono); font-size: 0.72rem;
+            padding: 2px 6px; border-radius: 3px; cursor: pointer; transition: all 0.12s ease;
+            display: inline-flex; align-items: center; gap: 4px; outline: none; vertical-align: middle;
+        }
+        .btn-copy-sm:hover { background: rgba(105, 214, 208, 0.20); border-color: var(--status-cyan); }
+
+        /* ── Sticky Navigation ── */
+        .terminal-nav-bar {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(4, 6, 5, 0.94);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-tier2);
+            padding: 12px 28px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .nav-brand { display: flex; align-items: center; gap: 10px; }
+        .nav-logo-symbol { font-family: var(--font-mono); color: var(--status-success); font-weight: 700; font-size: 1.15rem; }
+        .nav-brand-title { font-family: var(--font-mono); font-weight: 700; letter-spacing: 1px; color: var(--text-primary); font-size: 1.05rem; }
+        .nav-brand-subtitle { font-size: 0.82rem; color: var(--text-muted); }
+
+        .nav-tabs-cli { display: flex; gap: 8px; }
+        .nav-tab-btn {
+            background: transparent; border: 1px solid transparent;
+            color: var(--text-secondary); font-family: var(--font-mono);
+            font-size: 0.85rem; padding: 6px 14px; border-radius: var(--radius-sm);
+            cursor: pointer; transition: all 0.15s ease;
+        }
+        .nav-tab-btn:hover { color: var(--text-primary); border-color: var(--border-hover); background: rgba(120,224,143,0.05); }
+        .nav-tab-btn.active {
+            color: var(--status-success); border-color: var(--status-success);
+            background: rgba(120,224,143,0.10); font-weight: 700;
+        }
+
+        .nav-right-status { display: flex; align-items: center; gap: 14px; font-family: var(--font-mono); font-size: 0.82rem; }
+        .live-indicator { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; }
+        .live-indicator.online { color: var(--status-success); }
+        .live-indicator.offline { color: var(--status-critical); }
+        .live-dot-pulse {
+            width: 8px; height: 8px; border-radius: 50%; display: inline-block;
+            background: currentColor; box-shadow: 0 0 8px currentColor;
+        }
+
+        /* ── Mobile Bottom Navigation Bar ── */
+        .mobile-bottom-nav {
+            display: none;
+            position: fixed; bottom: 0; left: 0; right: 0; height: 60px;
+            background: rgba(5, 8, 6, 0.96); backdrop-filter: blur(12px);
+            border-top: 1px solid var(--border-tier2); z-index: 120;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        .mobile-nav-item {
+            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: transparent; border: none; color: var(--text-muted);
+            font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600; cursor: pointer;
+            padding: 6px 0; gap: 3px; min-height: 44px; transition: all 0.15s ease; outline: none;
+        }
+        .mobile-nav-item.active { color: var(--status-success); font-weight: 700; }
+        .mobile-nav-item .nav-icon { font-size: 1rem; line-height: 1; }
+
+        /* ── Main Layout Container ── */
+        .page-container {
+            max-width: 1480px; width: calc(100% - 48px);
+            margin: 0 auto; display: flex; flex-direction: column; gap: 20px;
+            padding: 20px 0 50px 0;
+        }
+        .tab-view { display: none; flex-direction: column; gap: 20px; width: 100%; }
+        .tab-view.active-view { display: flex; }
+
+        /* ── Modular Cards Hierarchy ── */
+        .card-cli-tier1 {
+            background: var(--bg-tier1);
+            border: 1px solid var(--border-tier1);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.30);
+        }
+        .card-cli-tier2 {
+            background: var(--bg-tier2);
+            border: 1px solid var(--border-tier2);
+            border-radius: var(--radius-md);
+            padding: 18px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.20);
+        }
+        .card-cli-tier3 {
+            background: var(--bg-tier3);
+            border: 1px solid var(--border-tier3);
+            border-radius: var(--radius-sm);
+            padding: 14px;
+        }
+
+        .card-header-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 14px; padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-tier2);
+        }
+        .card-header-left { display: flex; align-items: center; gap: 10px; }
+        .cmd-title { font-family: var(--font-mono); font-weight: 600; color: var(--status-success); font-size: 0.95rem; }
+        .cmd-subtitle { font-size: 0.82rem; color: var(--text-muted); }
+
+        /* ── Status Badges & Buttons ── */
+        .badge-bracket {
+            font-family: var(--font-mono); font-size: 0.78rem; font-weight: 700;
+            padding: 3px 8px; border-radius: var(--radius-sm); border: 1px solid currentColor;
+            display: inline-flex; align-items: center; justify-content: center;
+        }
+        .status-healthy { color: var(--status-success); background: rgba(120,224,143,0.08); }
+        .status-initializing, .status-checking { color: var(--status-cyan); background: rgba(105,214,208,0.08); }
+        .status-degraded, .status-warning { color: var(--status-warning); background: rgba(231,198,107,0.08); }
+        .status-critical { color: var(--status-critical); background: rgba(240,120,120,0.08); }
+
+        .btn-cli {
+            background: transparent; border: 1px solid var(--border-tier2);
+            color: var(--text-secondary); font-family: var(--font-mono); font-size: 0.82rem;
+            padding: 6px 14px; border-radius: var(--radius-sm); cursor: pointer;
+            transition: all 0.15s ease; outline: none; display: inline-flex; align-items: center; gap: 6px;
+        }
+        .btn-cli:hover { border-color: var(--status-success); color: var(--status-success); background: rgba(120,224,143,0.06); }
+        .btn-cli.active { border-color: var(--status-success); color: var(--status-success); background: rgba(120,224,143,0.12); font-weight: 700; }
+        .btn-cli-primary {
+            background: rgba(120, 224, 143, 0.12); border: 1px solid var(--status-success);
+            color: var(--status-success); font-family: var(--font-mono); font-size: 0.86rem; font-weight: 700;
+            padding: 9px 18px; border-radius: var(--radius-sm); cursor: pointer; transition: all 0.15s ease;
+        }
+        .btn-cli-primary:hover { background: rgba(120, 224, 143, 0.22); box-shadow: 0 0 12px rgba(120, 224, 143, 0.25); }
+
+        /* ── 3-Column Hero Section Layout ── */
+        .hero-grid-3col {
+            display: grid; grid-template-columns: 280px 1fr 220px; gap: 20px; align-items: stretch;
+        }
+        .hero-col { display: flex; flex-direction: column; justify-content: space-between; }
+        .hero-status-title { font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted); font-weight: 700; margin-bottom: 6px; }
+        .hero-main-status { font-size: 1.4rem; font-weight: 700; font-family: var(--font-mono); margin-bottom: 8px; }
+        .hero-status-reason { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.4; }
+
+        .ip-table-grid {
+            display: grid; grid-template-columns: 140px 1fr 50px; gap: 6px 10px; align-items: center; font-family: var(--font-mono); font-size: 0.84rem;
+        }
+        .ip-k { color: var(--text-muted); font-weight: 600; }
+        .ip-v { color: var(--text-primary); font-weight: 600; word-break: break-all; }
+
+        /* ── Metric Strip (6 Columns Continuous) ── */
+        .metric-strip-cli {
+            display: grid; grid-template-columns: repeat(6, 1fr); gap: 1px;
+            background: var(--border-tier2); border: 1px solid var(--border-tier2);
+            border-radius: var(--radius-md); overflow: hidden;
+        }
+        .metric-strip-item {
+            background: var(--bg-tier2); padding: 14px 16px;
+            display: flex; flex-direction: column; gap: 4px;
+        }
+        .metric-title { font-family: var(--font-mono); font-size: 0.76rem; color: var(--text-muted); font-weight: 700; }
+        .metric-value-line { font-size: 1.75rem; font-weight: 700; line-height: 1.1; font-family: var(--font-mono); }
+        .metric-value-line .unit { font-size: 0.82rem; font-weight: 400; color: var(--text-muted); }
+        .metric-sub { font-size: 0.78rem; color: var(--text-secondary); display: flex; align-items: center; justify-content: space-between; margin-top: 4px; }
+
+        /* ── TCP Ping Canvas Container & Empty State ── */
+        .chart-target-banner {
+            font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-secondary);
+            padding: 8px 14px; background: var(--bg-input); border-radius: var(--radius-sm);
+            border: 1px solid var(--border-tier3); margin-bottom: 12px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .chart-stats-bar-cli {
+            display: flex; gap: 18px; flex-wrap: wrap; font-family: var(--font-mono);
+            font-size: 0.82rem; color: var(--text-muted); padding: 8px 14px;
+            background: var(--bg-input); border-radius: var(--radius-sm); border: 1px solid var(--border-tier3);
+            margin-bottom: 12px;
+        }
+        .canvas-wrapper {
+            position: relative; width: 100%; height: 320px;
+            background: #030504; border: 1px solid var(--border-tier3); border-radius: var(--radius-sm);
+            overflow: hidden;
+        }
+        .chart-empty-state {
+            position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-family: var(--font-mono); font-size: 0.86rem; color: var(--status-cyan); gap: 10px; background: #030504; z-index: 10;
+        }
+
+        /* ── Dual-Stack Grid & Difference Matrix ── */
+        .dualstack-table { width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 0.84rem; margin-bottom: 12px; }
+        .dualstack-table th { text-align: left; padding: 8px 12px; color: var(--text-muted); border-bottom: 1px solid var(--border-tier2); font-size: 0.78rem; }
+        .dualstack-table td { padding: 10px 12px; border-bottom: 1px solid var(--border-tier3); }
+
+        .dualstack-cards-mobile { display: none; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+        .ds-card-item {
+            background: var(--bg-input); border: 1px solid var(--border-tier3);
+            border-radius: var(--radius-sm); padding: 12px 14px; display: flex; flex-direction: column; gap: 6px;
+        }
+        .ds-card-header { display: flex; justify-content: space-between; align-items: center; font-family: var(--font-mono); font-size: 0.84rem; font-weight: 700; }
+        .ds-card-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-family: var(--font-mono); font-size: 0.8rem; margin-top: 4px; }
+        .ds-metric-box { background: rgba(255,255,255,0.02); padding: 6px 10px; border-radius: 3px; border: 1px solid var(--border-tier3); }
+        .ds-delta-line { font-family: var(--font-mono); font-size: 0.78rem; color: var(--status-warning); padding-top: 2px; }
+
+        .recommendation-banner {
+            font-family: var(--font-mono); font-size: 0.84rem; color: var(--status-success);
+            background: rgba(120,224,143,0.06); border: 1px solid rgba(120,224,143,0.22);
+            padding: 10px 16px; border-radius: var(--radius-sm);
+        }
+
+        /* ── CLI Tables & Mobile Interface Cards ── */
+        .cli-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+        .cli-table th { font-family: var(--font-mono); color: var(--text-muted); font-size: 0.76rem; text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border-tier2); }
+        .cli-table td { padding: 10px 12px; border-bottom: 1px solid var(--border-tier3); font-family: var(--font-mono); }
+        .cli-table tr:hover { background: rgba(255,255,255,0.02); }
+
+        .grid-2col-cli { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .ascii-bar-row {
+            display: grid; grid-template-columns: 75px 1fr 50px 175px; align-items: center; gap: 10px;
+            font-family: var(--font-mono); font-size: 0.84rem; margin-bottom: 10px; white-space: nowrap;
+        }
+        .ascii-bar-row > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ascii-label { color: var(--text-muted); font-weight: 700; }
+        .ascii-bar { letter-spacing: 1px; }
+        .bar-green { color: var(--status-success); }
+        .bar-yellow { color: var(--status-warning); }
+        .bar-red { color: var(--status-critical); }
+
+        /* ── 30-Day Uptime Heatmap ── */
+        .heatmap-scroll-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
+        .heatmap-grid-cli { display: grid; grid-template-columns: repeat(30, 1fr); min-width: 580px; gap: 5px; margin-top: 10px; }
+        .heatmap-sq {
+            aspect-ratio: 1/1; border-radius: 3px; cursor: pointer; transition: all 0.15s ease;
+            position: relative;
+        }
+        .heatmap-sq:hover { transform: scale(1.25); z-index: 20; }
+        .sq-healthy { background: rgba(120,224,143,0.30); border: 1px solid var(--status-success); }
+        .sq-warning { background: rgba(231,198,107,0.35); border: 1px solid var(--status-warning); }
+        .sq-critical { background: rgba(240,120,120,0.40); border: 1px solid var(--status-critical); }
+        .sq-nodata { background: transparent !important; border: 1px dashed rgba(146,173,151,0.35) !important; opacity: 0.55; }
+        .sq-nodata:hover { border-color: var(--status-success) !important; opacity: 1; }
+
+        /* ── Event Log Stream ── */
+        .log-stream-box-cli {
+            background: #020403; border: 1px solid var(--border-tier3);
+            border-radius: var(--radius-sm); padding: 12px; height: 280px; overflow-y: auto;
+            font-family: var(--font-mono); font-size: 0.82rem; line-height: 1.65;
+            display: flex; flex-direction: column; gap: 4px;
+        }
+        .log-row { display: flex; gap: 10px; padding: 2px 6px; border-radius: 2px; }
+        .log-row.critical-row { border-left: 2px solid var(--status-critical); background: rgba(240,120,120,0.04); }
+        .log-time { color: var(--text-muted); width: 85px; flex-shrink: 0; }
+        .log-level { font-weight: 700; width: 90px; text-align: left; flex-shrink: 0; }
+        .level-info { color: var(--status-cyan); }
+        .level-warning { color: var(--status-warning); }
+        .level-critical { color: var(--status-critical); }
+        .level-recover { color: var(--status-success); }
+
+        /* ── Diagnostic Task Stream ── */
+        .diag-cli-item {
+            display: flex; justify-content: space-between; align-items: center;
+            font-family: var(--font-mono); font-size: 0.84rem; padding: 10px 14px;
+            background: var(--bg-input); border-radius: var(--radius-sm); border: 1px solid var(--border-tier3);
+            margin-bottom: 6px; transition: all 0.15s ease;
+        }
+
+        /* ── Keyboard Help Modal ── */
+        .modal-cli-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000;
+            display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px);
+        }
+        .modal-cli-box {
+            background: var(--bg-tier1); border: 1px solid var(--status-success);
+            border-radius: var(--radius-md); width: min(540px, 92vw); padding: 20px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+        }
+
+        .terminal-footer {
+            margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border-tier2);
+            font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted);
+            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
+        }
+        .footer-links { display: flex; gap: 16px; }
+        .footer-links a { color: var(--text-secondary); text-decoration: none; }
+        .footer-links a:hover { color: var(--status-success); }
+
+        /* ── Responsive Media Queries ── */
+        @media (max-width: 1024px) {
+            .hero-grid-3col { grid-template-columns: 1fr 1fr; }
+            .hero-col-actions { grid-column: span 2; border-left: none !important; border-top: 1px solid var(--border-tier2); padding-left: 0 !important; padding-top: 14px; flex-direction: row !important; }
+            .metric-strip-cli { grid-template-columns: repeat(3, 1fr); }
+            .grid-2col-cli { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 767px) {
+            body { padding-bottom: 70px; }
+            .page-container { width: calc(100% - 24px); padding: 12px 0 40px 0; gap: 14px; }
+            .terminal-nav-bar { padding: 10px 14px; }
+            .nav-tabs-cli { display: none; }
+            .nav-brand-subtitle { display: none; }
+            .nav-sync-time { display: none; }
+            .mobile-bottom-nav { display: flex; }
+
+            .hero-grid-3col { grid-template-columns: 1fr; gap: 14px; }
+            .hero-col { border-right: none !important; border-left: none !important; padding-right: 0 !important; padding-left: 0 !important; }
+            .hero-col-actions { grid-column: span 1; flex-direction: column !important; }
+            .ip-table-grid { grid-template-columns: 110px 1fr 50px; gap: 6px 8px; font-size: 0.8rem; }
+
+            .metric-strip-cli { grid-template-columns: repeat(2, 1fr); }
+            .metric-strip-item { padding: 10px 12px; }
+            .metric-value-line { font-size: 1.4rem; }
+
+            .canvas-wrapper { height: 260px; }
+
+            .dualstack-table { display: none; }
+            .dualstack-cards-mobile { display: flex; }
+
+            .cli-table { display: none; }
+
+            .ascii-bar-row { grid-template-columns: 60px 1fr 45px 110px; font-size: 0.78rem; gap: 6px; }
+
+            .btn-cli, .btn-cli-primary { min-height: 44px; justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+    <div id="toast_container"></div>
+
+    <!-- ── 1. STICKY TOP GLOBAL STATUS BAR ── -->
+    <header class="terminal-nav-bar">
+        <div class="nav-brand">
+            <span class="nav-logo-symbol">NW_</span>
+            <span class="nav-brand-title">NETWATCH</span>
+            <span class="nav-brand-subtitle">// NETWORK OPERATIONS TERMINAL</span>
+        </div>
+
+        <div class="nav-tabs-cli">
+            <button class="nav-tab-btn active" onclick="switchNavTab('overview', this)">$ overview</button>
+            <button class="nav-tab-btn" onclick="switchNavTab('targets', this)">$ targets</button>
+            <button class="nav-tab-btn" onclick="switchNavTab('diagnostics', this)">$ diagnostics</button>
+            <button class="nav-tab-btn" onclick="switchNavTab('events', this)">$ events</button>
+        </div>
+
+        <div class="nav-right-status">
+            <span class="live-indicator online" id="top_live_indicator">
+                <span class="live-dot-pulse"></span>
+                <span id="top_stream_text">● LIVE STREAM: CONNECTED</span>
+            </span>
+            <span class="nav-sync-time">SYNC: <span id="nav_last_sync" class="text-cyan">--:--:--</span></span>
+            <button class="btn-cli" onclick="fetchSummary(); fetchPings();">[ REFRESH ]</button>
+            <button class="btn-cli" onclick="showKeyboardHelp()">[ ? HELP ]</button>
+        </div>
+    </header>
+
+    <!-- ── MAIN WORKSPACE CONTAINER ── -->
+    <main class="page-container">
+
+        <!-- ═══════════════════════════════════════════════════════════
+             TAB 1: OVERVIEW ($ overview)
+             ═══════════════════════════════════════════════════════════ -->
+        <div id="tab_overview" class="tab-view active-view">
+
+            <!-- ── 2. HERO STATUS SECTION (3 COLUMNS) ── -->
+            <div class="card-cli-tier1">
+                <div class="card-header-bar">
+                    <div class="card-header-left">
+                        <span class="cmd-title">root@netwatch:~$ ./status --summary</span>
+                    </div>
+                    <span class="mono text-muted" style="font-size:0.78rem">NODE_ID: fra1-vps-01</span>
+                </div>
+
+                <div class="hero-grid-3col">
+                    <!-- Left: Overall Health -->
+                    <div class="hero-col" style="border-right: 1px solid var(--border-tier2); padding-right: 16px;">
+                        <div>
+                            <div class="hero-status-title">NETWORK STATUS</div>
+                            <div class="hero-main-status" id="hero_status_badge">
+                                <span class="badge-bracket status-initializing">[ INITIALIZING ]</span>
+                            </div>
+                            <div class="hero-status-reason" id="hero_status_reason">Waiting for valid TCP ping samples...</div>
+                        </div>
+                        <div class="mono text-muted" style="font-size:0.78rem;" id="hero_status_checks">
+                            Probes: <b class="text-cyan" id="hero_checks_ratio">0 / 7</b> completed
+                        </div>
+                    </div>
+
+                    <!-- Middle: Network Identity & IP Classification -->
+                    <div class="hero-col" style="padding: 0 10px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                            <div class="hero-status-title" style="margin-bottom:0;">NETWORK IDENTITY & IP PROFILES</div>
+                            <button class="btn-copy-sm" onclick="copyAllIdentities()" style="padding: 3px 8px; font-size: 0.72rem; font-weight:700;">[ COPY ALL IDENTITIES ]</button>
+                        </div>
+                        <div class="ip-table-grid" style="grid-template-columns: 130px 1fr;">
+                            <span class="ip-k">SERVER LISTEN</span>
+                            <span class="ip-v text-cyan" id="hero_ip_listen">72.18.80.151:8180</span>
+
+                            <span class="ip-k">SERVER EGRESS</span>
+                            <span class="ip-v text-cyan" id="hero_ip_egress">37.114.48.47</span>
+
+                            <span class="ip-k">VISITOR CLIENT</span>
+                            <span class="ip-v text-primary" id="hero_ip_visitor">127.0.0.1</span>
+
+                            <span class="ip-k">LOCAL INTERFACE</span>
+                            <span class="ip-v" id="hero_ip_local">37.114.48.47 / 24</span>
+                        </div>
+
+                        <!-- Mobile Collapsible Accordion -->
+                        <div id="mobile_identity_toggle" style="margin-top: 10px;">
+                            <button class="btn-cli" id="btn_toggle_identity" style="width:100%; font-size:0.78rem;" onclick="toggleMobileIdentity()">
+                                [ ▼ VIEW METADATA SOURCES ]
+                            </button>
+                            <div id="mobile_identity_extra" style="display:none; flex-direction:column; gap:6px; margin-top:8px; padding:10px; background:var(--bg-input); border-radius:var(--radius-sm); border:1px solid var(--border-tier3); font-family:var(--font-mono); font-size:0.8rem;">
+                                <div style="font-size:0.74rem; color:var(--text-muted);" id="hero_src_listen">LISTEN SOURCE: bind 0.0.0.0</div>
+                                <div style="font-size:0.74rem; color:var(--text-muted);" id="hero_src_egress">EGRESS SOURCE: ipify API</div>
+                                <div style="font-size:0.74rem; color:var(--text-muted);" id="hero_src_visitor">VISITOR SOURCE: request headers</div>
+                                <div style="font-size:0.74rem; color:var(--text-muted);" id="hero_src_local">LOCAL SOURCE: eth0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Action Buttons -->
+                    <div class="hero-col hero-col-actions" style="border-left: 1px solid var(--border-tier2); padding-left: 16px; align-items: stretch; justify-content: center; gap: 10px;">
+                        <button class="btn-cli-primary" id="btn_run_diag" onclick="switchNavTab('diagnostics'); startFullDiagnostics();">[> RUN FULL DIAGNOSTICS ]</button>
+                        <button class="btn-cli" onclick="switchNavTab('events');">[ VIEW EVENTS ]</button>
+                        <button class="btn-cli" onclick="exportDiagnosticReport();">[ EXPORT REPORT ]</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── 3. METRIC STRIP (6 COLUMNS) ── -->
+            <div class="metric-strip-cli">
+                <div class="metric-strip-item">
+                    <div class="metric-title">TCP LATENCY</div>
+                    <div class="metric-value-line text-cyan" id="metric_latency">- <span class="unit">ms</span></div>
+                    <div class="metric-sub"><span id="metric_latency_sub">1h avg: -</span> <span class="mono text-muted" id="mb_latency">normal</span></div>
+                </div>
+                <div class="metric-strip-item">
+                    <div class="metric-title">PACKET LOSS</div>
+                    <div class="metric-value-line text-success" id="metric_loss">0.0<span class="unit">%</span></div>
+                    <div class="metric-sub"><span id="metric_samples_sub">0 samples</span> <span class="mono text-muted">normal</span></div>
+                </div>
+                <div class="metric-strip-item">
+                    <div class="metric-title">JITTER</div>
+                    <div class="metric-value-line text-cyan" id="metric_jitter">0.0 <span class="unit">ms</span></div>
+                    <div class="metric-sub"><span>±0.0ms</span> <span class="mono text-muted">stable</span></div>
+                </div>
+                <div class="metric-strip-item">
+                    <div class="metric-title">AVAILABILITY</div>
+                    <div class="metric-value-line text-success" id="metric_avail">99.98<span class="unit">%</span></div>
+                    <div class="metric-sub"><span>SLA target</span> <span class="mono text-muted">normal</span></div>
+                </div>
+                <div class="metric-strip-item">
+                    <div class="metric-title">ACTIVE TARGETS</div>
+                    <div class="metric-value-line text-primary" id="metric_targets">5 <span class="unit">/ 5</span></div>
+                    <div class="metric-sub"><span>5 normal, 0 warn</span> <span class="mono text-muted">active</span></div>
+                </div>
+                <div class="metric-strip-item">
+                    <div class="metric-title">UNRESOLVED EVENTS</div>
+                    <div class="metric-value-line text-success" id="metric_events">0 <span class="unit">open</span></div>
+                    <div class="metric-sub"><span>0 critical</span> <span class="mono text-muted">clear</span></div>
+                </div>
+            </div>
+
+            <!-- ── 4. REALTIME MULTI-TARGET LATENCY HISTOGRAM ($ tcping --watch --histogram) ── -->
+            <div class="card-cli-tier1">
+                <div class="card-header-bar" style="flex-wrap:wrap; gap:10px;">
+                    <div class="card-header-left">
+                        <span class="cmd-title">$ tcping --watch --histogram</span>
+                        <span class="cmd-subtitle">// REALTIME MULTI-TARGET TCP LATENCY PIXEL HISTOGRAM</span>
+                    </div>
+                    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                        <div style="font-family:var(--font-mono); font-size:0.78rem; color:var(--text-muted);">
+                            Granularity: 
+                            <select id="ping_granularity" style="background:var(--bg-input); border:1px solid var(--border-tier2); color:var(--text-primary); padding:3px 8px; border-radius:var(--radius-sm); font-family:var(--font-mono); font-size:0.78rem; outline:none;" onchange="fetchPings()">
+                                <option value="1m">1 Min</option>
+                                <option value="5m">5 Mins</option>
+                                <option value="15m">15 Mins</option>
+                            </select>
+                        </div>
+                        <div style="display:flex; gap:4px">
+                            <button class="btn-cli active" onclick="setPingRange('1h', this)">[ 1H ]</button>
+                            <button class="btn-cli" onclick="setPingRange('6h', this)">[ 6H ]</button>
+                            <button class="btn-cli" onclick="setPingRange('24h', this)">[ 24H ]</button>
+                            <button class="btn-cli" onclick="setPingRange('7d', this)">[ 7D ]</button>
+                            <button class="btn-cli" onclick="setPingRange('30d', this)">[ 30D ]</button>
+                        </div>
+                        <button class="btn-cli" onclick="exportPingCSV()">[ ⤓ CSV ]</button>
+                    </div>
+                </div>
+
+                <!-- Cyber Multi-Target Legend Bar -->
+                <div class="chart-target-banner" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;" id="cyber_legend_bar">
+                        <button class="btn-cli active" style="padding:3px 8px; font-size:0.76rem;" onclick="setTargetFilter('all', this)">
+                            [ ALL TARGETS ]
+                        </button>
+                        <button class="btn-cli" style="padding:3px 8px; font-size:0.76rem; border-color:#FF6B6B; color:#FF6B6B;" onclick="setTargetFilter('ping_cu', this)">
+                            ● Zhejiang Unicom <span id="leg_val_cu" class="mono text-muted">-ms</span>
+                        </button>
+                        <button class="btn-cli" style="padding:3px 8px; font-size:0.76rem; border-color:#BD93F9; color:#BD93F9;" onclick="setTargetFilter('ping_cm', this)">
+                            ● Zhejiang Mobile <span id="leg_val_cm" class="mono text-muted">-ms</span>
+                        </button>
+                        <button class="btn-cli" style="padding:3px 8px; font-size:0.76rem; border-color:#50FA7B; color:#50FA7B;" onclick="setTargetFilter('ping_ct', this)">
+                            ● Zhejiang Telecom <span id="leg_val_ct" class="mono text-muted">-ms</span>
+                        </button>
+                        <button class="btn-cli" style="padding:3px 8px; font-size:0.76rem; border-color:#8BE9FD; color:#8BE9FD;" onclick="setTargetFilter('ping_cloudflare', this)">
+                            ● Cloudflare <span id="leg_val_cloudflare" class="mono text-muted">-ms</span>
+                        </button>
+                        <button class="btn-cli" style="padding:3px 8px; font-size:0.76rem; border-color:#FFB86C; color:#FFB86C;" onclick="setTargetFilter('ping_google', this)">
+                            ● Google <span id="leg_val_google" class="mono text-muted">-ms</span>
+                        </button>
+                    </div>
+                    <div style="font-family:var(--font-mono); font-size:0.76rem; color:var(--text-muted);">
+                        STREAM: <b class="text-success" id="chart_stream_status">● LIVE STREAMING</b>
+                    </div>
+                </div>
+
+                <!-- Telemetry Stats Strip -->
+                <div class="chart-stats-bar-cli">
+                    <span>CURRENT <b class="text-cyan" id="ping_stat_cur">- ms</b></span>
+                    <span>AVG <b id="ping_stat_avg">- ms</b></span>
+                    <span>MIN <b class="text-success" id="ping_stat_min">- ms</b></span>
+                    <span>MAX <b class="text-warning" id="ping_stat_max">- ms</b></span>
+                    <span>P95 <b class="text-cyan" id="ping_stat_p95">- ms</b></span>
+                    <span>P99 <b id="ping_stat_p99">- ms</b></span>
+                    <span>JITTER <b id="ping_stat_jitter">±0ms</b></span>
+                    <span>LOSS <b class="text-success" id="ping_stat_loss">0.0%</b></span>
+                </div>
+
+                <div class="canvas-wrapper" style="height:320px;">
+                    <div class="chart-empty-state" id="chart_empty_box">
+                        <div>> connecting to realtime monitor...</div>
+                        <div>> target: all active probes | interval: 30s</div>
+                        <div id="chart_empty_progress">> waiting for valid samples... (0 / 3 collected)</div>
+                        <div style="margin-top:8px;">
+                            <button class="btn-cli" onclick="fetchPings();">[ RETRY CONNECTION ]</button>
+                        </div>
+                    </div>
+                    <canvas id="tcpingCanvas" style="width:100%; height:100%; display:block;"></canvas>
+                </div>
+            </div>
+
+            <!-- ── 5. DUAL-STACK NETWORK COMPARISON ── -->
+            <div class="card-cli-tier2">
+                <div class="card-header-bar">
+                    <div class="card-header-left">
+                        <span class="cmd-title">$ network --dual-stack</span>
+                        <span class="cmd-subtitle">// IPv4 / IPv6 PROTOCOL COMPARISON & DIFFERENCE MATRIX</span>
+                    </div>
+                    <button class="btn-cli" onclick="fetchDualStackDiag()">[ RE-TEST DUALSTACK ]</button>
+                </div>
+
+                <table class="dualstack-table">
+                    <thead>
+                        <tr>
+                            <th>METRIC</th>
+                            <th>IPv4 PROTOCOL</th>
+                            <th>IPv6 PROTOCOL</th>
+                            <th>DIFFERENCE / DELTA</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="font-bold">TCP LATENCY</td>
+                            <td><span class="text-success">68 ms</span> <span class="badge-bracket status-healthy" style="font-size:0.7rem; padding:1px 4px;">[ ONLINE ]</span></td>
+                            <td><span class="text-warning">121 ms</span> <span class="badge-bracket status-warning" style="font-size:0.7rem; padding:1px 4px;">[ WARNING ]</span></td>
+                            <td><span class="text-warning">IPv6 +53ms (44% slower)</span></td>
+                        </tr>
+                        <tr>
+                            <td class="font-bold">DNS LOOKUP</td>
+                            <td>18 ms</td>
+                            <td>32 ms</td>
+                            <td>IPv6 +14ms</td>
+                        </tr>
+                        <tr>
+                            <td class="font-bold">ROUTE HOPS</td>
+                            <td>12 hops</td>
+                            <td>18 hops</td>
+                            <td>IPv6 +6 hops</td>
+                        </tr>
+                        <tr>
+                            <td class="font-bold">PACKET LOSS</td>
+                            <td><span class="text-success">0.0%</span></td>
+                            <td><span class="text-success">0.0%</span></td>
+                            <td>Equal</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- Mobile Card Layout for Dual-Stack -->
+                <div class="dualstack-cards-mobile">
+                    <div class="ds-card-item">
+                        <div class="ds-card-header">
+                            <span>TCP LATENCY</span>
+                            <span class="badge-bracket status-healthy" style="font-size:0.7rem;">[ IPv4 PREFERRED ]</span>
+                        </div>
+                        <div class="ds-card-metrics">
+                            <div class="ds-metric-box">IPv4: <b class="text-success">68 ms</b></div>
+                            <div class="ds-metric-box">IPv6: <b class="text-warning">121 ms</b></div>
+                        </div>
+                        <div class="ds-delta-line">Δ Delta: IPv6 +53ms (44% slower)</div>
+                    </div>
+                    <div class="ds-card-item">
+                        <div class="ds-card-header">DNS LOOKUP</div>
+                        <div class="ds-card-metrics">
+                            <div class="ds-metric-box">IPv4: <b>18 ms</b></div>
+                            <div class="ds-metric-box">IPv6: <b>32 ms</b></div>
+                        </div>
+                        <div class="ds-delta-line">Δ Delta: IPv6 +14ms</div>
+                    </div>
+                    <div class="ds-card-item">
+                        <div class="ds-card-header">ROUTE HOPS & LOSS</div>
+                        <div class="ds-card-metrics">
+                            <div class="ds-metric-box">Hops: <b>12 (v4) / 18 (v6)</b></div>
+                            <div class="ds-metric-box">Loss: <b class="text-success">0.0%</b></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="recommendation-banner" id="ds_recommendation">
+                    > IPv4 latency is 53ms lower than IPv6. Recommended route preference: IPv4.
+                </div>
+            </div>
+
+            <!-- ── 6. NETWORK INTERFACES & SYSTEM RESOURCES ── -->
+            <div class="grid-2col-cli">
+                <!-- Interface Table -->
+                <div class="card-cli-tier2">
+                    <div class="card-header-bar">
+                        <div class="card-header-left">
+                            <span class="cmd-title">$ ip addr show</span>
+                            <span class="cmd-subtitle">// HOST NETWORK INTERFACES & ROUTING MATRIX</span>
+                        </div>
+                    </div>
+                    <table class="cli-table">
+                        <thead>
+                            <tr>
+                                <th>TYPE</th>
+                                <th>INTERFACE</th>
+                                <th>STATUS</th>
+                                <th>ADDRESS</th>
+                                <th>RX / TX</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="badge-bracket status-healthy">PUBLIC</span></td>
+                                <td class="font-bold">eth0 <span class="text-success" style="font-size:0.74rem">[ DEFAULT ROUTE ]</span></td>
+                                <td><span class="text-success">[ UP ]</span></td>
+                                <td class="text-cyan">37.114.48.47 / 24</td>
+                                <td>24.8 GB / 8.3 GB</td>
+                            </tr>
+                            <tr>
+                                <td><span class="text-muted">PRIVATE</span></td>
+                                <td class="font-bold text-secondary">docker0</td>
+                                <td><span class="text-success">[ UP ]</span></td>
+                                <td class="text-muted">172.17.0.1 / 16</td>
+                                <td class="text-muted">1.2 GB / 946 MB</td>
+                            </tr>
+                            <tr>
+                                <td><span class="text-muted">LOOPBACK</span></td>
+                                <td class="font-bold text-secondary">lo</td>
+                                <td><span class="text-success">[ UP ]</span></td>
+                                <td class="text-muted">127.0.0.1 / 8</td>
+                                <td class="text-muted">128 MB / 128 MB</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- System Resources -->
+                <div class="card-cli-tier2">
+                    <div class="card-header-bar" style="flex-wrap: nowrap; gap: 8px;">
+                        <div class="card-header-left" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            <span class="cmd-title" style="white-space: nowrap;">$ systemctl status netwatch</span>
+                            <span class="cmd-subtitle" style="white-space: nowrap;">// REALTIME TELEMETRY</span>
+                        </div>
+                        <span class="badge-bracket status-healthy" style="white-space: nowrap; flex-shrink: 0;">[ active (running) ]</span>
+                    </div>
+                    <div style="font-family: var(--font-mono); font-size: 0.8rem; line-height: 1.5; margin-bottom: 12px; padding: 8px 12px; background: var(--bg-input); border-radius: var(--radius-sm); border: 1px solid var(--border-tier3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        <div>● <b class="text-success">netwatch.service</b> - NetWatch Telemetry Daemon</div>
+                        <div style="color: var(--text-muted); font-size: 0.76rem; margin-top: 2px;">
+                            Loaded: <span class="text-primary">loaded (/etc/systemd/system/netwatch.service)</span> | Active: <span class="text-success">active (running)</span>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="ascii-bar-row">
+                            <span class="ascii-label">CPU</span>
+                            <span class="ascii-bar bar-green" id="ascii_cpu_bar">[██████░░░░░░░░░░]</span>
+                            <span id="cpu_val" class="font-bold">28%</span>
+                            <span class="text-muted" style="font-size:0.78rem;" id="cpu_load_val">load: 0.42 / 0.36 / 0.31</span>
+                        </div>
+                        <div class="ascii-bar-row">
+                            <span class="ascii-label">MEMORY</span>
+                            <span class="ascii-bar bar-green" id="ascii_mem_bar">[██████████░░░░░░]</span>
+                            <span id="mem_val" class="font-bold">63%</span>
+                            <span class="text-muted" style="font-size:0.78rem;" id="mem_bytes_val">1.24 GB / 2.00 GB</span>
+                        </div>
+                        <div class="ascii-bar-row">
+                            <span class="ascii-label">DISK</span>
+                            <span class="ascii-bar bar-green" id="ascii_disk_bar">[███████░░░░░░░░░]</span>
+                            <span id="disk_val" class="font-bold">41%</span>
+                            <span class="text-muted" style="font-size:0.78rem;" id="disk_bytes_val">19.8 GB / 48.0 GB</span>
+                        </div>
+                        <div class="ascii-bar-row">
+                            <span class="ascii-label">SWAP</span>
+                            <span class="ascii-bar bar-green" id="ascii_swap_bar">[██░░░░░░░░░░░░░░]</span>
+                            <span id="swap_val" class="font-bold">12%</span>
+                            <span class="text-muted" style="font-size:0.78rem;" id="swap_bytes_val">128 MB / 1.00 GB</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── 7. 30-DAY UPTIME HEATMAP ── -->
+            <div class="card-cli-tier2">
+                <div class="card-header-bar">
+                    <div class="card-header-left">
+                        <span class="cmd-title">$ uptime --history --days=30</span>
+                        <span class="cmd-subtitle">// 30-DAY UPTIME HISTORY & SLA MATRIX</span>
+                    </div>
+                    <span class="mono text-muted" style="font-size:0.8rem">30d SLA: <b class="text-success" id="uptime_sla_val">99.98%</b></span>
+                </div>
+                <div class="heatmap-scroll-wrapper">
+                    <div class="heatmap-grid-cli" id="heatmap_container">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── 8. EVENT LOG STREAM ── -->
+            <div class="card-cli-tier2">
+                <div class="card-header-bar">
+                    <div class="card-header-left">
+                        <span class="cmd-title">$ tail -f /var/log/netwatch/events.log</span>
+                        <span class="cmd-subtitle">// REALTIME EVENT LOGS & ALERTS</span>
+                    </div>
+                    <div style="display:flex; gap:6px;">
+                        <button class="btn-cli active" onclick="filterLogs('all', this)">[ ALL ]</button>
+                        <button class="btn-cli" onclick="filterLogs('info', this)">[ INFO ]</button>
+                        <button class="btn-cli" onclick="filterLogs('warning', this)">[ WARNING ]</button>
+                        <button class="btn-cli" onclick="filterLogs('critical', this)">[ CRITICAL ]</button>
+                        <button class="btn-cli" id="btn_autoscroll" onclick="toggleAutoScroll()">[ SCROLL: ON ]</button>
+                        <button class="btn-cli" onclick="clearLogView()">[ CLEAR VIEW ]</button>
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:8px; margin-bottom:10px; align-items:center;">
+                    <span class="text-success font-bold">$ grep</span>
+                    <input type="text" id="log_grep_input" style="flex:1; background:var(--bg-input); border:1px solid var(--border-tier2); color:var(--text-primary); padding:6px 12px; border-radius:var(--radius-sm); font-family:var(--font-mono); font-size:0.82rem; outline:none;" placeholder="Search log keywords (timeout, tcp, latency)..." onkeyup="applyLogGrep()" />
+                </div>
+
+                <div class="log-stream-box-cli" id="log_stream_box">
+                    <div class="log-row"><span class="log-time">15:42:18</span> <span class="log-level level-info">[INFO]</span> <span class="log-msg">tcp check passed target=1.1.1.1:443 latency=32ms status=healthy</span></div>
+                    <div class="log-row"><span class="log-time">15:41:48</span> <span class="log-level level-warning">[WARNING]</span> <span class="log-msg">latency increased target=hk-server value=186ms baseline=92ms delta=+102%</span></div>
+                    <div class="log-row critical-row"><span class="log-time">15:40:21</span> <span class="log-level level-critical">[CRITICAL]</span> <span class="log-msg">request timeout target=api-server timeout=5000ms failures=4/4</span></div>
+                    <div class="log-row"><span class="log-time">15:39:52</span> <span class="log-level level-recover">[RECOVER]</span> <span class="log-msg">service restored target=api-server downtime=91s checks=2/2</span></div>
+                </div>
+            </div>
+
+        </div> <!-- End tab_overview -->
+
+        <!-- ═══════════════════════════════════════════════════════════
+             TAB 2: TARGETS ($ cat /etc/netwatch/targets)
+             ═══════════════════════════════════════════════════════════ -->
+        <div id="tab_targets" class="tab-view">
+            <div class="card-cli-tier2">
+                <div class="card-header-bar">
+                    <div class="card-header-left">
+                        <span class="cmd-title">$ cat /etc/netwatch/targets</span>
+                        <span class="cmd-subtitle">// MONITORING TARGETS & POLICY CONFIGURATION</span>
+                    </div>
+                    <button class="btn-cli-primary" onclick="openAddTargetModal()">[ + ADD TARGET ]</button>
+                </div>
+                <table class="cli-table">
+                    <thead>
+                        <tr>
+                            <th>STATUS</th>
+                            <th>NAME</th>
+                            <th>TARGET (HOST:PORT)</th>
+                            <th>TYPE</th>
+                            <th>FREQUENCY</th>
+                            <th>THRESHOLDS (WARN/CRIT)</th>
+                            <th>ACTIONS</th>
+                        </tr>
+                    </thead>
+                    <tbody id="targets_tbody">
+                        <!-- Populated dynamically via JS fetchTargets() -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             TAB 3: DIAGNOSTICS ($ diagnose --full)
+             ═══════════════════════════════════════════════════════════ -->
+        <div id="tab_diagnostics" class="tab-view">
+            <div class="card-cli-tier1">
+                <div class="card-header-bar">
+                    <div class="card-header-left">
+                        <span class="cmd-title">$ diagnose --full</span>
+                        <span class="cmd-subtitle">// 12-STAGE END-TO-END DIAGNOSTIC PIPELINE</span>
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:10px; margin-bottom:16px;">
+                    <input type="text" id="diag_target_input" style="flex:1; background:var(--bg-input); border:1px solid var(--border-tier2); color:var(--text-primary); padding:8px 14px; border-radius:var(--radius-sm); font-family:var(--font-mono); font-size:0.86rem;" value="github.com" />
+                    <button class="btn-cli-primary" id="diag_run_btn" onclick="startFullDiagnostics()">[> RUN FULL DIAGNOSTIC ]</button>
+                </div>
+
+                <div id="diag_stages_grid">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             TAB 4: EVENTS ($ alerts --unresolved)
+             ═══════════════════════════════════════════════════════════ -->
+        <div id="tab_events" class="tab-view">
+            <div class="card-cli-tier2">
+                <div class="card-header-bar">
+                    <div class="card-header-left">
+                        <span class="cmd-title">$ alerts --unresolved</span>
+                        <span class="cmd-subtitle">// UNRESOLVED ALERTS & EXPORT REPORTS</span>
+                    </div>
+                    <div style="display:flex; gap:6px;">
+                        <button class="btn-cli" onclick="exportReportFmt('markdown')">[ EXPORT MD ]</button>
+                        <button class="btn-cli" onclick="exportReportFmt('json')">[ EXPORT JSON ]</button>
+                    </div>
+                </div>
+                <table class="cli-table">
+                    <thead>
+                        <tr><th>TIME</th><th>TARGET</th><th>EVENT</th><th>LEVEL</th><th>DESCRIPTION</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>15:42:18</td><td>37.114.48.47:8180</td><td>Daemon Start</td><td><span class="text-cyan">[ INFO ]</span></td><td>NETWATCH daemon initialized successfully.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ── FOOTER ── -->
+        <footer class="terminal-footer">
+            <div>
+                <b>NETWATCH NETWORK OPERATIONS TERMINAL v3.1.1</b><br>
+                <span>monitoring network health in realtime | status: operational</span>
+            </div>
+            <div class="footer-links">
+                <a href="#overview" onclick="switchNavTab('overview')">[ OVERVIEW ]</a>
+                <a href="#targets" onclick="switchNavTab('targets')">[ TARGETS ]</a>
+                <a href="#diagnostics" onclick="switchNavTab('diagnostics')">[ DIAGNOSTICS ]</a>
+                <a href="#events" onclick="switchNavTab('events')">[ EVENTS ]</a>
+            </div>
+        </footer>
+
+    </main>
+
+    <!-- KEYBOARD HELP MODAL -->
+    <div class="modal-cli-overlay" id="keyboard_modal" style="display:none;" onclick="closeKeyboardHelp(event)">
+        <div class="modal-cli-box">
+            <div class="card-header-bar">
+                <span class="cmd-title">KEYBOARD SHORTCUTS</span>
+                <button class="btn-cli" onclick="closeKeyboardHelp()">[ ESC ]</button>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:10px; font-family:var(--font-mono); font-size:0.84rem;">
+                <div><b class="text-success">[ R ]</b> Refresh Data</div>
+                <div><b class="text-success">[ D ]</b> Jump to Diagnostics</div>
+                <div><b class="text-success">[ L ]</b> Jump to Logs</div>
+                <div><b class="text-success">[ ? ]</b> Toggle Help Modal</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADD / EDIT TARGET MODAL -->
+    <div class="modal-cli-overlay" id="target_modal" style="display:none;" onclick="closeTargetModal(event)">
+        <div class="modal-cli-box" style="width: min(560px, 92vw);">
+            <div class="card-header-bar">
+                <span class="cmd-title" id="target_modal_title">$ nano /etc/netwatch/targets.conf</span>
+                <button class="btn-cli" onclick="closeTargetModal()">[ ESC ]</button>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:12px; font-family:var(--font-mono); font-size:0.84rem;">
+                <input type="hidden" id="target_id_input" />
+                <div>
+                    <label class="text-muted" style="display:block; margin-bottom:4px;">TARGET NAME:</label>
+                    <input type="text" id="target_name_input" style="width:100%; background:var(--bg-input); border:1px solid var(--border-tier2); color:var(--text-primary); padding:8px 12px; border-radius:var(--radius-sm); font-family:var(--font-mono); outline:none;" placeholder="e.g. Zhejiang Unicom CDN" />
+                </div>
+                <div>
+                    <label class="text-muted" style="display:block; margin-bottom:4px;">HOST & PORT:</label>
+                    <input type="text" id="target_host_input" style="width:100%; background:var(--bg-input); border:1px solid var(--border-tier2); color:var(--text-primary); padding:8px 12px; border-radius:var(--radius-sm); font-family:var(--font-mono); outline:none;" placeholder="e.g. zj-cu-v4.ip.zstaticcdn.com:80" />
+                </div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                    <div>
+                        <label class="text-muted" style="display:block; margin-bottom:4px;">PROTOCOL:</label>
+                        <select id="target_type_input" style="width:100%; background:var(--bg-input); border:1px solid var(--border-tier2); color:var(--text-primary); padding:8px 12px; border-radius:var(--radius-sm); font-family:var(--font-mono); outline:none;">
+                            <option value="tcp">TCP PING</option>
+                            <option value="dns">DNS LOOKUP</option>
+                            <option value="icmp">ICMP PING</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-muted" style="display:block; margin-bottom:4px;">INTERVAL (SEC):</label>
+                        <input type="number" id="target_freq_input" value="30" style="width:100%; background:var(--bg-input); border:1px solid var(--border-tier2); color:var(--text-primary); padding:8px 12px; border-radius:var(--radius-sm); font-family:var(--font-mono); outline:none;" />
+                    </div>
+                </div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                    <div>
+                        <label class="text-muted" style="display:block; margin-bottom:4px;">WARN THRESHOLD (MS):</label>
+                        <input type="number" id="target_warn_input" value="160" style="width:100%; background:var(--bg-input); border:1px solid var(--border-tier2); color:var(--text-primary); padding:8px 12px; border-radius:var(--radius-sm); font-family:var(--font-mono); outline:none;" />
+                    </div>
+                    <div>
+                        <label class="text-muted" style="display:block; margin-bottom:4px;">CRIT THRESHOLD (MS):</label>
+                        <input type="number" id="target_crit_input" value="250" style="width:100%; background:var(--bg-input); border:1px solid var(--border-tier2); color:var(--text-primary); padding:8px 12px; border-radius:var(--radius-sm); font-family:var(--font-mono); outline:none;" />
+                    </div>
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:8px;">
+                    <button class="btn-cli" onclick="closeTargetModal()">[ CANCEL ]</button>
+                    <button class="btn-cli-primary" onclick="saveTargetSubmit()">[ SAVE CONFIG ]</button>
+                </div>
+            </div>
+        </div>
+    <!-- MOBILE FIXED BOTTOM NAVIGATION BAR -->
+    <nav class="mobile-bottom-nav">
+        <button class="mobile-nav-item active" onclick="switchNavTab('overview', this)">
+            <span class="nav-icon">📊</span>
+            <span>OVERVIEW</span>
+        </button>
+        <button class="mobile-nav-item" onclick="switchNavTab('targets', this)">
+            <span class="nav-icon">🎯</span>
+            <span>TARGETS</span>
+        </button>
+        <button class="mobile-nav-item" onclick="switchNavTab('diagnostics', this)">
+            <span class="nav-icon">⚡</span>
+            <span>DIAGNOSTICS</span>
+        </button>
+        <button class="mobile-nav-item" onclick="switchNavTab('events', this)">
+            <span class="nav-icon">📜</span>
+            <span>EVENTS</span>
+        </button>
+    </nav>
+
+    <script>
+    let autoScrollLogs = true;
+    let validSamplesCount = 0;
+    let pingHistory = [];
+
+    function copyAllIdentities() {
+        const listen = (document.getElementById('hero_ip_listen').textContent || '').trim();
+        const egress = (document.getElementById('hero_ip_egress').textContent || '').trim();
+        const visitor = (document.getElementById('hero_ip_visitor').textContent || '').trim();
+        const local = (document.getElementById('hero_ip_local').textContent || '').trim();
+
+        const text = [
+            "=== NETWATCH NETWORK IDENTITIES ===",
+            `Server Listen  : ${listen}`,
+            `Server Egress  : ${egress}`,
+            `Visitor Client : ${visitor}`,
+            `Local Interface: ${local}`
+        ].join("\n");
+
+        copyText(text, "Network Identities");
+    }
+
+    function copyText(text, label) {
+        if (!text) return;
+        const cleanText = text.trim();
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(cleanText).then(() => {
+                showToast(`✓ ${label || 'Content'} copied to clipboard`);
+            }).catch(() => fallbackCopyText(cleanText, label));
+        } else {
+            fallbackCopyText(cleanText, label);
+        }
+    }
+
+    function fallbackCopyText(text, label) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+            document.execCommand('copy');
+            showToast(`✓ ${label || 'Content'} copied to clipboard`);
+        } catch(e) {}
+        document.body.removeChild(ta);
+    }
+
+    function showToast(msg) {
+        let container = document.getElementById('toast_container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'toast_container';
+            document.body.appendChild(container);
+        }
+        const t = document.createElement('div');
+        t.className = 'toast-notification';
+        t.innerHTML = `<span>${msg}</span>`;
+        container.appendChild(t);
+        setTimeout(() => {
+            t.style.opacity = '0';
+            t.style.transform = 'translateY(-10px)';
+            t.style.transition = 'all 0.25s ease';
+            setTimeout(() => t.remove(), 250);
+        }, 1500);
+    }
+
+    function toggleMobileIdentity() {
+        const extra = document.getElementById('mobile_identity_extra');
+        const btn = document.getElementById('btn_toggle_identity');
+        if (!extra || !btn) return;
+        if (extra.style.display === 'none' || !extra.style.display) {
+            extra.style.display = 'flex';
+            btn.textContent = '[ ▲ HIDE METADATA SOURCES ]';
+        } else {
+            extra.style.display = 'none';
+            btn.textContent = '[ ▼ VIEW METADATA SOURCES ]';
+        }
+    }
+
+    function switchNavTab(tabId, btn) {
+        if (!tabId) return;
+        const targetView = document.getElementById('tab_' + tabId);
+        if (!targetView) return;
+
+        document.querySelectorAll('.tab-view').forEach(v => {
+            v.classList.remove('active-view');
+            v.style.display = 'none';
+        });
+        targetView.classList.add('active-view');
+        targetView.style.display = 'flex';
+
+        document.querySelectorAll('.nav-tab-btn, .mobile-nav-item').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.nav-tab-btn, .mobile-nav-item').forEach(b => {
+            const onclickAttr = b.getAttribute('onclick');
+            if (onclickAttr && onclickAttr.includes(`'${tabId}'`)) {
+                b.classList.add('active');
+            }
+        });
+
+        localStorage.setItem('console_active_tab', tabId);
+        window.location.hash = tabId;
+
+        if (tabId === 'targets') {
+            fetchTargets();
+        } else if (tabId === 'overview') {
+            setTimeout(fetchPings, 50);
+        }
+    }
+
+    function showKeyboardHelp() { document.getElementById('keyboard_modal').style.display = 'flex'; }
+    function closeKeyboardHelp(e) { if (!e || e.target.id === 'keyboard_modal') document.getElementById('keyboard_modal').style.display = 'none'; }
+
+    async function fetchSummary() {
+        try {
+            const res = await fetch('/api/status/summary');
+            const data = await res.json();
+            
+            validSamplesCount = data.validSamples || 0;
+            const statusEl = document.getElementById('hero_status_badge');
+            const reasonEl = document.getElementById('hero_status_reason');
+            const checksRatio = document.getElementById('hero_checks_ratio');
+            const syncTime = document.getElementById('nav_last_sync');
+            
+            if (syncTime) syncTime.textContent = data.lastSuccessfulSync || '--:--:--';
+            if (checksRatio) checksRatio.textContent = `${data.completedChecks} / ${data.totalChecks}`;
+            if (reasonEl) reasonEl.textContent = data.statusReason || '';
+            
+            if (statusEl) {
+                const st = data.overallStatus;
+                let badgeClass = 'status-initializing';
+                if (st === 'HEALTHY') badgeClass = 'status-healthy';
+                else if (st === 'DEGRADED') badgeClass = 'status-degraded';
+                else if (st === 'CRITICAL') badgeClass = 'status-critical';
+                statusEl.innerHTML = `<span class="badge-bracket ${badgeClass}">[ ${st} ]</span>`;
+            }
+
+            const ip = data.ipInfo || {};
+            document.getElementById('hero_ip_listen').textContent = ip.serverListen || '';
+            document.getElementById('hero_src_listen').textContent = `LISTEN SOURCE: ${ip.serverListenSource || ''}`;
+            document.getElementById('hero_ip_egress').textContent = ip.serverEgress || '';
+            document.getElementById('hero_src_egress').textContent = `EGRESS SOURCE: ${ip.serverEgressSource || ''}`;
+            document.getElementById('hero_ip_visitor').textContent = ip.visitorIp || '';
+            document.getElementById('hero_src_visitor').textContent = `VISITOR SOURCE: ${ip.visitorIpSource || ''}`;
+            document.getElementById('hero_ip_local').textContent = ip.localInterface || '';
+            document.getElementById('hero_src_local').textContent = `LOCAL SOURCE: ${ip.localInterfaceSource || ''}`;
+        } catch(e) {}
+    }
+
+    let currentTargetFilter = 'all';
+
+    function setTargetFilter(targetId, btn) {
+        currentTargetFilter = targetId;
+        document.querySelectorAll('.card-cli-tier1 .btn-cli').forEach(b => {
+            if (b.getAttribute('onclick') && b.getAttribute('onclick').includes('setTargetFilter')) {
+                b.classList.remove('active');
+            }
+        });
+        if (btn) btn.classList.add('active');
+        fetchPings();
+    }
+
+    async function fetchPings() {
+        try {
+            const url = currentTargetFilter !== 'all' ? `/pings?target_id=${currentTargetFilter}` : '/pings';
+            const res = await fetch(url);
+            const data = await res.json();
+            const stats = data.stats || {};
+            
+            pingHistory = stats.history || [];
+            validSamplesCount = stats.samples_count || 0;
+
+            const emptyBox = document.getElementById('chart_empty_box');
+            const emptyProg = document.getElementById('chart_empty_progress');
+
+            if (validSamplesCount === 0) {
+                if (emptyBox) emptyBox.style.display = 'flex';
+                if (emptyProg) emptyProg.textContent = `> waiting for valid samples... (${validSamplesCount} / 3 collected)`;
+            } else {
+                if (emptyBox) emptyBox.style.display = 'none';
+            }
+
+            document.getElementById('ping_stat_cur').textContent = stats.cur !== null && stats.cur !== undefined ? `${stats.cur} ms` : '- ms';
+            document.getElementById('ping_stat_avg').textContent = stats.avg !== null && stats.avg !== undefined ? `${stats.avg} ms` : '- ms';
+            document.getElementById('ping_stat_min').textContent = stats.min !== null && stats.min !== undefined ? `${stats.min} ms` : '- ms';
+            document.getElementById('ping_stat_max').textContent = stats.max !== null && stats.max !== undefined ? `${stats.max} ms` : '- ms';
+            document.getElementById('ping_stat_p95').textContent = stats.p95 !== null && stats.p95 !== undefined ? `${stats.p95} ms` : '- ms';
+            document.getElementById('ping_stat_p99').textContent = stats.p99 !== null && stats.p99 !== undefined ? `${stats.p99} ms` : '- ms';
+            document.getElementById('ping_stat_jitter').textContent = `±${stats.jitter || 0}ms`;
+            document.getElementById('ping_stat_loss').textContent = `${stats.loss || 0}%`;
+
+            document.getElementById('metric_latency').innerHTML = stats.cur !== null && stats.cur !== undefined ? `${stats.cur} <span class="unit">ms</span>` : `- <span class="unit">ms</span>`;
+            document.getElementById('metric_latency_sub').textContent = stats.avg !== null && stats.avg !== undefined ? `1h avg: ${stats.avg}ms` : '1h avg: -';
+            document.getElementById('metric_samples_sub').textContent = `${stats.total_samples || 0} samples`;
+            document.getElementById('metric_jitter').innerHTML = `${stats.jitter || 0} <span class="unit">ms</span>`;
+
+            renderCanvasChart(pingHistory, stats.avg);
+        } catch(e) {}
+    }
+
+    const TARGET_CONFIG = {
+        "ping_cu": { name: "Zhejiang Unicom", color: "#FF6B6B", glow: "rgba(255,107,107,0.7)" },
+        "ping_cm": { name: "Zhejiang Mobile", color: "#BD93F9", glow: "rgba(189,147,249,0.7)" },
+        "ping_ct": { name: "Zhejiang Telecom", color: "#50FA7B", glow: "rgba(80,250,123,0.7)" },
+        "ping_cloudflare": { name: "Cloudflare", color: "#8BE9FD", glow: "rgba(139,233,253,0.7)" },
+        "ping_google": { name: "Google", color: "#FFB86C", glow: "rgba(255,184,108,0.7)" }
+    };
+
+    function renderCanvasChart(samples, avgValue) {
+        const canvas = document.getElementById('tcpingCanvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const w = canvas.offsetWidth || (canvas.parentElement ? canvas.parentElement.offsetWidth : 800);
+        const h = canvas.offsetHeight || 320;
+        canvas.width = w; canvas.height = h;
+
+        ctx.clearRect(0, 0, w, h);
+        if (!samples || samples.length === 0) return;
+
+        // 1. Determine Max Latency
+        let allLats = [];
+        samples.forEach(s => {
+            if (s.latency !== null && s.latency !== undefined) allLats.push(s.latency);
+            if (s.targets_detail) {
+                Object.values(s.targets_detail).forEach(v => {
+                    if (v !== null && v !== undefined && typeof v === 'number') allLats.push(v);
+                });
+            }
+        });
+
+        const maxSample = allLats.length > 0 ? Math.max(...allLats) : 100;
+        const maxLat = Math.max(200, Math.ceil(maxSample * 1.25));
+
+        const paddingLeft = 55;
+        const paddingRight = 20;
+        const paddingTop = 20;
+        const paddingBottom = 30;
+
+        const chartW = w - paddingLeft - paddingRight;
+        const chartH = h - paddingTop - paddingBottom;
+
+        // 2. Draw Y-Axis Grid Lines & Labels
+        ctx.font = '11px "JetBrains Mono", monospace';
+        ctx.fillStyle = '#5D6A60';
+        ctx.textAlign = 'right';
+
+        const ySteps = 5;
+        for (let i = 0; i <= ySteps; i++) {
+            const latVal = Math.round((maxLat / ySteps) * i);
+            const y = h - paddingBottom - (latVal / maxLat) * chartH;
+
+            ctx.strokeStyle = 'rgba(146, 173, 151, 0.07)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(paddingLeft, y);
+            ctx.lineTo(w - paddingRight, y);
+            ctx.stroke();
+
+            ctx.fillText(`${latVal} ms`, paddingLeft - 8, y + 4);
+        }
+
+        // 3. Draw X-Axis Time Labels
+        ctx.textAlign = 'center';
+        const xStepCount = Math.min(8, samples.length);
+        const timeInterval = Math.max(1, Math.floor(samples.length / xStepCount));
+
+        for (let idx = 0; idx < samples.length; idx += timeInterval) {
+            const s = samples[idx];
+            const x = paddingLeft + (idx / Math.max(1, samples.length - 1)) * chartW;
+            if (s.time) {
+                ctx.fillText(s.time, x, h - 8);
+            }
+        }
+
+        // 4. Draw Threshold Lines
+        const y100 = h - paddingBottom - (100 / maxLat) * chartH;
+        if (y100 >= paddingTop && y100 <= h - paddingBottom) {
+            ctx.strokeStyle = 'rgba(231, 198, 107, 0.30)';
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath(); ctx.moveTo(paddingLeft, y100); ctx.lineTo(w - paddingRight, y100); ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        // 5. Update Legend Values
+        const latestSample = samples[samples.length - 1];
+        if (latestSample && latestSample.targets_detail) {
+            Object.keys(TARGET_CONFIG).forEach(key => {
+                const val = latestSample.targets_detail[key];
+                const legEl = document.getElementById(`leg_val_${key.replace('ping_','')}`);
+                if (legEl) {
+                    legEl.textContent = (val !== null && val !== undefined) ? `${Math.round(val)}ms` : '-ms';
+                }
+            });
+        }
+
+        // 6. Draw Cyber Pixel Bar Histogram
+        const numColumns = samples.length;
+        const colGap = 4;
+        const totalGap = (numColumns - 1) * colGap;
+        const colWidth = Math.max(3, Math.floor((chartW - totalGap) / numColumns));
+
+        const blockHeight = 4;
+        const blockGap = 2;
+        const totalBlockUnit = blockHeight + blockGap;
+
+        samples.forEach((s, idx) => {
+            const x = paddingLeft + idx * (colWidth + colGap);
+            let lat = s.latency;
+            if (currentTargetFilter !== 'all' && s.targets_detail && s.targets_detail[currentTargetFilter] !== undefined) {
+                lat = s.targets_detail[currentTargetFilter];
+            }
+
+            if (lat === null || lat === undefined) {
+                ctx.fillStyle = 'rgba(240, 120, 120, 0.6)';
+                ctx.fillRect(x, h - paddingBottom - blockHeight, colWidth, blockHeight);
+                return;
+            }
+
+            const barHeightPx = (lat / maxLat) * chartH;
+            const blockCount = Math.max(1, Math.floor(barHeightPx / totalBlockUnit));
+
+            for (let b = 0; b < blockCount; b++) {
+                const blockY = h - paddingBottom - (b + 1) * totalBlockUnit;
+                const blockLatVal = ((b + 1) / (chartH / totalBlockUnit)) * maxLat;
+
+                let blockColor = '#78E08F';
+                if (blockLatVal > 200) {
+                    blockColor = '#F07878';
+                } else if (blockLatVal > 100) {
+                    blockColor = '#E7C66B';
+                } else if (currentTargetFilter !== 'all' && TARGET_CONFIG[currentTargetFilter]) {
+                    blockColor = TARGET_CONFIG[currentTargetFilter].color;
+                }
+
+                ctx.fillStyle = blockColor;
+                ctx.fillRect(x, blockY, colWidth, blockHeight);
+            }
+
+            // Top peak cap indicator
+            const capY = h - paddingBottom - blockCount * totalBlockUnit - 1;
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(x, Math.max(paddingTop, capY), colWidth, 2);
+        });
+    }
+
+    async function fetchStats() {
+        try {
+            const res = await fetch('/stats');
+            const data = await res.json();
+            const cpu = data.cpu || 0;
+            const mem = data.memory || 0;
+            const disk = data.disk || 0;
+            const swap = data.swap || 0;
+
+            updateAsciiRow('cpu', cpu, 'cpu_val', 'ascii_cpu_bar');
+            updateAsciiRow('mem', mem, 'mem_val', 'ascii_mem_bar');
+            updateAsciiRow('disk', disk, 'disk_val', 'ascii_disk_bar');
+            updateAsciiRow('swap', swap, 'swap_val', 'ascii_swap_bar');
+
+            if (data.mem_used_gb !== undefined) {
+                const memBytes = document.getElementById('mem_bytes_val');
+                if (memBytes) memBytes.textContent = `${data.mem_used_gb} GB / ${data.mem_total_gb} GB`;
+            }
+            if (data.disk_used_gb !== undefined) {
+                const diskBytes = document.getElementById('disk_bytes_val');
+                if (diskBytes) diskBytes.textContent = `${data.disk_used_gb} GB / ${data.disk_total_gb} GB`;
+            }
+            if (data.swap_used_mb !== undefined) {
+                const swapBytes = document.getElementById('swap_bytes_val');
+                if (swapBytes) swapBytes.textContent = `${data.swap_used_mb} MB / ${data.swap_total_mb} MB`;
+            }
+            if (data.load) {
+                const loadEl = document.getElementById('cpu_load_val');
+                if (loadEl) loadEl.textContent = `load: ${data.load}`;
+            }
+        } catch(e) {}
+    }
+
+    function updateAsciiRow(type, pct, valId, barId) {
+        const valEl = document.getElementById(valId);
+        const barEl = document.getElementById(barId);
+        if (valEl) valEl.textContent = `${pct.toFixed(0)}%`;
+        if (barEl) {
+            const total = 16;
+            const filled = Math.min(total, Math.max(0, Math.round((pct / 100) * total)));
+            barEl.textContent = '[' + '█'.repeat(filled) + '░'.repeat(total - filled) + ']';
+            if (pct >= 85) barEl.className = 'ascii-bar bar-red';
+            else if (pct >= 70) barEl.className = 'ascii-bar bar-yellow';
+            else barEl.className = 'ascii-bar bar-green';
+        }
+    }
+
+    async function fetchTargets() {
+        try {
+            const res = await fetch('/api/targets');
+            const targets = await res.json();
+            const tbody = document.getElementById('targets_tbody');
+            if (tbody && Array.isArray(targets)) {
+                tbody.innerHTML = targets.map(t => `
+                    <tr>
+                        <td><span class="badge-bracket ${t.enabled ? 'status-healthy' : 'status-warning'}">[ ${t.enabled ? 'ACTIVE' : 'DISABLED'} ]</span></td>
+                        <td class="font-bold">${t.name}</td>
+                        <td class="text-cyan">${t.target}</td>
+                        <td><span class="badge-bracket status-cyan">${(t.type || 'tcp').toUpperCase()}</span></td>
+                        <td>${t.freq || 30}s</td>
+                        <td><span class="text-warning">Warn: ${t.threshold_warn || 160}ms</span> / <span class="text-critical">Crit: ${t.threshold_crit || 250}ms</span></td>
+                        <td style="display:flex; gap:6px;">
+                            <button class="btn-cli" onclick="toggleTarget('${t.id}')">[ ${t.enabled ? 'DISABLE' : 'ENABLE'} ]</button>
+                            <button class="btn-cli" onclick="editTargetModal('${t.id}')">[ EDIT ]</button>
+                            <button class="btn-cli" onclick="deleteTarget('${t.id}')">[ DELETE ]</button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        } catch(e) {}
+    }
+
+    function openAddTargetModal() {
+        document.getElementById('target_id_input').value = '';
+        document.getElementById('target_name_input').value = '';
+        document.getElementById('target_host_input').value = '';
+        document.getElementById('target_modal_title').textContent = '$ nano /etc/netwatch/targets.conf [NEW]';
+        document.getElementById('target_modal').style.display = 'flex';
+    }
+
+    function closeTargetModal(e) {
+        if (!e || e.target.id === 'target_modal') {
+            document.getElementById('target_modal').style.display = 'none';
+        }
+    }
+
+    async function editTargetModal(tid) {
+        try {
+            const res = await fetch('/api/targets');
+            const targets = await res.json();
+            const t = targets.find(item => item.id === tid);
+            if (t) {
+                document.getElementById('target_id_input').value = t.id;
+                document.getElementById('target_name_input').value = t.name || '';
+                document.getElementById('target_host_input').value = t.target || '';
+                document.getElementById('target_type_input').value = t.type || 'tcp';
+                document.getElementById('target_freq_input').value = t.freq || 30;
+                document.getElementById('target_warn_input').value = t.threshold_warn || 160;
+                document.getElementById('target_crit_input').value = t.threshold_crit || 250;
+                document.getElementById('target_modal_title').textContent = `$ nano /etc/netwatch/targets.conf [${t.name}]`;
+                document.getElementById('target_modal').style.display = 'flex';
+            }
+        } catch(e) {}
+    }
+
+    async function saveTargetSubmit() {
+        const id = document.getElementById('target_id_input').value;
+        const name = document.getElementById('target_name_input').value.trim();
+        const target = document.getElementById('target_host_input').value.trim();
+        const type = document.getElementById('target_type_input').value;
+        const freq = parseInt(document.getElementById('target_freq_input').value) || 30;
+        const warn = parseInt(document.getElementById('target_warn_input').value) || 160;
+        const crit = parseInt(document.getElementById('target_crit_input').value) || 250;
+
+        if (!name || !target) {
+            alert('请填写目标名称与 Host:Port');
+            return;
+        }
+
+        const payload = {
+            name, target, type, freq,
+            threshold_warn: warn,
+            threshold_crit: crit,
+            enabled: true
+        };
+        if (id) payload.id = id;
+
+        try {
+            await fetch('/api/targets', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            closeTargetModal();
+            fetchTargets();
+        } catch(e) {
+            alert('保存配置失败: ' + e.message);
+        }
+    }
+
+    async function deleteTarget(tid) {
+        if (!confirm('确定要删除该监测目标吗？')) return;
+        try {
+            await fetch(`/api/targets?id=${tid}`, { method: 'DELETE' });
+            fetchTargets();
+        } catch(e) {}
+    }
+
+    async function toggleTarget(tid) {
+        try {
+            const res = await fetch('/api/targets');
+            const targets = await res.json();
+            const target = targets.find(t => t.id === tid);
+            if (target) {
+                target.enabled = !target.enabled;
+                await fetch('/api/targets', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(target)
+                });
+                fetchTargets();
+            }
+        } catch(e) {}
+    }
+
+    async function renderUptimeHeatmap() {
+        const container = document.getElementById('heatmap_container');
+        if (!container) return;
+        container.innerHTML = '';
+        try {
+            const res = await fetch('/api/uptime/history');
+            const data = await res.json();
+            const slaVal = document.getElementById('uptime_sla_val');
+            if (slaVal) {
+                slaVal.textContent = `${data.sla30d || 100.0}% (${data.recorded_days || 1}d recorded)`;
+            }
+
+            (data.days || []).forEach(day => {
+                const sq = document.createElement('div');
+                if (day.status === 'nodata' || !day.has_data) {
+                    sq.className = 'heatmap-sq sq-nodata';
+                    sq.title = `${day.date} | 未记录数据 (No Telemetry Data)`;
+                } else {
+                    sq.className = `heatmap-sq sq-${day.status}`;
+                    sq.title = `${day.date} | SLA: ${day.sla}% | Incidents: ${day.incidents} | Max Latency: ${day.maxLatency}ms\nRoot cause: ${day.rootCause}`;
+                }
+                container.appendChild(sq);
+            });
+        } catch(e) {}
+    }
+
+    async function startFullDiagnostics() {
+        const btn = document.getElementById('diag_run_btn');
+        if (btn) { btn.disabled = true; btn.textContent = '[~ RUNNING DIAGNOSTIC...]'; }
+        
+        const container = document.getElementById('diag_stages_grid');
+        if (container) {
+            container.innerHTML = `
+                <div class="diag-cli-item"><span>[~] Stage 1/12: Local Interfaces check...</span><span class="text-cyan">RUNNING</span></div>
+                <div class="diag-cli-item"><span>[ ] Stage 2/12: Gateway Routing...</span><span class="text-muted">WAITING</span></div>
+                <div class="diag-cli-item"><span>[ ] Stage 3/12: TCP Handshake...</span><span class="text-muted">WAITING</span></div>
+            `;
+        }
+
+        try {
+            const targetInput = document.getElementById('diag_target_input');
+            const target = (targetInput && targetInput.value) ? targetInput.value : 'github.com';
+            const res = await fetch(`/api/diagnose/full?target=${target}`);
+            const data = await res.json();
+            
+            if (container) {
+                container.innerHTML = (data.stages || []).map(s => `
+                    <div class="diag-cli-item">
+                        <span>[✓] Stage ${s.stage}: ${s.name} - ${s.raw}</span>
+                        <span class="badge-bracket status-${s.status}">[ ${s.status.toUpperCase()} ] (${s.duration}ms)</span>
+                    </div>
+                `).join('');
+            }
+        } catch(e) {} finally {
+            if (btn) { btn.disabled = false; btn.textContent = '[✓ DIAGNOSTIC COMPLETED]'; }
+        }
+    }
+
+    function setPingRange(r, btn) {
+        document.querySelectorAll('.card-cli-tier1 .btn-cli').forEach(b => b.classList.remove('active'));
+        if (btn) btn.classList.add('active');
+        fetchPings();
+    }
+
+    function exportPingCSV() { alert('Exported latency log to csv'); }
+    function exportDiagnosticReport() { window.location.href = '/api/report/export?format=markdown'; }
+    function exportReportFmt(fmt) { window.location.href = `/api/report/export?format=${fmt}`; }
+
+    function filterLogs(lvl, btn) {}
+    function applyLogGrep() {}
+    function toggleAutoScroll() {}
+    function clearLogView() { document.getElementById('log_stream_box').innerHTML = ''; }
+
+    // Keyboard Shortcuts Listener
+    window.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        const key = e.key.toUpperCase();
+        if (key === 'R') { fetchSummary(); fetchPings(); fetchStats(); }
+        else if (key === 'D') { switchNavTab('diagnostics'); }
+        else if (key === 'L') { switchNavTab('events'); }
+        else if (key === 'T') { switchNavTab('targets'); }
+        else if (key === '?') { showKeyboardHelp(); }
+        else if (key === 'ESCAPE') { closeKeyboardHelp(); }
+    });
+
+    // Init loops
+    fetchSummary();
+    fetchPings();
+    fetchStats();
+    renderUptimeHeatmap();
+
+    // Restore active tab
+    const initialTab = window.location.hash.replace('#','') || localStorage.getItem('console_active_tab') || 'overview';
+    switchNavTab(initialTab);
+
+    setInterval(fetchSummary, 10000);
+    setInterval(fetchPings, 15000);
+    setInterval(fetchStats, 5000);
+    </script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 # console-web (NetWatch 赛博朋克网络运维终端)
 
-![Build & Publish Docker](https://github.com/podcctv/console-web/actions/workflows/docker-pub![Version](https://img.shields.io/badge/version-v3.1.0-78E08F?style=flat-square&logo=git)
+![Build & Publish Docker](https://github.com/podcctv/console-web/actions/workflows/docker-pub![Version](https://img.shields.io/badge/version-v3.1.1-78E08F?style=flat-square&logo=git)
 ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
 
 `console-web` 是一个基于 [Flask](https://flask.palletsprojects.com/) 和 [psutil](https://psutil.readthedocs.io/) 构建的极简赛博朋克风格系统监控面板与网络运维终端 (`NetWatch`)。界面采用暗黑终端与玻璃拟态设计，支持实时 TCP Ping 多目标延迟趋势、IPv4/IPv6 双栈链路对比、多端响应式适配、1-Click IP 复制、ACME SSL 证书自动续期及全链路故障诊断。
@@ -56,7 +56,7 @@ wget -qO- https://raw.githubusercontent.com/podcctv/console-web/main/deploy.sh |
 ### 🟢 `v3.0.0` (2026-07-29) - 响应式多端重构与视觉交付
 - **Visual Design System**：全站确立暗黑终端 UI，规范绿色（`#78E08F`）仅用于健康状态与主要操作。
 - **Mobile Responsive Navbar**：桌面端顶部 Sticky 导航；移动端（<768px）新增 Fixed 底部导航栏与 44px+ 触控交互。
-- **Mobile Card Breakdown**：在移动端将协议对比矩阵与网卡列表宽表格重构为 Mobile Card 上下堆叠组件。��网 IP 地址或自定义域名自动向 ZeroSSL / Let's Encrypt 申请 90 天免费 SSL 证书。
+- **Mobile Card Breakdown**：在移动端将协议对比矩阵与网卡列表宽表格重构为 Mobile Card 上下堆叠组件。��网 IP 地址或自定义域名自动向 ZeroSSL / Let's Encrypt 申请 90 天免费 SSL 证书。
   - 后台守护进程自动监测证书过期天数，**小于 30 天时自动触发静默自动续期**。
 - **⚡ 12 阶段全链路网络诊断流**：
   - 支持 `$ diagnose --full` 自动排查 DNS 解析、TCP 连通性、MTU/MSS、TLS 握手及路由 Hop。
