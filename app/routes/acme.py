@@ -28,10 +28,12 @@ def acme_challenge_file(filename):
     return "Challenge file not found", 404
 
 @acme_bp.route("/acme/status")
+@acme_bp.route("/api/acme/status")
 def acme_status_route():
     return jsonify(acme_manager.get_cert_status())
 
 @acme_bp.route("/acme/issue")
+@acme_bp.route("/api/acme/issue")
 def acme_issue_route():
     target = request.args.get("target", "").strip() or None
     email = request.args.get("email", "").strip() or None
@@ -39,6 +41,7 @@ def acme_issue_route():
     return jsonify(success=success, message=msg)
 
 @acme_bp.route("/acme/renew")
+@acme_bp.route("/api/acme/renew")
 def acme_renew_route():
     success, msg = acme_manager.renew_cert()
     return jsonify(success=success, message=msg)

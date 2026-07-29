@@ -562,6 +562,10 @@
                         <span class="cmd-subtitle">// REALTIME MULTI-TARGET TCP LATENCY PIXEL HISTOGRAM</span>
                     </div>
                     <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                        <div style="display:flex; gap:4px; margin-right:6px;">
+                            <button class="btn-cli active" id="btn_chart_mode_hist" onclick="setChartMode('histogram')">[ 📊 HISTOGRAM ]</button>
+                            <button class="btn-cli" id="btn_chart_mode_line" onclick="setChartMode('line')">[ 📈 TREND LINE ]</button>
+                        </div>
                         <div style="font-family:var(--font-mono); font-size:0.78rem; color:var(--text-muted);">
                             Granularity: 
                             <select id="ping_granularity" style="background:var(--bg-input); border:1px solid var(--border-tier2); color:var(--text-primary); padding:3px 8px; border-radius:var(--radius-sm); font-family:var(--font-mono); font-size:0.78rem; outline:none;" onchange="fetchPings()">
@@ -581,25 +585,25 @@
                     </div>
                 </div>
 
-                <!-- Cyber Multi-Target Legend Bar -->
+                <!-- Cyber Multi-Target Legend Bar (Multi-Selectable) -->
                 <div class="chart-target-banner" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                     <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;" id="cyber_legend_bar">
-                        <button class="btn-cli active" style="padding:3px 8px; font-size:0.76rem;" onclick="setTargetFilter('all', this)">
+                        <button class="btn-cli active" id="target_btn_all" style="padding:3px 8px; font-size:0.76rem;" onclick="toggleTargetFilter('all')">
                             [ ALL TARGETS ]
                         </button>
-                        <button class="btn-cli" style="padding:3px 8px; font-size:0.76rem; border-color:#FF6B6B; color:#FF6B6B;" onclick="setTargetFilter('ping_cu', this)">
+                        <button class="btn-cli active" id="target_btn_ping_cu" style="padding:3px 8px; font-size:0.76rem; border-color:#FF6B6B; color:#FF6B6B; background:rgba(255,107,107,0.14);" onclick="toggleTargetFilter('ping_cu')">
                             ● Zhejiang Unicom <span id="leg_val_cu" class="mono text-muted">-ms</span>
                         </button>
-                        <button class="btn-cli" style="padding:3px 8px; font-size:0.76rem; border-color:#BD93F9; color:#BD93F9;" onclick="setTargetFilter('ping_cm', this)">
+                        <button class="btn-cli active" id="target_btn_ping_cm" style="padding:3px 8px; font-size:0.76rem; border-color:#BD93F9; color:#BD93F9; background:rgba(189,147,249,0.14);" onclick="toggleTargetFilter('ping_cm')">
                             ● Zhejiang Mobile <span id="leg_val_cm" class="mono text-muted">-ms</span>
                         </button>
-                        <button class="btn-cli" style="padding:3px 8px; font-size:0.76rem; border-color:#50FA7B; color:#50FA7B;" onclick="setTargetFilter('ping_ct', this)">
+                        <button class="btn-cli active" id="target_btn_ping_ct" style="padding:3px 8px; font-size:0.76rem; border-color:#50FA7B; color:#50FA7B; background:rgba(80,250,123,0.14);" onclick="toggleTargetFilter('ping_ct')">
                             ● Zhejiang Telecom <span id="leg_val_ct" class="mono text-muted">-ms</span>
                         </button>
-                        <button class="btn-cli" style="padding:3px 8px; font-size:0.76rem; border-color:#8BE9FD; color:#8BE9FD;" onclick="setTargetFilter('ping_cloudflare', this)">
+                        <button class="btn-cli active" id="target_btn_ping_cloudflare" style="padding:3px 8px; font-size:0.76rem; border-color:#8BE9FD; color:#8BE9FD; background:rgba(139,233,253,0.14);" onclick="toggleTargetFilter('ping_cloudflare')">
                             ● Cloudflare <span id="leg_val_cloudflare" class="mono text-muted">-ms</span>
                         </button>
-                        <button class="btn-cli" style="padding:3px 8px; font-size:0.76rem; border-color:#FFB86C; color:#FFB86C;" onclick="setTargetFilter('ping_google', this)">
+                        <button class="btn-cli active" id="target_btn_ping_google" style="padding:3px 8px; font-size:0.76rem; border-color:#FFB86C; color:#FFB86C; background:rgba(255,184,108,0.14);" onclick="toggleTargetFilter('ping_google')">
                             ● Google <span id="leg_val_google" class="mono text-muted">-ms</span>
                         </button>
                     </div>
@@ -1181,23 +1185,81 @@
         } catch(e) {}
     }
 
-    let currentTargetFilter = 'all';
+    const ALL_TARGET_KEYS = ["ping_cu", "ping_cm", "ping_ct", "ping_cloudflare", "ping_google"];
+    let selectedTargets = new Set(ALL_TARGET_KEYS);
+    let currentChartMode = 'histogram';
 
-    function setTargetFilter(targetId, btn) {
-        currentTargetFilter = targetId;
-        document.querySelectorAll('.card-cli-tier1 .btn-cli').forEach(b => {
-            if (b.getAttribute('onclick') && b.getAttribute('onclick').includes('setTargetFilter')) {
-                b.classList.remove('active');
+    function toggleTargetFilter(targetId) {
+        if (targetId === 'all') {
+            if (selectedTargets.size === ALL_TARGET_KEYS.length) {
+                selectedTargets = new Set([ALL_TARGET_KEYS[0]]);
+            } else {
+                selectedTargets = new Set(ALL_TARGET_KEYS);
+            }
+        } else {
+            if (selectedTargets.has(targetId)) {
+                if (selectedTargets.size > 1) {
+                    selectedTargets.delete(targetId);
+                }
+            } else {
+                selectedTargets.add(targetId);
+            }
+        }
+        updateTargetButtonUI();
+        renderCanvasChart(pingHistory);
+    }
+
+    function updateTargetButtonUI() {
+        const isAll = selectedTargets.size === ALL_TARGET_KEYS.length;
+        const btnAll = document.getElementById('target_btn_all');
+        if (btnAll) {
+            if (isAll) btnAll.classList.add('active');
+            else btnAll.classList.remove('active');
+        }
+
+        ALL_TARGET_KEYS.forEach(key => {
+            const btn = document.getElementById(`target_btn_${key}`);
+            if (!btn) return;
+            const isSelected = selectedTargets.has(key);
+            const color = TARGET_CONFIG[key]?.color || '#78E08F';
+            
+            if (isSelected) {
+                btn.classList.add('active');
+                btn.style.opacity = '1.0';
+                btn.style.background = `${color}22`;
+                btn.style.borderColor = color;
+                btn.style.color = color;
+                btn.style.boxShadow = `0 0 8px ${color}33`;
+            } else {
+                btn.classList.remove('active');
+                btn.style.opacity = '0.4';
+                btn.style.background = 'transparent';
+                btn.style.borderColor = 'var(--border-tier3)';
+                btn.style.color = 'var(--text-muted)';
+                btn.style.boxShadow = 'none';
             }
         });
-        if (btn) btn.classList.add('active');
-        fetchPings();
+    }
+
+    function setChartMode(mode) {
+        currentChartMode = mode;
+        const btnHist = document.getElementById('btn_chart_mode_hist');
+        const btnLine = document.getElementById('btn_chart_mode_line');
+        if (btnHist && btnLine) {
+            if (mode === 'histogram') {
+                btnHist.classList.add('active');
+                btnLine.classList.remove('active');
+            } else {
+                btnLine.classList.add('active');
+                btnHist.classList.remove('active');
+            }
+        }
+        renderCanvasChart(pingHistory);
     }
 
     async function fetchPings() {
         try {
-            const url = currentTargetFilter !== 'all' ? `/pings?target_id=${currentTargetFilter}` : '/pings';
-            const res = await fetch(url);
+            const res = await fetch('/pings');
             const data = await res.json();
             const stats = data.stats || {};
             
@@ -1251,29 +1313,36 @@
         ctx.clearRect(0, 0, w, h);
         if (!samples || samples.length === 0) return;
 
-        // 1. Determine Max Latency
-        let allLats = [];
+        // 1. Collect all latency values among SELECTED targets to calculate max Y scale
+        let activeKeys = Array.from(selectedTargets);
+        if (activeKeys.length === 0) activeKeys = ALL_TARGET_KEYS;
+
+        let selectedLats = [];
         samples.forEach(s => {
-            if (s.latency !== null && s.latency !== undefined) allLats.push(s.latency);
             if (s.targets_detail) {
-                Object.values(s.targets_detail).forEach(v => {
-                    if (v !== null && v !== undefined && typeof v === 'number') allLats.push(v);
+                activeKeys.forEach(k => {
+                    const val = s.targets_detail[k];
+                    if (val !== null && val !== undefined && typeof val === 'number') {
+                        selectedLats.push(val);
+                    }
                 });
+            } else if (s.latency !== null && s.latency !== undefined) {
+                selectedLats.push(s.latency);
             }
         });
 
-        const maxSample = allLats.length > 0 ? Math.max(...allLats) : 100;
-        const maxLat = Math.max(200, Math.ceil(maxSample * 1.25));
+        const maxSample = selectedLats.length > 0 ? Math.max(...selectedLats) : 100;
+        const maxLat = Math.max(160, Math.ceil(maxSample * 1.25));
 
         const paddingLeft = 55;
         const paddingRight = 20;
-        const paddingTop = 20;
+        const paddingTop = 25;
         const paddingBottom = 30;
 
         const chartW = w - paddingLeft - paddingRight;
         const chartH = h - paddingTop - paddingBottom;
 
-        // 2. Draw Y-Axis Grid Lines & Labels
+        // 2. Y-Axis Grid Lines & Labels
         ctx.font = '11px "JetBrains Mono", monospace';
         ctx.fillStyle = '#5D6A60';
         ctx.textAlign = 'right';
@@ -1293,7 +1362,7 @@
             ctx.fillText(`${latVal} ms`, paddingLeft - 8, y + 4);
         }
 
-        // 3. Draw X-Axis Time Labels
+        // 3. X-Axis Time Labels
         ctx.textAlign = 'center';
         const xStepCount = Math.min(8, samples.length);
         const timeInterval = Math.max(1, Math.floor(samples.length / xStepCount));
@@ -1306,7 +1375,7 @@
             }
         }
 
-        // 4. Draw Threshold Lines
+        // 4. Threshold Lines (100ms Warning)
         const y100 = h - paddingBottom - (100 / maxLat) * chartH;
         if (y100 >= paddingTop && y100 <= h - paddingBottom) {
             ctx.strokeStyle = 'rgba(231, 198, 107, 0.30)';
@@ -1315,10 +1384,10 @@
             ctx.setLineDash([]);
         }
 
-        // 5. Update Legend Values
+        // 5. Update Legend Realtime Values
         const latestSample = samples[samples.length - 1];
         if (latestSample && latestSample.targets_detail) {
-            Object.keys(TARGET_CONFIG).forEach(key => {
+            ALL_TARGET_KEYS.forEach(key => {
                 const val = latestSample.targets_detail[key];
                 const legEl = document.getElementById(`leg_val_${key.replace('ping_','')}`);
                 if (legEl) {
@@ -1327,54 +1396,109 @@
             });
         }
 
-        // 6. Draw Cyber Pixel Bar Histogram
+        // 6. Draw Chart Data based on currentChartMode
         const numColumns = samples.length;
         const colGap = 4;
         const totalGap = (numColumns - 1) * colGap;
-        const colWidth = Math.max(3, Math.floor((chartW - totalGap) / numColumns));
+        const colWidth = Math.max(4, Math.floor((chartW - totalGap) / numColumns));
 
-        const blockHeight = 4;
-        const blockGap = 2;
-        const totalBlockUnit = blockHeight + blockGap;
+        if (currentChartMode === 'histogram') {
+            // --- 📊 SCIENTIFIC MULTI-TARGET GROUPED PIXEL HISTOGRAM ---
+            const numTargets = activeKeys.length;
+            const subWidth = Math.max(2, Math.floor(colWidth / numTargets));
+            const subGap = numTargets > 1 ? 1 : 0;
+            const drawWidth = Math.max(1, subWidth - subGap);
+            const blockHeight = 4;
+            const blockGap = 2;
+            const totalBlockUnit = blockHeight + blockGap;
 
-        samples.forEach((s, idx) => {
-            const x = paddingLeft + idx * (colWidth + colGap);
-            let lat = s.latency;
-            if (currentTargetFilter !== 'all' && s.targets_detail && s.targets_detail[currentTargetFilter] !== undefined) {
-                lat = s.targets_detail[currentTargetFilter];
-            }
+            samples.forEach((s, idx) => {
+                const colX = paddingLeft + idx * (colWidth + colGap);
 
-            if (lat === null || lat === undefined) {
-                ctx.fillStyle = 'rgba(240, 120, 120, 0.6)';
-                ctx.fillRect(x, h - paddingBottom - blockHeight, colWidth, blockHeight);
-                return;
-            }
+                activeKeys.forEach((key, tIdx) => {
+                    const subX = colX + tIdx * subWidth;
+                    let lat = s.targets_detail ? s.targets_detail[key] : s.latency;
+                    const config = TARGET_CONFIG[key] || { color: '#78E08F' };
 
-            const barHeightPx = (lat / maxLat) * chartH;
-            const blockCount = Math.max(1, Math.floor(barHeightPx / totalBlockUnit));
+                    if (lat === null || lat === undefined) {
+                        ctx.fillStyle = 'rgba(240, 120, 120, 0.4)';
+                        ctx.fillRect(subX, h - paddingBottom - 3, drawWidth, 3);
+                        return;
+                    }
 
-            for (let b = 0; b < blockCount; b++) {
-                const blockY = h - paddingBottom - (b + 1) * totalBlockUnit;
-                const blockLatVal = ((b + 1) / (chartH / totalBlockUnit)) * maxLat;
+                    // Determine uniform single color for the ENTIRE column (no vertical multi-color stacking!)
+                    let barColor = config.color;
+                    if (numTargets === 1) {
+                        // Single target selected: use health color status
+                        if (lat > 200) barColor = '#F07878';
+                        else if (lat > 100) barColor = '#E7C66B';
+                        else barColor = config.color;
+                    } else {
+                        // Multi-target grouped mode: override with alert color if >200ms
+                        if (lat > 200) barColor = '#F07878';
+                        else if (lat > 100) barColor = '#E7C66B';
+                    }
 
-                let blockColor = '#78E08F';
-                if (blockLatVal > 200) {
-                    blockColor = '#F07878';
-                } else if (blockLatVal > 100) {
-                    blockColor = '#E7C66B';
-                } else if (currentTargetFilter !== 'all' && TARGET_CONFIG[currentTargetFilter]) {
-                    blockColor = TARGET_CONFIG[currentTargetFilter].color;
-                }
+                    const barHeightPx = (lat / maxLat) * chartH;
+                    const blockCount = Math.max(1, Math.floor(barHeightPx / totalBlockUnit));
 
-                ctx.fillStyle = blockColor;
-                ctx.fillRect(x, blockY, colWidth, blockHeight);
-            }
+                    // Render discrete blocks using the EXACT SAME uniform color from bottom to top
+                    for (let b = 0; b < blockCount; b++) {
+                        const blockY = h - paddingBottom - (b + 1) * totalBlockUnit;
+                        const isTopCap = (b === blockCount - 1);
 
-            // Top peak cap indicator
-            const capY = h - paddingBottom - blockCount * totalBlockUnit - 1;
-            ctx.fillStyle = '#FFFFFF';
-            ctx.fillRect(x, Math.max(paddingTop, capY), colWidth, 2);
-        });
+                        ctx.fillStyle = isTopCap ? '#FFFFFF' : barColor;
+                        ctx.globalAlpha = isTopCap ? 1.0 : 0.85;
+                        ctx.fillRect(subX, blockY, drawWidth, blockHeight);
+                    }
+                    ctx.globalAlpha = 1.0;
+                });
+            });
+
+        } else {
+            // --- 📈 NEON MULTI-TARGET GLOWING TREND LINE ---
+            activeKeys.forEach(key => {
+                const config = TARGET_CONFIG[key] || { color: '#78E08F', glow: 'rgba(120,224,143,0.7)' };
+                const points = [];
+
+                samples.forEach((s, idx) => {
+                    let lat = s.targets_detail ? s.targets_detail[key] : s.latency;
+                    const x = paddingLeft + (idx / Math.max(1, samples.length - 1)) * chartW;
+                    if (lat !== null && lat !== undefined) {
+                        const y = h - paddingBottom - (lat / maxLat) * chartH;
+                        points.push({ x, y, lat });
+                    }
+                });
+
+                if (points.length === 0) return;
+
+                // Draw curve
+                ctx.shadowColor = config.glow;
+                ctx.shadowBlur = 8;
+                ctx.strokeStyle = config.color;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+
+                points.forEach((pt, i) => {
+                    if (i === 0) ctx.moveTo(pt.x, pt.y);
+                    else {
+                        const prev = points[i - 1];
+                        const cx = (prev.x + pt.x) / 2;
+                        ctx.bezierCurveTo(cx, prev.y, cx, pt.y, pt.x, pt.y);
+                    }
+                });
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                // Draw dots
+                points.forEach(pt => {
+                    ctx.fillStyle = config.color;
+                    ctx.beginPath();
+                    ctx.arc(pt.x, pt.y, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+            });
+        }
     }
 
     async function fetchStats() {

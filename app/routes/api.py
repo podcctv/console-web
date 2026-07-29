@@ -79,6 +79,7 @@ def api_status_summary():
     })
 
 @api_bp.route("/pings")
+@api_bp.route("/api/pings")
 def pings():
     client_ip = request.headers.get("X-Forwarded-For", request.remote_addr)
     if client_ip and "," in client_ip:
@@ -129,6 +130,7 @@ def pings():
     return jsonify(results)
 
 @api_bp.route("/stats")
+@api_bp.route("/api/stats")
 def stats():
     return jsonify(get_system_stats_data())
 
