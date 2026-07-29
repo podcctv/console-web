@@ -468,7 +468,7 @@
                     <div class="card-header-left">
                         <span class="cmd-title">root@netwatch:~$ ./status --summary</span>
                     </div>
-                    <span class="mono text-muted" style="font-size:0.78rem">NODE_ID: fra1-vps-01</span>
+                    <span class="mono text-muted" style="font-size:0.78rem" id="hero_node_id">NODE_ID: fra1-vps-01</span>
                 </div>
 
                 <div class="hero-grid-3col">
@@ -1173,6 +1173,8 @@
             if (syncTime) syncTime.textContent = data.lastSuccessfulSync || '--:--:--';
             if (checksRatio) checksRatio.textContent = `${data.completedChecks} / ${data.totalChecks}`;
             if (reasonEl) reasonEl.textContent = data.statusReason || '';
+            const nodeEl = document.getElementById('hero_node_id');
+            if (nodeEl && data.nodeId) nodeEl.textContent = `NODE_ID: ${data.nodeId}`;
             
             if (statusEl) {
                 const st = data.overallStatus;

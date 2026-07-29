@@ -157,3 +157,66 @@ def humanize_bytes(size: float) -> str:
             return f"{size:.1f}{unit}"
         size /= 1024
     return f"{size:.1f}EB"
+
+_node_id_cache = {"node_id": None, "timestamp": 0}
+
+def get_auto_node_id(ip: str = None) -> str:
+    """Generate a realistic, professional Node ID based on server public IP geolocation and ISP."""
+    now = time.time()
+    with _cache_lock:
+        if _node_id_cache["node_id"] and (now - _node_id_cache["timestamp"] < 3600):
+            return _node_id_cache["node_id"]
+
+    if not ip or is_private_ip(ip):
+        ip = get_public_ip()
+
+    if is_private_ip(ip):
+        return "local-dev-vps-01"
+
+    node_id = "fra1-vps-01"
+    try:
+        req = urllib.request.Request(
+            f"http://ip-api.com/json/{ip}?fields=countryCode,city,isp",
+            headers={"User-Agent": "console-web/3.3"}
+        )
+        with urllib.request.urlopen(req, timeout=3) as resp:
+            data = json.loads(resp.read().decode())
+            country = (data.get("countryCode") or "US").upper()
+            city = (data.get("city") or "").lower()
+            isp = (data.get("isp") or "").lower()
+
+            city_code = country.lower()
+            if "frankfurt" in city: city_code = "fra"
+            elif "hong kong" in city or country == "HK": city_code = "hkg"
+            elif "tokyo" in city or "osaka" in city or country == "JP": city_code = "tyo"
+            elif "singapore" in city or country == "SG": city_code = "sin"
+            elif "london" in city or country == "GB": city_code = "lhr"
+            elif "hangzhou" in city or "zhejiang" in city: city_code = "hgh"
+            elif "shanghai" in city: city_code = "sha"
+            elif "beijing" in city: city_code = "pek"
+            elif "guangzhou" in city or "shenzhen" in city: city_code = "can"
+            elif "san jose" in city or "san francisco" in city or "los angeles" in city: city_code = "sjc"
+            else: city_code = f"{country.lower()}-01"
+
+            isp_code = "node"
+            if "hetzner" in isp: isp_code = "hetzner"
+            elif "alibaba" in isp or "aliyun" in isp: isp_code = "aliyun"
+            elif "tencent" in isp: isp_code = "tencent"
+            elif "digitalocean" in isp: isp_code = "do"
+            elif "linode" in isp or "akamai" in isp: isp_code = "linode"
+            elif "telecom" in isp or "chinatelecom" in isp: isp_code = "ct"
+            elif "unicom" in isp or "chinaunicom" in isp: isp_code = "cu"
+            elif "mobile" in isp or "chinamobile" in isp: isp_code = "cm"
+            elif "aws" in isp or "amazon" in isp: isp_code = "aws"
+            elif "google" in isp: isp_code = "gcp"
+            elif isp: isp_code = isp.split()[0].lower()
+
+            node_id = f"{city_code}-{isp_code}-01"
+    except Exception as e:
+        logger.warning("Auto node ID generation error: %s", e)
+
+    with _cache_lock:
+        _node_id_cache["node_id"] = node_id
+        _node_id_cache["timestamp"] = now
+
+    return node_id

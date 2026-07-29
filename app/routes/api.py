@@ -15,7 +15,7 @@ from app.config import PING_TARGETS, COMMANDS
 from app.tsdb import tsdb
 from app.network import (
     tcp_ping, icmp_ping, get_public_ip, is_private_ip, query_isp,
-    ensure_isp_info, ISP_FULL_NAME, ISP_SHORT_NAME, humanize, humanize_bytes
+    ensure_isp_info, get_auto_node_id, ISP_FULL_NAME, ISP_SHORT_NAME, humanize, humanize_bytes
 )
 from app.system_stats import get_system_stats_data, get_uptime_history_data
 
@@ -59,6 +59,7 @@ def api_status_summary():
             reason = "All primary network checks passed."
             
     return jsonify({
+        "nodeId": get_auto_node_id(egress_ip),
         "overallStatus": overall_status,
         "statusReason": reason,
         "validSamples": len(valid_samples),
