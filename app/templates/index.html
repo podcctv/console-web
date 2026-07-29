@@ -558,13 +558,13 @@
             <div class="card-cli-tier1">
                 <div class="card-header-bar" style="flex-wrap:wrap; gap:10px;">
                     <div class="card-header-left">
-                        <span class="cmd-title">$ tcping --watch --histogram</span>
-                        <span class="cmd-subtitle">// REALTIME MULTI-TARGET TCP LATENCY PIXEL HISTOGRAM</span>
+                        <span class="cmd-title">$ tcping --watch</span>
+                        <span class="cmd-subtitle">// REALTIME MULTI-TARGET TCP LATENCY TREND GRAPH</span>
                     </div>
                     <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                         <div style="display:flex; gap:4px; margin-right:6px;">
-                            <button class="btn-cli active" id="btn_chart_mode_hist" onclick="setChartMode('histogram')">[ 📊 HISTOGRAM ]</button>
-                            <button class="btn-cli" id="btn_chart_mode_line" onclick="setChartMode('line')">[ 📈 TREND LINE ]</button>
+                            <button class="btn-cli active" id="btn_chart_mode_line" onclick="setChartMode('line')">[ 📈 TREND LINE ]</button>
+                            <button class="btn-cli" id="btn_chart_mode_hist" onclick="setChartMode('histogram')">[ 📊 HISTOGRAM ]</button>
                         </div>
                         <div style="font-family:var(--font-mono); font-size:0.78rem; color:var(--text-muted);">
                             Granularity: 
@@ -1187,7 +1187,7 @@
 
     const ALL_TARGET_KEYS = ["ping_cu", "ping_cm", "ping_ct", "ping_cloudflare", "ping_google"];
     let selectedTargets = new Set(ALL_TARGET_KEYS);
-    let currentChartMode = 'histogram';
+    let currentChartMode = 'line';
 
     function toggleTargetFilter(targetId) {
         if (targetId === 'all') {
@@ -1229,7 +1229,7 @@
                 btn.style.background = `${color}22`;
                 btn.style.borderColor = color;
                 btn.style.color = color;
-                btn.style.boxShadow = `0 0 8px ${color}33`;
+                btn.style.boxShadow = `0 0 8px ${color}44`;
             } else {
                 btn.classList.remove('active');
                 btn.style.opacity = '0.4';
@@ -1246,12 +1246,12 @@
         const btnHist = document.getElementById('btn_chart_mode_hist');
         const btnLine = document.getElementById('btn_chart_mode_line');
         if (btnHist && btnLine) {
-            if (mode === 'histogram') {
-                btnHist.classList.add('active');
-                btnLine.classList.remove('active');
-            } else {
+            if (mode === 'line') {
                 btnLine.classList.add('active');
                 btnHist.classList.remove('active');
+            } else {
+                btnHist.classList.add('active');
+                btnLine.classList.remove('active');
             }
         }
         renderCanvasChart(pingHistory);
@@ -1295,11 +1295,11 @@
     }
 
     const TARGET_CONFIG = {
-        "ping_cu": { name: "Zhejiang Unicom", color: "#FF6B6B", glow: "rgba(255,107,107,0.7)" },
-        "ping_cm": { name: "Zhejiang Mobile", color: "#BD93F9", glow: "rgba(189,147,249,0.7)" },
-        "ping_ct": { name: "Zhejiang Telecom", color: "#50FA7B", glow: "rgba(80,250,123,0.7)" },
-        "ping_cloudflare": { name: "Cloudflare", color: "#8BE9FD", glow: "rgba(139,233,253,0.7)" },
-        "ping_google": { name: "Google", color: "#FFB86C", glow: "rgba(255,184,108,0.7)" }
+        "ping_cu": { name: "Zhejiang Unicom", color: "#FF6B6B", glow: "rgba(255,107,107,0.8)", fillStart: "rgba(255,107,107,0.22)" },
+        "ping_cm": { name: "Zhejiang Mobile", color: "#BD93F9", glow: "rgba(189,147,249,0.8)", fillStart: "rgba(189,147,249,0.22)" },
+        "ping_ct": { name: "Zhejiang Telecom", color: "#50FA7B", glow: "rgba(80,250,123,0.8)", fillStart: "rgba(80,250,123,0.22)" },
+        "ping_cloudflare": { name: "Cloudflare", color: "#8BE9FD", glow: "rgba(139,233,253,0.8)", fillStart: "rgba(139,233,253,0.22)" },
+        "ping_google": { name: "Google", color: "#FFB86C", glow: "rgba(255,184,108,0.8)", fillStart: "rgba(255,184,108,0.22)" }
     };
 
     function renderCanvasChart(samples, avgValue) {
@@ -1352,7 +1352,7 @@
             const latVal = Math.round((maxLat / ySteps) * i);
             const y = h - paddingBottom - (latVal / maxLat) * chartH;
 
-            ctx.strokeStyle = 'rgba(146, 173, 151, 0.07)';
+            ctx.strokeStyle = 'rgba(146, 173, 151, 0.08)';
             ctx.lineWidth = 1;
             ctx.beginPath();
             ctx.moveTo(paddingLeft, y);
@@ -1378,7 +1378,7 @@
         // 4. Threshold Lines (100ms Warning)
         const y100 = h - paddingBottom - (100 / maxLat) * chartH;
         if (y100 >= paddingTop && y100 <= h - paddingBottom) {
-            ctx.strokeStyle = 'rgba(231, 198, 107, 0.30)';
+            ctx.strokeStyle = 'rgba(231, 198, 107, 0.25)';
             ctx.setLineDash([4, 4]);
             ctx.beginPath(); ctx.moveTo(paddingLeft, y100); ctx.lineTo(w - paddingRight, y100); ctx.stroke();
             ctx.setLineDash([]);
@@ -1402,7 +1402,84 @@
         const totalGap = (numColumns - 1) * colGap;
         const colWidth = Math.max(4, Math.floor((chartW - totalGap) / numColumns));
 
-        if (currentChartMode === 'histogram') {
+        if (currentChartMode === 'line') {
+            // --- 📈 PREMIUM NEON MULTI-TARGET GLOWING TREND CURVES ---
+            activeKeys.forEach(key => {
+                const config = TARGET_CONFIG[key] || { color: '#78E08F', glow: 'rgba(120,224,143,0.8)', fillStart: 'rgba(120,224,143,0.22)' };
+                const points = [];
+
+                samples.forEach((s, idx) => {
+                    let lat = s.targets_detail ? s.targets_detail[key] : s.latency;
+                    const x = paddingLeft + (idx / Math.max(1, samples.length - 1)) * chartW;
+                    if (lat !== null && lat !== undefined) {
+                        const y = h - paddingBottom - (lat / maxLat) * chartH;
+                        points.push({ x, y, lat });
+                    }
+                });
+
+                if (points.length === 0) return;
+
+                // Step A: Draw Soft Ambient Fill Gradient Under Curve
+                const areaGrad = ctx.createLinearGradient(0, paddingTop, 0, h - paddingBottom);
+                areaGrad.addColorStop(0, config.fillStart);
+                areaGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+
+                ctx.fillStyle = areaGrad;
+                ctx.beginPath();
+                ctx.moveTo(points[0].x, h - paddingBottom);
+                points.forEach((pt, i) => {
+                    if (i === 0) ctx.lineTo(pt.x, pt.y);
+                    else {
+                        const prev = points[i - 1];
+                        const cx = (prev.x + pt.x) / 2;
+                        ctx.bezierCurveTo(cx, prev.y, cx, pt.y, pt.x, pt.y);
+                    }
+                });
+                ctx.lineTo(points[points.length - 1].x, h - paddingBottom);
+                ctx.closePath();
+                ctx.fill();
+
+                // Step B: Draw Neon Glow Pass
+                ctx.shadowColor = config.glow;
+                ctx.shadowBlur = 12;
+                ctx.strokeStyle = config.color;
+                ctx.lineWidth = 3.0;
+                ctx.beginPath();
+                points.forEach((pt, i) => {
+                    if (i === 0) ctx.moveTo(pt.x, pt.y);
+                    else {
+                        const prev = points[i - 1];
+                        const cx = (prev.x + pt.x) / 2;
+                        ctx.bezierCurveTo(cx, prev.y, cx, pt.y, pt.x, pt.y);
+                    }
+                });
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                // Step C: Draw Crisp Inner Core Line
+                ctx.strokeStyle = '#FFFFFF';
+                ctx.globalAlpha = 0.35;
+                ctx.lineWidth = 1.0;
+                ctx.stroke();
+                ctx.globalAlpha = 1.0;
+
+                // Step D: Draw Halo Data Points
+                points.forEach(pt => {
+                    // Outer glow ring
+                    ctx.fillStyle = config.glow;
+                    ctx.beginPath();
+                    ctx.arc(pt.x, pt.y, 4.5, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Solid inner dot
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.beginPath();
+                    ctx.arc(pt.x, pt.y, 2.0, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+            });
+
+        } else {
             // --- 📊 SCIENTIFIC MULTI-TARGET GROUPED PIXEL HISTOGRAM ---
             const numTargets = activeKeys.length;
             const subWidth = Math.max(2, Math.floor(colWidth / numTargets));
@@ -1426,23 +1503,13 @@
                         return;
                     }
 
-                    // Determine uniform single color for the ENTIRE column (no vertical multi-color stacking!)
                     let barColor = config.color;
-                    if (numTargets === 1) {
-                        // Single target selected: use health color status
-                        if (lat > 200) barColor = '#F07878';
-                        else if (lat > 100) barColor = '#E7C66B';
-                        else barColor = config.color;
-                    } else {
-                        // Multi-target grouped mode: override with alert color if >200ms
-                        if (lat > 200) barColor = '#F07878';
-                        else if (lat > 100) barColor = '#E7C66B';
-                    }
+                    if (lat > 200) barColor = '#F07878';
+                    else if (lat > 100) barColor = '#E7C66B';
 
                     const barHeightPx = (lat / maxLat) * chartH;
                     const blockCount = Math.max(1, Math.floor(barHeightPx / totalBlockUnit));
 
-                    // Render discrete blocks using the EXACT SAME uniform color from bottom to top
                     for (let b = 0; b < blockCount; b++) {
                         const blockY = h - paddingBottom - (b + 1) * totalBlockUnit;
                         const isTopCap = (b === blockCount - 1);
@@ -1452,50 +1519,6 @@
                         ctx.fillRect(subX, blockY, drawWidth, blockHeight);
                     }
                     ctx.globalAlpha = 1.0;
-                });
-            });
-
-        } else {
-            // --- 📈 NEON MULTI-TARGET GLOWING TREND LINE ---
-            activeKeys.forEach(key => {
-                const config = TARGET_CONFIG[key] || { color: '#78E08F', glow: 'rgba(120,224,143,0.7)' };
-                const points = [];
-
-                samples.forEach((s, idx) => {
-                    let lat = s.targets_detail ? s.targets_detail[key] : s.latency;
-                    const x = paddingLeft + (idx / Math.max(1, samples.length - 1)) * chartW;
-                    if (lat !== null && lat !== undefined) {
-                        const y = h - paddingBottom - (lat / maxLat) * chartH;
-                        points.push({ x, y, lat });
-                    }
-                });
-
-                if (points.length === 0) return;
-
-                // Draw curve
-                ctx.shadowColor = config.glow;
-                ctx.shadowBlur = 8;
-                ctx.strokeStyle = config.color;
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-
-                points.forEach((pt, i) => {
-                    if (i === 0) ctx.moveTo(pt.x, pt.y);
-                    else {
-                        const prev = points[i - 1];
-                        const cx = (prev.x + pt.x) / 2;
-                        ctx.bezierCurveTo(cx, prev.y, cx, pt.y, pt.x, pt.y);
-                    }
-                });
-                ctx.stroke();
-                ctx.shadowBlur = 0;
-
-                // Draw dots
-                points.forEach(pt => {
-                    ctx.fillStyle = config.color;
-                    ctx.beginPath();
-                    ctx.arc(pt.x, pt.y, 3, 0, Math.PI * 2);
-                    ctx.fill();
                 });
             });
         }
