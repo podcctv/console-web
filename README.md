@@ -1,7 +1,7 @@
 # console-web (NetWatch 赛博朋克网络运维终端)
 
 ![Build & Publish Docker](https://github.com/podcctv/console-web/actions/workflows/docker-publish.yml/badge.svg)
-![Version](https://img.shields.io/badge/version-v3.6.1-78E08F?style=flat-square&logo=git)
+![Version](https://img.shields.io/badge/version-v3.6.2-78E08F?style=flat-square&logo=git)
 ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
 
 `console-web` 是一个基于 [Flask](https://flask.palletsprojects.com/) 和 [psutil](https://psutil.readthedocs.io/) 构建的极简赛博朋克风格系统监控面板与网络运维终端 (`NetWatch`)。界面采用暗黑终端与玻璃拟态设计，支持实时 TCP Ping 多目标延迟趋势、IPv4/IPv6 双栈链路对比、多端响应式适配、1-Click IP 复制、ACME SSL 证书自动续期及全链路故障诊断。
@@ -45,7 +45,9 @@ wget -qO- https://raw.githubusercontent.com/podcctv/console-web/main/deploy.sh |
 - **📋 统一一键 IP 复制 (`[ COPY ALL IDENTITIES ]`)**：
   - 网络身份区域提供单一顶部复制按钮，一键提取 Listen、Egress、Visitor 及 Local 接口的结构化文本至剪贴板。
 
----
+### 🟢 `v3.6.2` (2026-07-29) - Dynamic Version Injection & Click-to-Check Manual Updates
+- **Dynamic Flask Version Rendering**：`views.py` 动态向 `index.html` 注入后端权威 `__version__`，彻底解决网页刷新后版本号倒退回旧版静态文本（`v3.3.0`）的问题。
+- **Interactive Manual Version Check**：点击顶部导航栏版本号徽章（`#version_badge_ui`），即可触发主动在线检测，并弹窗反馈检测结果或升级指南。
 
 ### 🟢 `v3.6.1` (2026-07-29) - System Status Telemetry Layout & Grid Ratio Overhaul
 - **5-Column Telemetry Grid Alignment**：重构 `$ systemctl status netwatch` 内部为标准 5 列 Grid 网格对齐（Label | Sparkline | ASCII Bar | Pct/Rate | Details），彻底消除 `load: ...` / `0.41 GB / ...` / `Rx/Tx Total` 折行与省略号打断。

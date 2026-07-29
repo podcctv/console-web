@@ -489,7 +489,7 @@
             <span class="nav-logo-symbol">NW_</span>
             <span class="nav-brand-title">NETWATCH</span>
             <span class="nav-brand-subtitle" style="margin-right:4px;">// NETWORK OPERATIONS TERMINAL</span>
-            <span id="version_badge_ui" style="background:rgba(120,224,143,0.12); border:1px solid var(--border-active); color:var(--text-success); font-family:var(--font-mono); font-size:0.72rem; padding:2px 6px; border-radius:var(--radius-sm); font-weight:700;">v3.3.0</span>
+            <span id="version_badge_ui" style="background:rgba(120,224,143,0.12); border:1px solid var(--border-active); color:var(--text-success); font-family:var(--font-mono); font-size:0.72rem; padding:2px 6px; border-radius:var(--radius-sm); font-weight:700; cursor:pointer;" onclick="manualCheckVersion()" title="Click to manually check for version updates">v{{ version or "3.6.2" }}</span>
             <a href="https://github.com/podcctv/console-web" target="_blank" rel="noopener" style="font-size:0.72rem; text-decoration:none; display:inline-flex; align-items:center; gap:4px; border:1px solid rgba(139,233,253,0.4); color:var(--text-cyan); padding:2px 6px; border-radius:var(--radius-sm); background:rgba(139,233,253,0.08); font-family:var(--font-mono); font-weight:600;">
                 [ 🐙 GitHub ]
             </a>
@@ -2006,7 +2006,12 @@
 
     let versionPollTimer = null;
 
-    async function checkVersionStatus() {
+    async function manualCheckVersion() {
+        showToast("🔍 正在主动检测 GitHub 最新版本...");
+        await checkVersionStatus(true);
+    }
+
+    async function checkVersionStatus(isManual = false) {
         try {
             const res = await fetch('/api/version/check');
             const data = await res.json();
@@ -2045,14 +2050,26 @@
                         versionPollTimer = null;
                     }
                 }
+
+                if (isManual) {
+                    showCyberModal('🚀 发现 GitHub 新版本 (NEW VERSION DISCOVERED)', `当前版本: v${data.current_version}\n最新版本: v${data.latest_version}\n\n更新说明: ${data.release_notes || '请点击右侧 [ UPDATE NOW ] 按钮完成一键热更新。'}`, 'info');
+                }
             } else {
                 if (updateWrap) updateWrap.style.display = 'none';
                 if (versionPollTimer) {
                     clearInterval(versionPollTimer);
                     versionPollTimer = null;
                 }
+
+                if (isManual) {
+                    showCyberModal('✅ 版本检查完成 (SYSTEM UP TO DATE)', `当前运行版本: v${data.current_version}\n\n当前系统代码已是 GitHub main 分支最新版本，无需更新。`, 'success');
+                }
             }
-        } catch(e) {}
+        } catch(e) {
+            if (isManual) {
+                showCyberModal('❌ 版本检查失败 (NETWORK ERROR)', `无法连接至 GitHub 版本检测接口: ${e.message}`, 'error');
+            }
+        }
     }
 
     function showCyberModal(title, message, type = 'info', onConfirm = null) {
