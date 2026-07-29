@@ -58,6 +58,7 @@ def configure_logging():
 
 configure_logging()
 logger = logging.getLogger(__name__)
+__version__ = "3.0.0"
 
 app = Flask(__name__)
 start_time = datetime.now()
@@ -2141,7 +2142,7 @@ TEMPLATE = r"""
         <!-- ── FOOTER ── -->
         <footer class="terminal-footer">
             <div>
-                <b>NETWATCH NETWORK OPERATIONS TERMINAL v2.5</b><br>
+                <b>NETWATCH NETWORK OPERATIONS TERMINAL v3.0.0</b><br>
                 <span>monitoring network health in realtime | status: operational</span>
             </div>
             <div class="footer-links">
