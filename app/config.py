@@ -7,8 +7,9 @@ LOGS_DIR = BASE_DIR / "logs"
 MONITOR_TARGETS_FILE = BASE_DIR / "targets.json"
 UPTIME_FILE = BASE_DIR / "uptime_history.json"
 
-# Version
-__version__ = "3.1.1"
+# Version & Repository
+__version__ = "3.3.0"
+GITHUB_REPO_URL = "https://github.com/podcctv/console-web"
 
 # Default ping targets for telemetry
 PING_TARGETS = {

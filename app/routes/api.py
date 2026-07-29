@@ -229,9 +229,85 @@ def host():
         version=getattr(uname, "version", None),
         machine=getattr(uname, "machine", None),
         processor=getattr(uname, "processor", None),
-        physical_cores=physical_cores,
-        total_cores=total_cores,
-        max_freq=f"{freq.max:.2f}Mhz" if freq else None,
-        total_memory=humanize_bytes(vm.total) if vm else None,
-        total_disk=humanize_bytes(du.total) if du else None,
+        cpu_physical_cores=physical_cores,
+        cpu_total_cores=total_cores,
+        cpu_max_freq_mhz=getattr(freq, "max", None),
+        memory_total_bytes=getattr(vm, "total", None),
+        disk_total_bytes=getattr(du, "total", None)
     )
+
+import urllib.request
+from app.config import GITHUB_REPO_URL, BASE_DIR, __version__
+
+@api_bp.route("/api/version/check")
+def check_version():
+    latest_ver = __version__
+    has_update = False
+    release_notes = "Currently running the latest version."
+    
+    try:
+        req = urllib.request.Request(
+            "https://api.github.com/repos/podcctv/console-web/releases/latest",
+            headers={"User-Agent": "NetWatch-Agent"}
+        )
+        with urllib.request.urlopen(req, timeout=4) as response:
+            if response.status == 200:
+                data = json.loads(response.read().decode())
+                tag_name = data.get("tag_name", "").lstrip("v")
+                if tag_name and tag_name != __version__:
+                    latest_ver = tag_name
+                    has_update = True
+                    release_notes = data.get("body", "New version available on GitHub.")
+    except Exception:
+        try:
+            res = subprocess.run(
+                ["git", "ls-remote", "--tags", "origin"],
+                cwd=str(BASE_DIR), capture_output=True, text=True, timeout=5
+            )
+            if res.returncode == 0 and res.stdout:
+                lines = [line.strip() for line in res.stdout.strip().split("\n") if line.strip()]
+                if lines:
+                    last_tag_line = lines[-1]
+                    tag = last_tag_line.split("refs/tags/")[-1].replace("^{}", "").lstrip("v")
+                    if tag and tag != __version__:
+                        latest_ver = tag
+                        has_update = True
+                        release_notes = f"Remote version v{tag} detected on origin."
+        except Exception:
+            pass
+
+    return jsonify({
+        "current_version": __version__,
+        "latest_version": latest_ver,
+        "has_update": has_update,
+        "github_url": GITHUB_REPO_URL,
+        "release_notes": release_notes,
+        "checked_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    })
+
+@api_bp.route("/api/version/update", methods=["POST"])
+def update_version():
+    try:
+        res = subprocess.run(
+            ["git", "pull", "origin", "main"],
+            cwd=str(BASE_DIR), capture_output=True, text=True, timeout=30
+        )
+        output = f"STDOUT:\n{res.stdout}\nSTDERR:\n{res.stderr}"
+        if res.returncode == 0:
+            return jsonify({
+                "status": "success",
+                "message": "Git pull succeeded! Code updated to latest version.",
+                "logs": output
+            })
+        else:
+            return jsonify({
+                "status": "error",
+                "message": f"Git pull failed with exit code {res.returncode}",
+                "logs": output
+            }), 500
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e),
+            "logs": ""
+        }), 500

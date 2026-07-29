@@ -421,10 +421,19 @@
 
     <!-- ── 1. STICKY TOP GLOBAL STATUS BAR ── -->
     <header class="terminal-nav-bar">
-        <div class="nav-brand">
+        <div class="nav-brand" style="display:flex; align-items:center; gap:8px;">
             <span class="nav-logo-symbol">NW_</span>
             <span class="nav-brand-title">NETWATCH</span>
-            <span class="nav-brand-subtitle">// NETWORK OPERATIONS TERMINAL</span>
+            <span class="nav-brand-subtitle" style="margin-right:4px;">// NETWORK OPERATIONS TERMINAL</span>
+            <span id="version_badge_ui" style="background:rgba(120,224,143,0.12); border:1px solid var(--border-active); color:var(--text-success); font-family:var(--font-mono); font-size:0.72rem; padding:2px 6px; border-radius:var(--radius-sm); font-weight:700;">v3.3.0</span>
+            <a href="https://github.com/podcctv/console-web" target="_blank" rel="noopener" style="font-size:0.72rem; text-decoration:none; display:inline-flex; align-items:center; gap:4px; border:1px solid rgba(139,233,253,0.4); color:var(--text-cyan); padding:2px 6px; border-radius:var(--radius-sm); background:rgba(139,233,253,0.08); font-family:var(--font-mono); font-weight:600;">
+                [ 🐙 GitHub ]
+            </a>
+            <span id="update_notification_badge" style="display:none;">
+                <button class="btn-cli" id="btn_do_auto_update" onclick="triggerAutoUpdate()" style="border-color:#FFB86C; color:#FFB86C; background:rgba(255,184,108,0.15); font-size:0.72rem; padding:2px 6px;">
+                    [ 🚀 NEW: <span id="latest_ver_num">v3.4.0</span> - UPDATE NOW ]
+                </button>
+            </span>
         </div>
 
         <div class="nav-tabs-cli">
@@ -1858,11 +1867,62 @@
         else if (key === 'ESCAPE') { closeKeyboardHelp(); }
     });
 
+    async function checkVersionStatus() {
+        try {
+            const res = await fetch('/api/version/check');
+            const data = await res.json();
+            
+            const badgeEl = document.getElementById('version_badge_ui');
+            if (badgeEl && data.current_version) {
+                badgeEl.textContent = `v${data.current_version}`;
+            }
+
+            const updateWrap = document.getElementById('update_notification_badge');
+            const latestVerEl = document.getElementById('latest_ver_num');
+
+            if (data.has_update) {
+                if (latestVerEl) latestVerEl.textContent = `v${data.latest_version}`;
+                if (updateWrap) updateWrap.style.display = 'inline-block';
+            } else {
+                if (updateWrap) updateWrap.style.display = 'none';
+            }
+        } catch(e) {}
+    }
+
+    async function triggerAutoUpdate() {
+        const btn = document.getElementById('btn_do_auto_update');
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = '[ ⏳ UPDATING VIA GIT PULL... ]';
+        }
+        try {
+            const res = await fetch('/api/version/update', { method: 'POST' });
+            const data = await res.json();
+            if (res.ok && data.status === 'success') {
+                alert('✅ 自动更新成功！系统代码已同步至最新主分支。\n页面将在 3 秒后自动刷新。');
+                setTimeout(() => window.location.reload(), 3000);
+            } else {
+                alert('⚠️ 自动更新失败:\n' + (data.message || '未知错误'));
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = '[ 🚀 RETRY AUTO UPDATE ]';
+                }
+            }
+        } catch(e) {
+            alert('⚠️ 触发更新失败: ' + e.message);
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = '[ 🚀 RETRY AUTO UPDATE ]';
+            }
+        }
+    }
+
     // Init loops
     fetchSummary();
     fetchPings();
     fetchStats();
     renderUptimeHeatmap();
+    checkVersionStatus();
 
     // Restore active tab
     const initialTab = window.location.hash.replace('#','') || localStorage.getItem('console_active_tab') || 'overview';
@@ -1871,6 +1931,7 @@
     setInterval(fetchSummary, 10000);
     setInterval(fetchPings, 15000);
     setInterval(fetchStats, 5000);
+    setInterval(checkVersionStatus, 300000);
     </script>
 </body>
 </html>
