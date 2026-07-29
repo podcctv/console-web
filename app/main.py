@@ -1643,30 +1643,61 @@ TEMPLATE = r"""
                 </div>
             </div>
 
-            <!-- ── 4. REALTIME TCP PING CHART ($ tcping --watch) ── -->
+            <!-- ── 4. REALTIME MULTI-TARGET LATENCY TREND CHART ($ tcping --watch) ── -->
             <div class="card-cli-tier1">
                 <div class="card-header-bar" style="flex-wrap:wrap; gap:10px;">
                     <div class="card-header-left">
-                        <span class="cmd-title">$ tcping --watch</span>
-                        <span class="cmd-subtitle">// 实时 TCP 链路延迟与丢包监控</span>
+                        <span class="cmd-title">$ tcping --watch --multi-target</span>
+                        <span class="cmd-subtitle">// 实时多目标 TCP 链路延迟与趋势分析</span>
                     </div>
-                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                        <button class="btn-cli active" onclick="setTargetFilter('all', this)">[ ALL TARGETS ]</button>
-                        <button class="btn-cli" onclick="setTargetFilter('ping_cu', this)">[ 浙江联通 ]</button>
-                        <button class="btn-cli" onclick="setTargetFilter('ping_cm', this)">[ 浙江移动 ]</button>
-                        <button class="btn-cli" onclick="setTargetFilter('ping_ct', this)">[ 浙江电信 ]</button>
-                        <button class="btn-cli" onclick="setTargetFilter('ping_cloudflare', this)">[ Cloudflare ]</button>
-                        <button class="btn-cli" onclick="setTargetFilter('ping_google', this)">[ Google ]</button>
+                    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                        <div style="font-family:var(--font-mono); font-size:0.78rem; color:var(--text-muted);">
+                            数据粒度: 
+                            <select id="ping_granularity" style="background:var(--bg-input); border:1px solid var(--border-tier2); color:var(--text-primary); padding:3px 8px; border-radius:var(--radius-sm); font-family:var(--font-mono); font-size:0.78rem; outline:none;" onchange="fetchPings()">
+                                <option value="1m">1 分钟</option>
+                                <option value="5m">5 分钟</option>
+                                <option value="15m">15 分钟</option>
+                            </select>
+                        </div>
+                        <div style="display:flex; gap:4px">
+                            <button class="btn-cli active" onclick="setPingRange('1h', this)">[ 1H ]</button>
+                            <button class="btn-cli" onclick="setPingRange('6h', this)">[ 6H ]</button>
+                            <button class="btn-cli" onclick="setPingRange('24h', this)">[ 24H ]</button>
+                            <button class="btn-cli" onclick="setPingRange('7d', this)">[ 7D ]</button>
+                            <button class="btn-cli" onclick="setPingRange('30d', this)">[ 30D ]</button>
+                        </div>
+                        <button class="btn-cli" onclick="exportPingCSV()">[ ⤓ CSV ]</button>
                     </div>
                 </div>
 
-                <div class="chart-target-banner">
-                    <span>TARGET: <b class="text-cyan">1.1.1.1:443</b> (Cloudflare DNS)</span>
-                    <span>MODE: <b class="text-primary">TCP CONNECT</b></span>
-                    <span>INTERVAL: <b class="text-primary">30s</b></span>
-                    <span>STREAM: <b class="text-success" id="chart_stream_status">CONNECTED</b></span>
+                <!-- Cyber Multi-Target Legend Bar -->
+                <div class="chart-target-banner" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;" id="cyber_legend_bar">
+                        <button class="btn-cli active" style="padding:3px 8px; font-size:0.76rem;" onclick="setTargetFilter('all', this)">
+                            [ ALL TARGETS ]
+                        </button>
+                        <button class="btn-cli" style="padding:3px 8px; font-size:0.76rem; border-color:#FF6B6B; color:#FF6B6B;" onclick="setTargetFilter('ping_cu', this)">
+                            ● 浙江联通 <span id="leg_val_cu" class="mono text-muted">-ms</span>
+                        </button>
+                        <button class="btn-cli" style="padding:3px 8px; font-size:0.76rem; border-color:#BD93F9; color:#BD93F9;" onclick="setTargetFilter('ping_cm', this)">
+                            ● 浙江移动 <span id="leg_val_cm" class="mono text-muted">-ms</span>
+                        </button>
+                        <button class="btn-cli" style="padding:3px 8px; font-size:0.76rem; border-color:#50FA7B; color:#50FA7B;" onclick="setTargetFilter('ping_ct', this)">
+                            ● 浙江电信 <span id="leg_val_ct" class="mono text-muted">-ms</span>
+                        </button>
+                        <button class="btn-cli" style="padding:3px 8px; font-size:0.76rem; border-color:#8BE9FD; color:#8BE9FD;" onclick="setTargetFilter('ping_cloudflare', this)">
+                            ● Cloudflare <span id="leg_val_cloudflare" class="mono text-muted">-ms</span>
+                        </button>
+                        <button class="btn-cli" style="padding:3px 8px; font-size:0.76rem; border-color:#FFB86C; color:#FFB86C;" onclick="setTargetFilter('ping_google', this)">
+                            ● Google <span id="leg_val_google" class="mono text-muted">-ms</span>
+                        </button>
+                    </div>
+                    <div style="font-family:var(--font-mono); font-size:0.76rem; color:var(--text-muted);">
+                        STREAM: <b class="text-success" id="chart_stream_status">● LIVE STREAMING</b>
+                    </div>
                 </div>
 
+                <!-- Telemetry Stats Strip -->
                 <div class="chart-stats-bar-cli">
                     <span>CURRENT <b class="text-cyan" id="ping_stat_cur">- ms</b></span>
                     <span>AVG <b id="ping_stat_avg">- ms</b></span>
@@ -1678,10 +1709,10 @@ TEMPLATE = r"""
                     <span>LOSS <b class="text-success" id="ping_stat_loss">0.0%</b></span>
                 </div>
 
-                <div class="canvas-wrapper">
+                <div class="canvas-wrapper" style="height:320px;">
                     <div class="chart-empty-state" id="chart_empty_box">
                         <div>> connecting to realtime monitor...</div>
-                        <div>> target: 1.1.1.1:443 | interval: 30s</div>
+                        <div>> target: all active probes | interval: 30s</div>
                         <div id="chart_empty_progress">> waiting for valid samples... (0 / 3 collected)</div>
                         <div style="margin-top:8px;">
                             <button class="btn-cli" onclick="fetchPings();">[ RETRY CONNECTION ]</button>
@@ -2164,88 +2195,175 @@ TEMPLATE = r"""
         } catch(e) {}
     }
 
+    const TARGET_CONFIG = {
+        "ping_cu": { name: "浙江联通", color: "#FF6B6B", glow: "rgba(255,107,107,0.7)" },
+        "ping_cm": { name: "浙江移动", color: "#BD93F9", glow: "rgba(189,147,249,0.7)" },
+        "ping_ct": { name: "浙江电信", color: "#50FA7B", glow: "rgba(80,250,123,0.7)" },
+        "ping_cloudflare": { name: "Cloudflare", color: "#8BE9FD", glow: "rgba(139,233,253,0.7)" },
+        "ping_google": { name: "Google", color: "#FFB86C", glow: "rgba(255,184,108,0.7)" }
+    };
+
     function renderCanvasChart(samples, avgValue) {
         const canvas = document.getElementById('tcpingCanvas');
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
         const w = canvas.offsetWidth || (canvas.parentElement ? canvas.parentElement.offsetWidth : 800);
-        const h = canvas.offsetHeight || 260;
+        const h = canvas.offsetHeight || 320;
         canvas.width = w; canvas.height = h;
 
         ctx.clearRect(0, 0, w, h);
 
         if (!samples || samples.length === 0) return;
 
-        // Dynamically compute max latency so high latency values scale correctly inside canvas
-        const validLats = samples.map(s => s.latency).filter(l => l !== null && l !== undefined);
-        const maxSample = validLats.length > 0 ? Math.max(...validLats) : 100;
-        const maxLat = Math.max(220, Math.ceil(maxSample * 1.25));
-        const padding = 28;
-
-        // Grid lines
-        ctx.strokeStyle = 'rgba(140, 165, 145, 0.08)';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        for (let y = padding; y < h - padding; y += 40) {
-            ctx.moveTo(0, y); ctx.lineTo(w, y);
-        }
-        ctx.stroke();
-
-        // 100ms Warning threshold line
-        const y100 = h - padding - (100 / maxLat) * (h - 2 * padding);
-        if (y100 >= padding && y100 <= h - padding) {
-            ctx.strokeStyle = 'rgba(231, 198, 107, 0.4)';
-            ctx.setLineDash([4, 4]);
-            ctx.beginPath(); ctx.moveTo(0, y100); ctx.lineTo(w, y100); ctx.stroke();
-        }
-
-        // 200ms Critical threshold line
-        const y200 = h - padding - (200 / maxLat) * (h - 2 * padding);
-        if (y200 >= padding && y200 <= h - padding) {
-            ctx.strokeStyle = 'rgba(240, 120, 120, 0.4)';
-            ctx.beginPath(); ctx.moveTo(0, y200); ctx.lineTo(w, y200); ctx.stroke();
-            ctx.setLineDash([]);
-        }
-
-        // Average line
-        if (avgValue) {
-            const yAvg = h - padding - (avgValue / maxLat) * (h - 2 * padding);
-            ctx.strokeStyle = 'rgba(105, 214, 208, 0.5)';
-            ctx.setLineDash([2, 2]);
-            ctx.beginPath(); ctx.moveTo(0, yAvg); ctx.lineTo(w, yAvg); ctx.stroke();
-            ctx.setLineDash([]);
-        }
-
-        // Draw latency line
-        ctx.strokeStyle = '#69D6D0';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-
-        const step = w / Math.max(1, samples.length - 1);
-        let firstPoint = true;
-
-        samples.forEach((s, idx) => {
-            if (s.latency !== null && s.latency !== undefined) {
-                const x = idx * step;
-                const y = h - padding - (s.latency / maxLat) * (h - 2 * padding);
-                if (firstPoint) { ctx.moveTo(x, y); firstPoint = false; }
-                else ctx.lineTo(x, y);
+        // Compute max latency across all targets and samples
+        let allLats = [];
+        samples.forEach(s => {
+            if (s.latency !== null && s.latency !== undefined) allLats.push(s.latency);
+            if (s.targets_detail) {
+                Object.values(s.targets_detail).forEach(v => {
+                    if (v !== null && v !== undefined && typeof v === 'number') allLats.push(v);
+                });
             }
         });
-        ctx.stroke();
 
-        // Draw points
-        samples.forEach((s, idx) => {
-            const x = idx * step;
-            const lat = s.latency;
-            if (lat === null || lat === undefined) {
-                ctx.fillStyle = '#F07878';
-                ctx.beginPath(); ctx.arc(x, h - padding, 4, 0, Math.PI * 2); ctx.fill();
-            } else {
-                ctx.fillStyle = '#78E08F';
-                const y = h - padding - (lat / maxLat) * (h - 2 * padding);
-                ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
+        const maxSample = allLats.length > 0 ? Math.max(...allLats) : 100;
+        const maxLat = Math.max(200, Math.ceil(maxSample * 1.25));
+
+        const paddingLeft = 55;
+        const paddingRight = 20;
+        const paddingTop = 20;
+        const paddingBottom = 30;
+
+        const chartW = w - paddingLeft - paddingRight;
+        const chartH = h - paddingTop - paddingBottom;
+
+        // 1. Draw Grid Lines & Y-Axis Labels
+        ctx.font = '11px "JetBrains Mono", monospace';
+        ctx.fillStyle = '#5D6A60';
+        ctx.textAlign = 'right';
+
+        const ySteps = 5;
+        for (let i = 0; i <= ySteps; i++) {
+            const latVal = Math.round((maxLat / ySteps) * i);
+            const y = h - paddingBottom - (latVal / maxLat) * chartH;
+
+            // Grid Line
+            ctx.strokeStyle = 'rgba(146, 173, 151, 0.07)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(paddingLeft, y);
+            ctx.lineTo(w - paddingRight, y);
+            ctx.stroke();
+
+            // Y Label
+            ctx.fillText(`${latVal} ms`, paddingLeft - 8, y + 4);
+        }
+
+        // 2. Draw X-Axis Time Labels
+        ctx.textAlign = 'center';
+        const xStepCount = Math.min(8, samples.length);
+        const timeInterval = Math.max(1, Math.floor(samples.length / xStepCount));
+
+        for (let idx = 0; idx < samples.length; idx += timeInterval) {
+            const s = samples[idx];
+            const x = paddingLeft + (idx / Math.max(1, samples.length - 1)) * chartW;
+
+            // Vertical Grid Line
+            ctx.strokeStyle = 'rgba(146, 173, 151, 0.05)';
+            ctx.beginPath();
+            ctx.moveTo(x, paddingTop);
+            ctx.lineTo(x, h - paddingBottom);
+            ctx.stroke();
+
+            // Time Label
+            if (s.time) {
+                ctx.fillText(s.time, x, h - 8);
             }
+        }
+
+        // 3. Draw Threshold Lines
+        const y100 = h - paddingBottom - (100 / maxLat) * chartH;
+        if (y100 >= paddingTop && y100 <= h - paddingBottom) {
+            ctx.strokeStyle = 'rgba(231, 198, 107, 0.35)';
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath(); ctx.moveTo(paddingLeft, y100); ctx.lineTo(w - paddingRight, y100); ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        const y200 = h - paddingBottom - (200 / maxLat) * chartH;
+        if (y200 >= paddingTop && y200 <= h - paddingBottom) {
+            ctx.strokeStyle = 'rgba(240, 120, 120, 0.35)';
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath(); ctx.moveTo(paddingLeft, y200); ctx.lineTo(w - paddingRight, y200); ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        // 4. Update Legend Values from latest sample
+        const latestSample = samples[samples.length - 1];
+        if (latestSample && latestSample.targets_detail) {
+            Object.keys(TARGET_CONFIG).forEach(key => {
+                const val = latestSample.targets_detail[key];
+                const legEl = document.getElementById(`leg_val_${key.replace('ping_','')}`);
+                if (legEl) {
+                    legEl.textContent = (val !== null && val !== undefined) ? `${Math.round(val)}ms` : '-ms';
+                }
+            });
+        }
+
+        // 5. Draw Multi-Series Latency Curves
+        const stepW = chartW / Math.max(1, samples.length - 1);
+        const keysToDraw = currentTargetFilter === 'all'
+            ? Object.keys(TARGET_CONFIG)
+            : [currentTargetFilter];
+
+        keysToDraw.forEach(key => {
+            const conf = TARGET_CONFIG[key] || { color: '#69D6D0', glow: 'rgba(105,214,208,0.6)' };
+
+            ctx.save();
+            ctx.strokeStyle = conf.color;
+            ctx.fillStyle = conf.color;
+            ctx.shadowColor = conf.glow;
+            ctx.shadowBlur = 6;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+
+            let firstPoint = true;
+
+            samples.forEach((s, idx) => {
+                let lat = null;
+                if (s.targets_detail && s.targets_detail[key] !== undefined) {
+                    lat = s.targets_detail[key];
+                } else if (key === currentTargetFilter || currentTargetFilter === 'all') {
+                    lat = s.latency;
+                }
+
+                if (lat !== null && lat !== undefined) {
+                    const x = paddingLeft + idx * stepW;
+                    const y = h - paddingBottom - (lat / maxLat) * chartH;
+                    if (firstPoint) { ctx.moveTo(x, y); firstPoint = false; }
+                    else ctx.lineTo(x, y);
+                }
+            });
+            ctx.stroke();
+
+            // Draw glowing series points
+            samples.forEach((s, idx) => {
+                let lat = null;
+                if (s.targets_detail && s.targets_detail[key] !== undefined) {
+                    lat = s.targets_detail[key];
+                } else if (key === currentTargetFilter) {
+                    lat = s.latency;
+                }
+
+                if (lat !== null && lat !== undefined) {
+                    const x = paddingLeft + idx * stepW;
+                    const y = h - paddingBottom - (lat / maxLat) * chartH;
+                    ctx.beginPath();
+                    ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+            ctx.restore();
         });
     }
 
