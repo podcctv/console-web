@@ -1,7 +1,7 @@
 # console-web (NetWatch 赛博朋克网络运维终端)
 
 ![Build & Publish Docker](https://github.com/podcctv/console-web/actions/workflows/docker-publish.yml/badge.svg)
-![Version](https://img.shields.io/badge/version-v3.5.0-78E08F?style=flat-square&logo=git)
+![Version](https://img.shields.io/badge/version-v3.6.0-78E08F?style=flat-square&logo=git)
 ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
 
 `console-web` 是一个基于 [Flask](https://flask.palletsprojects.com/) 和 [psutil](https://psutil.readthedocs.io/) 构建的极简赛博朋克风格系统监控面板与网络运维终端 (`NetWatch`)。界面采用暗黑终端与玻璃拟态设计，支持实时 TCP Ping 多目标延迟趋势、IPv4/IPv6 双栈链路对比、多端响应式适配、1-Click IP 复制、ACME SSL 证书自动续期及全链路故障诊断。
@@ -49,7 +49,10 @@ wget -qO- https://raw.githubusercontent.com/podcctv/console-web/main/deploy.sh |
 
 ## 📅 版本更新日志 (Changelog)
 
-📌 **版本号管理规范**：本项目遵从 [语义化版本 2.0.0 (Semantic Versioning)](https://semver.org/lang/zh-CN/) 规范（`MAJOR.MINOR.PATCH`）。每次更新同步修改 `app/config.py` (`__version__`)、`setup.cfg` (`version`) 及 `README.md`。
+### 🟢 `v3.6.0` (2026-07-29) - GitHub Zip Direct Auto-Updater & Beautified Cyber Modals
+- **GitHub Zip Direct Overwrite Engine**：支持直接从 GitHub 下载 `main.zip` 在内存中解压并覆盖更新应用代码文件，彻底解决 Docker 容器内部缺乏 Git 命令或 Docker Socket 导致的更新失败问题。
+- **Beautified Cyber Modal Dialogs**：重构前发全站弹窗提示，全面替代浏览器原生 `alert()`，呈现纯正 VT100 暗黑终端与玻璃拟态视觉体验。
+- **Smooth Container Auto-Reload**：热更新完成后自动触发守护进程平滑重启 (1.5s)，并在 3 秒内自动刷新页面加载新版本。
 
 ### 🟢 `v3.5.0` (2026-07-29) - Live Mini-Sparklines & Fullscreen Telemetry & SLA Hover Popovers
 - **Live Canvas Mini-Sparklines**：在 CPU、Memory、Disk 与 Net Traffic (RX/TX) 监控项旁内嵌 Live Sparkline Canvas 动态走势线。

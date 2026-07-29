@@ -1030,6 +1030,24 @@
 
     </main>
 
+    <!-- BEAUTIFIED CYBER DIALOG MODAL -->
+    <div class="modal-cli-overlay" id="cyber_modal_overlay" style="display:none; z-index:10050;" onclick="closeCyberModalOnOverlay(event)">
+        <div class="modal-cli-box" style="width: min(540px, 92vw); border-color: var(--border-active); box-shadow: 0 0 40px rgba(0, 0, 0, 0.85), 0 0 20px rgba(120, 224, 143, 0.25);">
+            <div class="card-header-bar" style="border-bottom: 1px solid var(--border-tier2); padding-bottom: 8px; margin-bottom: 14px;">
+                <div class="card-header-left">
+                    <span class="cmd-title" id="cyber_modal_title">$ system --notification</span>
+                </div>
+                <span class="badge-bracket status-healthy" id="cyber_modal_status">[ NOTICE ]</span>
+            </div>
+            <div style="font-family: var(--font-mono); font-size: 0.86rem; line-height: 1.6; color: var(--text-primary); margin-bottom: 22px; white-space: pre-wrap; word-break: break-word;" id="cyber_modal_body">
+                Notification message content goes here...
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:10px;" id="cyber_modal_actions">
+                <button class="btn-cli-primary" onclick="closeCyberModal()">[ ACKNOWLEDGE ]</button>
+            </div>
+        </div>
+    </div>
+
     <!-- KEYBOARD HELP MODAL -->
     <div class="modal-cli-overlay" id="keyboard_modal" style="display:none;" onclick="closeKeyboardHelp(event)">
         <div class="modal-cli-box">
@@ -2037,33 +2055,100 @@
         } catch(e) {}
     }
 
+    function showCyberModal(title, message, type = 'info', onConfirm = null) {
+        const overlay = document.getElementById('cyber_modal_overlay');
+        const titleEl = document.getElementById('cyber_modal_title');
+        const statusEl = document.getElementById('cyber_modal_status');
+        const bodyEl = document.getElementById('cyber_modal_body');
+        const actionsEl = document.getElementById('cyber_modal_actions');
+
+        if (!overlay) {
+            window.alert(message);
+            return;
+        }
+
+        if (titleEl) titleEl.textContent = title || '$ system --notification';
+        if (bodyEl) bodyEl.textContent = message || '';
+
+        let badgeClass = 'status-healthy';
+        let statusText = '[ NOTICE ]';
+        if (type === 'error' || type === 'critical') {
+            badgeClass = 'status-critical';
+            statusText = '[ CRITICAL ERROR ]';
+        } else if (type === 'warn' || type === 'warning') {
+            badgeClass = 'status-degraded';
+            statusText = '[ WARNING ]';
+        } else if (type === 'success') {
+            badgeClass = 'status-healthy';
+            statusText = '[ SUCCESS ]';
+        }
+        if (statusEl) {
+            statusEl.className = `badge-bracket ${badgeClass}`;
+            statusEl.textContent = statusText;
+        }
+
+        if (onConfirm) {
+            actionsEl.innerHTML = `
+                <button class="btn-cli" onclick="closeCyberModal()">[ CANCEL ]</button>
+                <button class="btn-cli-primary" id="cyber_modal_confirm_btn">[ CONFIRM ]</button>
+            `;
+            document.getElementById('cyber_modal_confirm_btn').onclick = () => {
+                closeCyberModal();
+                onConfirm();
+            };
+        } else {
+            actionsEl.innerHTML = `
+                <button class="btn-cli-primary" onclick="closeCyberModal()">[ ACKNOWLEDGE ]</button>
+            `;
+        }
+
+        overlay.style.display = 'flex';
+    }
+
+    function closeCyberModal() {
+        const overlay = document.getElementById('cyber_modal_overlay');
+        if (overlay) overlay.style.display = 'none';
+    }
+
+    function closeCyberModalOnOverlay(e) {
+        if (e && e.target.id === 'cyber_modal_overlay') {
+            closeCyberModal();
+        }
+    }
+
+    // Override native window.alert with Cyberpunk Modal
+    window.alert = function(msg) {
+        showCyberModal('$ alert --system-notification', msg, 'warning');
+    };
+
     async function triggerAutoUpdate() {
         const btn = document.getElementById('btn_do_auto_update');
         if (btn) {
             btn.disabled = true;
-            btn.textContent = '[ ⏳ UPDATING VIA GIT PULL... ]';
+            btn.textContent = '[ ⏳ DOWNLOADING & UPDATING... ]';
         }
+        showCyberModal('$ update --initiate', '⚙️ 正在拉取 GitHub main 分支最新发布包，解压后容器将自动平滑重启 (1.5s)...', 'info');
         try {
             const res = await fetch('/api/version/update', { method: 'POST' });
             const data = await res.json();
             if (res.ok && data.status === 'success') {
-                alert('✅ 自动更新成功！系统代码已同步至最新主分支。\n页面将在 3 秒后自动刷新。');
-                setTimeout(() => window.location.reload(), 3000);
+                showCyberModal('🚀 自动更新成功 (UPDATE SUCCESSFUL)', `✅ ${data.message}\n\n系统代码已更新，后台服务正在平滑重启 (1.5s)，页面 3 秒后自动加载新版...`, 'success');
+                setTimeout(() => window.location.reload(), 3200);
             } else if (data.status === 'waiting') {
-                alert('⏳ Docker 镜像尚在 GitHub Actions 构建中:\n' + (data.message || '请稍候...'));
+                showCyberModal('⏳ 镜像构建中 (DOCKER BUILD IN PROGRESS)', `GitHub Actions 正在编译新镜像:\n${data.message || '请稍候...'}\n\n提示: 待 GitHub Actions 编译完成后即可一键点选解锁。`, 'warn');
                 if (btn) {
                     btn.disabled = true;
                     btn.textContent = '[ ⏳ GH ACTIONS DOCKER BUILD IN PROGRESS... ]';
                 }
             } else {
-                alert('⚠️ 自动更新失败:\n' + (data.message || '未知错误'));
+                showCyberModal('⚠️ 自动更新提示 (UPDATE RESPONSE)', `状态: ${data.status || 'warning'}\n消息: ${data.message}\n\n执行排查日志:\n${data.logs || '无详细日志'}`, 'warn');
                 if (btn) {
                     btn.disabled = false;
                     btn.textContent = '[ 🚀 RETRY AUTO UPDATE ]';
                 }
             }
         } catch(e) {
-            alert('⚠️ 触发更新失败: ' + e.message);
+            showCyberModal('❌ 更新请求异常 (NETWORK ERROR)', `无法连接到更新接口: ${e.message}`, 'error');
             if (btn) {
                 btn.disabled = false;
                 btn.textContent = '[ 🚀 RETRY AUTO UPDATE ]';
