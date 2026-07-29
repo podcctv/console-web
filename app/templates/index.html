@@ -307,10 +307,10 @@
         .cli-table td { padding: 10px 12px; border-bottom: 1px solid var(--border-tier3); font-family: var(--font-mono); }
         .cli-table tr:hover { background: rgba(255,255,255,0.02); }
 
-        .grid-2col-cli { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .grid-2col-cli { display: grid; grid-template-columns: minmax(320px, 0.95fr) minmax(440px, 1.05fr); gap: 20px; }
         .ascii-bar-row {
-            display: grid; grid-template-columns: 75px 1fr 50px 175px; align-items: center; gap: 10px;
-            font-family: var(--font-mono); font-size: 0.84rem; margin-bottom: 10px; white-space: nowrap;
+            display: grid; grid-template-columns: 75px 105px 125px 45px 1fr; align-items: center; gap: 8px;
+            font-family: var(--font-mono); font-size: 0.84rem; margin-bottom: 12px; white-space: nowrap;
         }
         .ascii-bar-row > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .ascii-label { color: var(--text-muted); font-weight: 700; }
@@ -410,7 +410,7 @@
 
             .cli-table { display: none; }
 
-            .ascii-bar-row { grid-template-columns: 60px 1fr 45px 110px; font-size: 0.78rem; gap: 6px; }
+            .ascii-bar-row { grid-template-columns: 60px 80px 85px 40px 1fr; font-size: 0.74rem; gap: 4px; overflow-x: auto; }
 
         /* ── v3.5 Cyber & Telemetry Polish ── */
         .fullscreen-chart-active {

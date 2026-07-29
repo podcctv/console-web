@@ -1,7 +1,7 @@
 # console-web (NetWatch 赛博朋克网络运维终端)
 
 ![Build & Publish Docker](https://github.com/podcctv/console-web/actions/workflows/docker-publish.yml/badge.svg)
-![Version](https://img.shields.io/badge/version-v3.6.0-78E08F?style=flat-square&logo=git)
+![Version](https://img.shields.io/badge/version-v3.6.1-78E08F?style=flat-square&logo=git)
 ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
 
 `console-web` 是一个基于 [Flask](https://flask.palletsprojects.com/) 和 [psutil](https://psutil.readthedocs.io/) 构建的极简赛博朋克风格系统监控面板与网络运维终端 (`NetWatch`)。界面采用暗黑终端与玻璃拟态设计，支持实时 TCP Ping 多目标延迟趋势、IPv4/IPv6 双栈链路对比、多端响应式适配、1-Click IP 复制、ACME SSL 证书自动续期及全链路故障诊断。
@@ -47,7 +47,9 @@ wget -qO- https://raw.githubusercontent.com/podcctv/console-web/main/deploy.sh |
 
 ---
 
-## 📅 版本更新日志 (Changelog)
+### 🟢 `v3.6.1` (2026-07-29) - System Status Telemetry Layout & Grid Ratio Overhaul
+- **5-Column Telemetry Grid Alignment**：重构 `$ systemctl status netwatch` 内部为标准 5 列 Grid 网格对齐（Label | Sparkline | ASCII Bar | Pct/Rate | Details），彻底消除 `load: ...` / `0.41 GB / ...` / `Rx/Tx Total` 折行与省略号打断。
+- **2-Column Container Ratio Optimization**：优化主视图双列 Grid 比例为 `45% 55%`，赋予右侧系统资源监控卡片充足的展示宽度。
 
 ### 🟢 `v3.6.0` (2026-07-29) - GitHub Zip Direct Auto-Updater & Beautified Cyber Modals
 - **GitHub Zip Direct Overwrite Engine**：支持直接从 GitHub 下载 `main.zip` 在内存中解压并覆盖更新应用代码文件，彻底解决 Docker 容器内部缺乏 Git 命令或 Docker Socket 导致的更新失败问题。
