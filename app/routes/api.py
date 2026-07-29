@@ -246,7 +246,8 @@ def host():
     )
 
 import urllib.request
-from app.config import GITHUB_REPO_URL, BASE_DIR, __version__
+import app.config as app_config
+from app.config import GITHUB_REPO_URL, BASE_DIR
 
 def check_github_actions_build():
     """Check if the latest GitHub Actions workflow run for main branch is completed successfully."""
@@ -271,7 +272,7 @@ def check_github_actions_build():
                         return {"ready": False, "status": status, "conclusion": None, "run_id": run_id, "message": f"GitHub Actions Docker build is currently {status}... Please wait."}
                     else:
                         return {"ready": False, "status": status, "conclusion": conclusion, "run_id": run_id, "message": f"GitHub Actions build finished with conclusion: {conclusion}"}
-    except Exception as e:
+    except Exception:
         pass
     return {"ready": True, "status": "unknown", "conclusion": None, "message": "Could not check GitHub Actions API (manual update permitted)."}
 
@@ -301,12 +302,36 @@ def parse_semver(v_str):
     except Exception:
         return (0, 0, 0)
 
+def reload_app_modules():
+    """Invalidate bytecode cache & dynamically reload app modules in memory."""
+    try:
+        importlib.invalidate_caches()
+        for pycache in BASE_DIR.glob("**/__pycache__"):
+            try:
+                shutil.rmtree(pycache, ignore_errors=True)
+            except Exception:
+                pass
+        if "app.config" in sys.modules:
+            try:
+                importlib.reload(sys.modules["app.config"])
+            except Exception:
+                pass
+        for mod_name in list(sys.modules.keys()):
+            if mod_name.startswith("app.") or mod_name == "app":
+                try:
+                    importlib.reload(sys.modules[mod_name])
+                except Exception:
+                    pass
+    except Exception as e:
+        logger.warning("Error during module hot-reload: %s", e)
+
 @api_bp.route("/api/version/check")
 def check_version():
-    latest_ver = fetch_remote_github_version() or __version__
+    current_ver = app_config.__version__
+    latest_ver = fetch_remote_github_version() or current_ver
     release_notes = f"Latest version v{latest_ver} published on GitHub main branch."
 
-    if latest_ver == __version__:
+    if latest_ver == current_ver:
         try:
             req = urllib.request.Request(
                 "https://api.github.com/repos/podcctv/console-web/releases/latest",
@@ -322,15 +347,15 @@ def check_version():
         except Exception:
             pass
 
-    has_update = parse_semver(latest_ver) > parse_semver(__version__)
+    has_update = parse_semver(latest_ver) > parse_semver(current_ver)
     if not has_update:
-        latest_ver = __version__
+        latest_ver = current_ver
         release_notes = "Currently running the latest version."
 
     build_status = check_github_actions_build()
 
     return jsonify({
-        "current_version": __version__,
+        "current_version": current_ver,
         "latest_version": latest_ver,
         "has_update": has_update,
         "docker_build": build_status,
@@ -365,23 +390,7 @@ def update_code_from_github_zip():
         target_path.write_bytes(file_bytes)
         updated_files.append(rel_path)
 
-    # Invalidate bytecode cache & dynamically reload app modules in memory
-    try:
-        importlib.invalidate_caches()
-        for pycache in BASE_DIR.glob("**/__pycache__"):
-            try:
-                shutil.rmtree(pycache, ignore_errors=True)
-            except Exception:
-                pass
-        for mod_name in list(sys.modules.keys()):
-            if mod_name.startswith("app.") or mod_name == "app":
-                try:
-                    importlib.reload(sys.modules[mod_name])
-                except Exception:
-                    pass
-    except Exception:
-        pass
-
+    reload_app_modules()
     return updated_files
 
 @api_bp.route("/api/version/update", methods=["POST"])
@@ -434,6 +443,9 @@ def update_version():
             output += f"\nDocker pull unavailable: {e}"
 
     if success:
+        reload_app_modules()
+        new_version = app_config.__version__
+
         # Schedule process restart after 1s so Docker container or Gunicorn reloads with new code
         def delayed_restart():
             time.sleep(1.0)
@@ -447,8 +459,6 @@ def update_version():
 
         threading.Thread(target=delayed_restart, daemon=True).start()
 
-        # In case modules were reloaded in memory, read new version
-        from app.config import __version__ as new_version
         return jsonify({
             "status": "success",
             "message": f"System updated successfully! Code overwritten to version v{new_version}. Daemon restart scheduled.",

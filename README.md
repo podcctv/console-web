@@ -1,7 +1,7 @@
 # console-web (NetWatch 赛博朋克网络运维终端)
 
 ![Build & Publish Docker](https://github.com/podcctv/console-web/actions/workflows/docker-publish.yml/badge.svg)
-![Version](https://img.shields.io/badge/version-v3.8.0-78E08F?style=flat-square&logo=git)
+![Version](https://img.shields.io/badge/version-v3.8.1-78E08F?style=flat-square&logo=git)
 ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
 
 `console-web` 是一个基于 [Flask](https://flask.palletsprojects.com/) 和 [psutil](https://psutil.readthedocs.io/) 构建的极简赛博朋克风格系统监控面板与网络运维终端 (`NetWatch`)。界面采用暗黑终端与玻璃拟态设计，支持实时 TCP Ping 多目标延迟趋势、IPv4/IPv6 双栈链路对比、多端响应式适配、1-Click IP 复制、ACME SSL 证书自动续期及全链路故障诊断。
@@ -44,6 +44,10 @@ wget -qO- https://raw.githubusercontent.com/podcctv/console-web/main/deploy.sh |
   - 主界面内置版本号与 GitHub 项目链接；版本检测自动判断 SemVer 语义化逻辑，对接 GitHub Actions Docker 镜像构建状态同步锁，完成编译后解锁热更新。
 - **📋 统一一键 IP 复制 (`[ COPY ALL IDENTITIES ]`)**：
   - 网络身份区域提供单一顶部复制按钮，一键提取 Listen、Egress、Visitor 及 Local 接口的结构化文本至剪贴板。
+
+### 🟢 `v3.8.1` (2026-07-29) - Dynamic Version Access & Universal Hot-Reloading Fix
+- **Dynamic Version Resolution**：重构 `check_version` 与 `views.py` 中的静态 `__version__` 绑定为 `app.config.__version__` 动态提取，彻底解决热更新后版本号驻留旧值的问题。
+- **Universal Module Hot-Reloading**：将模块重载与字节码缓存清理提取为 `reload_app_modules()` 共享函数，覆盖 `git pull` 与 Zip 下载双通道更新路径。
 
 ### 🟢 `v3.8.0` (2026-07-29) - Cyber Theme Selector & VT100 Quick-Cmd & Web Audio Sound FX
 - **🎨 4-Palette Cyber Theme Selector**：新增 `[ 🟢 Green | 🔷 Cyan | 💖 Magenta | 🟧 Amber ]` 赛博主题霓虹配色切换器，全站 CSS 变量与光晕跟随切换。

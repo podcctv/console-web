@@ -1,7 +1,7 @@
 import os
 import logging
 from pathlib import Path
-from app import app, logger, acme_manager, __version__
+from app import app, logger, acme_manager
 
 if __name__ == "__main__":
     acme_manager._auto_init()

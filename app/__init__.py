@@ -8,7 +8,8 @@ from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from flask import Flask
 
-from app.config import LOGS_DIR, PING_TARGETS, __version__
+from app.config import LOGS_DIR, PING_TARGETS
+import app.config as app_config
 from app.tsdb import tsdb
 from app import acme_manager
 from app.network import tcp_ping
@@ -85,5 +86,5 @@ logger.info(
     platform.system(),
     platform.release(),
     platform.python_version(),
-    __version__,
+    app_config.__version__,
 )
