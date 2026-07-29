@@ -624,7 +624,7 @@
                     <span>LOSS <b class="text-success" id="ping_stat_loss">0.0%</b></span>
                 </div>
 
-                <div class="canvas-wrapper" style="height:320px;">
+                <div class="canvas-wrapper" style="height:320px; position:relative;">
                     <div class="chart-empty-state" id="chart_empty_box">
                         <div>> connecting to realtime monitor...</div>
                         <div>> target: all active probes | interval: 30s</div>
@@ -633,6 +633,7 @@
                             <button class="btn-cli" onclick="fetchPings();">[ RETRY CONNECTION ]</button>
                         </div>
                     </div>
+                    <div id="chart_hover_tooltip" style="display:none; position:absolute; top:20px; left:60px; z-index:100; pointer-events:none; background:rgba(6, 10, 8, 0.96); border:1px solid var(--border-active); border-radius:var(--radius-sm); padding:9px 13px; font-family:var(--font-mono); font-size:0.76rem; box-shadow:0 8px 24px rgba(0,0,0,0.7); backdrop-filter:blur(8px); flex-direction:column; gap:4px; min-width:190px;"></div>
                     <canvas id="tcpingCanvas" style="width:100%; height:100%; display:block;"></canvas>
                 </div>
             </div>
@@ -1522,7 +1523,90 @@
                 });
             });
         }
+
+        // 7. Interactive Crosshair & Floating Tooltip Overlay
+        const tooltipEl = document.getElementById('chart_hover_tooltip');
+        if (chartMouseX !== null && chartMouseX >= paddingLeft && chartMouseX <= w - paddingRight) {
+            const sampleIdx = Math.min(samples.length - 1, Math.max(0, Math.round(((chartMouseX - paddingLeft) / chartW) * (samples.length - 1))));
+            const closestSample = samples[sampleIdx];
+            if (closestSample) {
+                const closestX = paddingLeft + (sampleIdx / Math.max(1, samples.length - 1)) * chartW;
+
+                // Hairline Crosshair
+                ctx.strokeStyle = 'rgba(120, 224, 143, 0.55)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([3, 3]);
+                ctx.beginPath();
+                ctx.moveTo(closestX, paddingTop);
+                ctx.lineTo(closestX, h - paddingBottom);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                let ttHtml = `<div style="font-weight:700; color:var(--status-success); border-bottom:1px solid var(--border-tier3); padding-bottom:4px; margin-bottom:4px;">⏱ TIME: ${closestSample.time || '--:--:--'}</div>`;
+
+                activeKeys.forEach(k => {
+                    const val = closestSample.targets_detail ? closestSample.targets_detail[k] : closestSample.latency;
+                    const cfg = TARGET_CONFIG[k] || { name: k, color: '#78E08F' };
+                    const latStr = (val !== null && val !== undefined) ? `${Math.round(val)} ms` : '<span style="color:#F07878">TIMEOUT</span>';
+
+                    ttHtml += `
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+                            <span style="color:${cfg.color}; font-weight:600;">● ${cfg.name}</span>
+                            <span class="mono" style="font-weight:700;">${latStr}</span>
+                        </div>
+                    `;
+
+                    // Draw focus ring on curve point
+                    if (val !== null && val !== undefined) {
+                        const pointY = h - paddingBottom - (val / maxLat) * chartH;
+                        ctx.fillStyle = cfg.color;
+                        ctx.beginPath();
+                        ctx.arc(closestX, pointY, 5.5, 0, Math.PI * 2);
+                        ctx.fill();
+
+                        ctx.fillStyle = '#FFFFFF';
+                        ctx.beginPath();
+                        ctx.arc(closestX, pointY, 2.5, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                });
+
+                if (tooltipEl) {
+                    tooltipEl.innerHTML = ttHtml;
+                    tooltipEl.style.display = 'flex';
+
+                    let ttLeft = closestX + 15;
+                    if (ttLeft + 210 > w) ttLeft = closestX - 215;
+                    tooltipEl.style.left = `${Math.max(10, ttLeft)}px`;
+                }
+            }
+        } else if (tooltipEl) {
+            tooltipEl.style.display = 'none';
+        }
     }
+
+    let chartMouseX = null;
+    let chartMouseY = null;
+
+    // Attach canvas hover listener
+    window.addEventListener('DOMContentLoaded', () => {
+        const canvasEl = document.getElementById('tcpingCanvas');
+        if (canvasEl) {
+            canvasEl.addEventListener('mousemove', (e) => {
+                const rect = canvasEl.getBoundingClientRect();
+                chartMouseX = e.clientX - rect.left;
+                chartMouseY = e.clientY - rect.top;
+                renderCanvasChart(pingHistory);
+            });
+            canvasEl.addEventListener('mouseleave', () => {
+                chartMouseX = null;
+                chartMouseY = null;
+                const tt = document.getElementById('chart_hover_tooltip');
+                if (tt) tt.style.display = 'none';
+                renderCanvasChart(pingHistory);
+            });
+        }
+    });
 
     async function fetchStats() {
         try {

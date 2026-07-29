@@ -8,13 +8,32 @@ from app.config import UPTIME_FILE
 
 logger = logging.getLogger(__name__)
 
+_last_net_io = None
+_last_net_time = None
+
 def get_system_stats_data():
+    global _last_net_io, _last_net_time
     try:
         cpu = psutil.cpu_percent(interval=None)
         mem = psutil.virtual_memory()
         disk = psutil.disk_usage("/")
         swap = psutil.swap_memory()
         
+        # Calculate RX/TX network throughput
+        now = time.time()
+        net_io = psutil.net_io_counters()
+        rx_kbps = 0.0
+        tx_kbps = 0.0
+        if _last_net_io and _last_net_time and now > _last_net_time:
+            dt = now - _last_net_time
+            rx_bytes_diff = net_io.bytes_recv - _last_net_io.bytes_recv
+            tx_bytes_diff = net_io.bytes_sent - _last_net_io.bytes_sent
+            rx_kbps = round((rx_bytes_diff / 1024) / dt, 1)
+            tx_kbps = round((tx_bytes_diff / 1024) / dt, 1)
+
+        _last_net_io = net_io
+        _last_net_time = now
+
         load_str = "0.12 / 0.08 / 0.05"
         if hasattr(os, "getloadavg"):
             try:
@@ -34,6 +53,8 @@ def get_system_stats_data():
             "swap": round(swap.percent, 1),
             "swap_used_mb": int(swap.used / (1024**2)),
             "swap_total_mb": int(swap.total / (1024**2)),
+            "net_rx_kbps": rx_kbps,
+            "net_tx_kbps": tx_kbps,
             "load": load_str,
             "tcp_established": 24,
             "tcp_timewait": 8

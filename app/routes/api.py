@@ -1,4 +1,5 @@
 import os
+import json
 import platform
 import socket
 import time
@@ -128,6 +129,17 @@ def pings():
     }
 
     return jsonify(results)
+
+@api_bp.route("/api/pings/stream")
+def api_pings_stream():
+    def generate():
+        while True:
+            history = tsdb.query("global", limit=60)
+            stats = tsdb.get_stats("global")
+            payload = json.dumps({"stats": {**stats, "history": history}})
+            yield f"data: {payload}\n\n"
+            time.sleep(10)
+    return Response(stream_with_context(generate()), mimetype="text/event-stream")
 
 @api_bp.route("/stats")
 @api_bp.route("/api/stats")
