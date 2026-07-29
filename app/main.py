@@ -58,7 +58,58 @@ def configure_logging():
 
 configure_logging()
 logger = logging.getLogger(__name__)
-__version__ = "3.0.0"
+__version__ = "3.1.0"
+
+class TimeSeriesDB:
+    """High-performance, thread-safe in-memory time-series telemetry engine with bounded retention."""
+    def __init__(self, max_points_per_series=1440):
+        self.max_points = max_points_per_series
+        self._series = {}
+        self._lock = threading.Lock()
+
+    def insert(self, series_id, timestamp, value, metadata=None):
+        with self._lock:
+            if series_id not in self._series:
+                self._series[series_id] = []
+            buf = self._series[series_id]
+            buf.append({
+                "time": datetime.fromtimestamp(timestamp).strftime("%H:%M:%S") if isinstance(timestamp, (int, float)) else str(timestamp),
+                "timestamp": timestamp,
+                "latency": value,
+                "meta": metadata or {}
+            })
+            if len(buf) > self.max_points:
+                buf.pop(0)
+
+    def query(self, series_id="global", limit=60):
+        with self._lock:
+            buf = self._series.get(series_id, [])
+            return list(buf[-limit:])
+
+    def get_stats(self, series_id="global"):
+        with self._lock:
+            buf = self._series.get(series_id, [])
+            valid = [p["latency"] for p in buf if p.get("latency") is not None]
+            if not valid:
+                return {"cur": None, "avg": None, "min": None, "max": None, "p50": None, "p95": None, "p99": None, "jitter": 0.0, "loss": 0.0, "samples_count": 0, "total_samples": len(buf)}
+            sorted_v = sorted(valid)
+            cur = valid[-1]
+            avg = sum(valid) / len(valid)
+            mn = sorted_v[0]
+            mx = sorted_v[-1]
+            p50 = sorted_v[int(len(sorted_v) * 0.50)]
+            p95 = sorted_v[int(len(sorted_v) * 0.95)]
+            p99 = sorted_v[min(len(sorted_v) - 1, int(len(sorted_v) * 0.99))]
+            jitter = (mx - mn) / 2.0 if len(valid) > 1 else 0.0
+            loss_pct = round(((len(buf) - len(valid)) / len(buf)) * 100, 1) if buf else 0.0
+            return {
+                "cur": round(cur, 1), "avg": round(avg, 1), "min": round(mn, 1),
+                "max": round(mx, 1), "p50": round(p50, 1), "p95": round(p95, 1),
+                "p99": round(p99, 1), "jitter": round(jitter, 1), "loss": loss_pct,
+                "samples_count": len(valid), "total_samples": len(buf)
+            }
+
+tsdb = TimeSeriesDB()
 
 app = Flask(__name__)
 start_time = datetime.now()
@@ -206,9 +257,9 @@ def acme_status_route():
 MONITOR_TARGETS_FILE = Path(__file__).resolve().parent.parent / "targets.json"
 
 DEFAULT_TARGETS = [
-    {"id": "t1", "name": "浙江联通 CDN", "target": "zj-cu-v4.ip.zstaticcdn.com:80", "type": "tcp", "freq": 30, "threshold_warn": 160, "threshold_crit": 250, "enabled": True},
-    {"id": "t2", "name": "浙江移动 CDN", "target": "zj-cm-v4.ip.zstaticcdn.com:80", "type": "tcp", "freq": 30, "threshold_warn": 160, "threshold_crit": 250, "enabled": True},
-    {"id": "t3", "name": "浙江电信 CDN", "target": "zj-ct-v4.ip.zstaticcdn.com:80", "type": "tcp", "freq": 30, "threshold_warn": 160, "threshold_crit": 250, "enabled": True},
+    {"id": "t1", "name": "Zhejiang Unicom CDN", "target": "zj-cu-v4.ip.zstaticcdn.com:80", "type": "tcp", "freq": 30, "threshold_warn": 160, "threshold_crit": 250, "enabled": True},
+    {"id": "t2", "name": "Zhejiang Mobile CDN", "target": "zj-cm-v4.ip.zstaticcdn.com:80", "type": "tcp", "freq": 30, "threshold_warn": 160, "threshold_crit": 250, "enabled": True},
+    {"id": "t3", "name": "Zhejiang Telecom CDN", "target": "zj-ct-v4.ip.zstaticcdn.com:80", "type": "tcp", "freq": 30, "threshold_warn": 160, "threshold_crit": 250, "enabled": True},
     {"id": "t4", "name": "Cloudflare DNS", "target": "1.1.1.1:53", "type": "dns", "freq": 60, "threshold_warn": 100, "threshold_crit": 200, "enabled": True},
     {"id": "t5", "name": "Google DNS", "target": "8.8.8.8:53", "type": "dns", "freq": 60, "threshold_warn": 100, "threshold_crit": 200, "enabled": True},
 ]
@@ -575,17 +626,17 @@ def api_diagnose_dualstack():
     if v4_info["status"] == "healthy" and v6_info["status"] == "healthy":
         diff = v6_info["tcp_ms"] - v4_info["tcp_ms"]
         if abs(diff) <= 5:
-            rec = "双栈表现接近，均可正常通信"
+            rec = "Both IPv4 and IPv6 show comparable latency performance."
         elif diff < 0:
-            rec = f"IPv6 延迟更低 ({diff}ms)"
+            rec = f"IPv6 latency is {abs(diff)}ms lower. Preferred route: IPv6."
         else:
-            rec = f"IPv4 延迟更低 (-{diff}ms)"
+            rec = f"IPv4 latency is {diff}ms lower. Preferred route: IPv4."
     elif v4_info["status"] == "healthy":
-        rec = "IPv4 单栈正常，IPv6 不可用或无 AAAA 记录"
+        rec = "IPv4 functional; IPv6 unreachable or missing AAAA record."
     elif v6_info["status"] == "healthy":
-        rec = "IPv6 单栈正常，IPv4 不可用"
+        rec = "IPv6 functional; IPv4 unreachable."
     else:
-        rec = "IPv4/IPv6 均不可达，请检查域名或目标网络"
+        rec = "Both IPv4 and IPv6 unreachable. Check DNS resolution or host network."
         
     return jsonify({
         "target": host,
@@ -1125,48 +1176,27 @@ def pings():
         main_lat = next((v for k, v in results.items() if k != "client_ping" and isinstance(v, (int, float))), None)
 
     now_ts = time.time()
-    now_str = datetime.now().strftime("%H:%M:%S")
-    ping_samples_ring.append({
-        "time": now_str,
-        "timestamp": now_ts,
-        "latency": main_lat,
-        "target": target_filter,
-        "targets_detail": {k: v for k, v in results.items() if k != "stats"},
-        "loss": 0 if main_lat is not None else 100
-    })
-    if len(ping_samples_ring) > 1200:
-        ping_samples_ring.pop(0)
+    targets_detail = {k: v for k, v in results.items() if k != "stats"}
 
-    # Compute stats
-    valid_lats = [s["latency"] for s in ping_samples_ring if s["latency"] is not None]
-    if valid_lats:
-        sorted_lats = sorted(valid_lats)
-        cur = valid_lats[-1]
-        avg = sum(valid_lats) / len(valid_lats)
-        mn = sorted_lats[0]
-        mx = sorted_lats[-1]
-        p50 = sorted_lats[int(len(sorted_lats) * 0.50)]
-        p95 = sorted_lats[int(len(sorted_lats) * 0.95)]
-        p99 = sorted_lats[min(len(sorted_lats) - 1, int(len(sorted_lats) * 0.99))]
-        jitter = (mx - mn) / 2.0 if len(valid_lats) > 1 else 0.0
-        loss_pct = round(((len(ping_samples_ring) - len(valid_lats)) / len(ping_samples_ring)) * 100, 1)
-    else:
-        cur = avg = mn = mx = p50 = p95 = p99 = jitter = None
-        loss_pct = 0.0
+    # Record into TimeSeriesDB engine
+    tsdb.insert("global", now_ts, main_lat, {"target": target_filter, "details": targets_detail})
+    for k, v in targets_detail.items():
+        if isinstance(v, (int, float)):
+            tsdb.insert(k, now_ts, v)
+
+    stats = tsdb.get_stats("global")
+    history = tsdb.query("global", limit=60)
+
+    # Attach detail objects for frontend chart multi-series rendering
+    for point in history:
+        if "details" not in point and "meta" in point:
+            point["targets_detail"] = point["meta"].get("details", {})
+        elif "targets_detail" not in point:
+            point["targets_detail"] = targets_detail
 
     results["stats"] = {
-        "cur": round(cur, 1) if cur else None,
-        "avg": round(avg, 1) if avg else None,
-        "min": round(mn, 1) if mn else None,
-        "max": round(mx, 1) if mx else None,
-        "p50": round(p50, 1) if p50 else None,
-        "p95": round(p95, 1) if p95 else None,
-        "p99": round(p99, 1) if p99 else None,
-        "jitter": round(jitter, 1) if jitter else 0.0,
-        "loss": loss_pct,
-        "samples_count": len(valid_lats),
-        "total_samples": len(ping_samples_ring),
-        "history": ping_samples_ring[-60:]
+        **stats,
+        "history": history
     }
 
     return jsonify(results)
@@ -1252,8 +1282,8 @@ TEMPLATE = r"""
             --radius-md: 6px;
             --radius-lg: 8px;
 
-            --font-mono: "JetBrains Mono", "IBM Plex Mono", "Consolas", monospace;
-            --font-ui: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+            --font-mono: "JetBrains Mono", "IBM Plex Mono", "Consolas", "Courier New", monospace;
+            --font-ui: var(--font-mono);
         }
 
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -1266,12 +1296,18 @@ TEMPLATE = r"""
             background: radial-gradient(circle at 50% -20%, rgba(80, 160, 100, 0.06), transparent 50%), var(--bg-page);
             background-attachment: fixed;
             color: var(--text-primary);
-            font-family: var(--font-ui);
+            font-family: var(--font-mono);
             margin: 0; padding: 0;
-            font-size: 14px;
+            font-size: 13.5px;
             line-height: 1.55;
             font-variant-numeric: tabular-nums;
             -webkit-font-smoothing: antialiased;
+        }
+
+        body::before {
+            content: " "; display: block; position: fixed; top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.22) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.015), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.015));
+            z-index: 999; background-size: 100% 3px, 6px 100%; pointer-events: none; opacity: 0.55;
         }
 
         .mono { font-family: var(--font-mono); }
@@ -1632,7 +1668,7 @@ TEMPLATE = r"""
         <div class="nav-brand">
             <span class="nav-logo-symbol">NW_</span>
             <span class="nav-brand-title">NETWATCH</span>
-            <span class="nav-brand-subtitle">// 网络运行监测终端</span>
+            <span class="nav-brand-subtitle">// NETWORK OPERATIONS TERMINAL</span>
         </div>
 
         <div class="nav-tabs-cli">
@@ -1687,31 +1723,33 @@ TEMPLATE = r"""
 
                     <!-- Middle: Network Identity & IP Classification -->
                     <div class="hero-col" style="padding: 0 10px;">
-                        <div class="hero-status-title" style="margin-bottom:8px">NETWORK IDENTITY & IP PROFILES</div>
-                        <div class="ip-table-grid">
+                        <div style="display:flex; justify-space-between; align-items:center; margin-bottom:8px;">
+                            <div class="hero-status-title" style="margin-bottom:0;">NETWORK IDENTITY & IP PROFILES</div>
+                            <button class="btn-copy-sm" onclick="copyAllIdentities()" style="padding: 3px 8px; font-size: 0.72rem; font-weight:700;">[ COPY ALL IDENTITIES ]</button>
+                        </div>
+                        <div class="ip-table-grid" style="grid-template-columns: 130px 1fr;">
                             <span class="ip-k">SERVER LISTEN</span>
                             <span class="ip-v text-cyan" id="hero_ip_listen">72.18.80.151:8180</span>
-                            <button class="btn-copy-sm" onclick="copyText(document.getElementById('hero_ip_listen').textContent, 'Server Listen IP')">复制</button>
 
                             <span class="ip-k">SERVER EGRESS</span>
                             <span class="ip-v text-cyan" id="hero_ip_egress">37.114.48.47</span>
-                            <button class="btn-copy-sm" onclick="copyText(document.getElementById('hero_ip_egress').textContent, 'Server Egress IP')">复制</button>
+
+                            <span class="ip-k">VISITOR CLIENT</span>
+                            <span class="ip-v text-primary" id="hero_ip_visitor">127.0.0.1</span>
 
                             <span class="ip-k">LOCAL INTERFACE</span>
                             <span class="ip-v" id="hero_ip_local">37.114.48.47 / 24</span>
-                            <button class="btn-copy-sm" onclick="copyText(document.getElementById('hero_ip_local').textContent, 'Local Interface')">复制</button>
                         </div>
 
                         <!-- Mobile Collapsible Accordion -->
                         <div id="mobile_identity_toggle" style="margin-top: 10px;">
                             <button class="btn-cli" id="btn_toggle_identity" style="width:100%; font-size:0.78rem;" onclick="toggleMobileIdentity()">
-                                [ ▼ 查看更多网络身份与来源信息 ]
+                                [ ▼ VIEW METADATA SOURCES ]
                             </button>
                             <div id="mobile_identity_extra" style="display:none; flex-direction:column; gap:6px; margin-top:8px; padding:10px; background:var(--bg-input); border-radius:var(--radius-sm); border:1px solid var(--border-tier3); font-family:var(--font-mono); font-size:0.8rem;">
-                                <div>VISITOR CLIENT: <b class="text-primary" id="hero_ip_visitor">127.0.0.1</b> <button class="btn-copy-sm" onclick="copyText(document.getElementById('hero_ip_visitor').textContent, 'Visitor IP')">复制</button></div>
-                                <div style="font-size:0.74rem; color:var(--text-muted);" id="hero_src_visitor">SOURCE: request client</div>
                                 <div style="font-size:0.74rem; color:var(--text-muted);" id="hero_src_listen">LISTEN SOURCE: bind 0.0.0.0</div>
                                 <div style="font-size:0.74rem; color:var(--text-muted);" id="hero_src_egress">EGRESS SOURCE: ipify API</div>
+                                <div style="font-size:0.74rem; color:var(--text-muted);" id="hero_src_visitor">VISITOR SOURCE: request headers</div>
                                 <div style="font-size:0.74rem; color:var(--text-muted);" id="hero_src_local">LOCAL SOURCE: eth0</div>
                             </div>
                         </div>
@@ -1719,7 +1757,7 @@ TEMPLATE = r"""
 
                     <!-- Right: Action Buttons -->
                     <div class="hero-col hero-col-actions" style="border-left: 1px solid var(--border-tier2); padding-left: 16px; align-items: stretch; justify-content: center; gap: 10px;">
-                        <button class="btn-cli-primary" id="btn_run_diag" onclick="switchNavTab('diagnostics'); startFullDiagnostics();">[> RUN FULL DIAGNOSTIC ]</button>
+                        <button class="btn-cli-primary" id="btn_run_diag" onclick="switchNavTab('diagnostics'); startFullDiagnostics();">[> RUN FULL DIAGNOSTICS ]</button>
                         <button class="btn-cli" onclick="switchNavTab('events');">[ VIEW EVENTS ]</button>
                         <button class="btn-cli" onclick="exportDiagnosticReport();">[ EXPORT REPORT ]</button>
                     </div>
@@ -1760,20 +1798,20 @@ TEMPLATE = r"""
                 </div>
             </div>
 
-            <!-- ── 4. REALTIME MULTI-TARGET LATENCY TREND CHART ($ tcping --watch) ── -->
+            <!-- ── 4. REALTIME MULTI-TARGET LATENCY HISTOGRAM ($ tcping --watch --histogram) ── -->
             <div class="card-cli-tier1">
                 <div class="card-header-bar" style="flex-wrap:wrap; gap:10px;">
                     <div class="card-header-left">
-                        <span class="cmd-title">$ tcping --watch --multi-target</span>
-                        <span class="cmd-subtitle">// 实时多目标 TCP 链路延迟与趋势分析</span>
+                        <span class="cmd-title">$ tcping --watch --histogram</span>
+                        <span class="cmd-subtitle">// REALTIME MULTI-TARGET TCP LATENCY PIXEL HISTOGRAM</span>
                     </div>
                     <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                         <div style="font-family:var(--font-mono); font-size:0.78rem; color:var(--text-muted);">
-                            数据粒度: 
+                            Granularity: 
                             <select id="ping_granularity" style="background:var(--bg-input); border:1px solid var(--border-tier2); color:var(--text-primary); padding:3px 8px; border-radius:var(--radius-sm); font-family:var(--font-mono); font-size:0.78rem; outline:none;" onchange="fetchPings()">
-                                <option value="1m">1 分钟</option>
-                                <option value="5m">5 分钟</option>
-                                <option value="15m">15 分钟</option>
+                                <option value="1m">1 Min</option>
+                                <option value="5m">5 Mins</option>
+                                <option value="15m">15 Mins</option>
                             </select>
                         </div>
                         <div style="display:flex; gap:4px">
@@ -1794,13 +1832,13 @@ TEMPLATE = r"""
                             [ ALL TARGETS ]
                         </button>
                         <button class="btn-cli" style="padding:3px 8px; font-size:0.76rem; border-color:#FF6B6B; color:#FF6B6B;" onclick="setTargetFilter('ping_cu', this)">
-                            ● 浙江联通 <span id="leg_val_cu" class="mono text-muted">-ms</span>
+                            ● Zhejiang Unicom <span id="leg_val_cu" class="mono text-muted">-ms</span>
                         </button>
                         <button class="btn-cli" style="padding:3px 8px; font-size:0.76rem; border-color:#BD93F9; color:#BD93F9;" onclick="setTargetFilter('ping_cm', this)">
-                            ● 浙江移动 <span id="leg_val_cm" class="mono text-muted">-ms</span>
+                            ● Zhejiang Mobile <span id="leg_val_cm" class="mono text-muted">-ms</span>
                         </button>
                         <button class="btn-cli" style="padding:3px 8px; font-size:0.76rem; border-color:#50FA7B; color:#50FA7B;" onclick="setTargetFilter('ping_ct', this)">
-                            ● 浙江电信 <span id="leg_val_ct" class="mono text-muted">-ms</span>
+                            ● Zhejiang Telecom <span id="leg_val_ct" class="mono text-muted">-ms</span>
                         </button>
                         <button class="btn-cli" style="padding:3px 8px; font-size:0.76rem; border-color:#8BE9FD; color:#8BE9FD;" onclick="setTargetFilter('ping_cloudflare', this)">
                             ● Cloudflare <span id="leg_val_cloudflare" class="mono text-muted">-ms</span>
@@ -1844,7 +1882,7 @@ TEMPLATE = r"""
                 <div class="card-header-bar">
                     <div class="card-header-left">
                         <span class="cmd-title">$ network --dual-stack</span>
-                        <span class="cmd-subtitle">// IPv4 / IPv6 协议链路对比与差值矩阵</span>
+                        <span class="cmd-subtitle">// IPv4 / IPv6 PROTOCOL COMPARISON & DIFFERENCE MATRIX</span>
                     </div>
                     <button class="btn-cli" onclick="fetchDualStackDiag()">[ RE-TEST DUALSTACK ]</button>
                 </div>
@@ -1928,7 +1966,7 @@ TEMPLATE = r"""
                     <div class="card-header-bar">
                         <div class="card-header-left">
                             <span class="cmd-title">$ ip addr show</span>
-                            <span class="cmd-subtitle">// 宿主机网络接口与路由状态</span>
+                            <span class="cmd-subtitle">// HOST NETWORK INTERFACES & ROUTING MATRIX</span>
                         </div>
                     </div>
                     <table class="cli-table">
@@ -1972,7 +2010,7 @@ TEMPLATE = r"""
                     <div class="card-header-bar" style="flex-wrap: nowrap; gap: 8px;">
                         <div class="card-header-left" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                             <span class="cmd-title" style="white-space: nowrap;">$ systemctl status netwatch</span>
-                            <span class="cmd-subtitle" style="white-space: nowrap;">// 实时资源</span>
+                            <span class="cmd-subtitle" style="white-space: nowrap;">// REALTIME TELEMETRY</span>
                         </div>
                         <span class="badge-bracket status-healthy" style="white-space: nowrap; flex-shrink: 0;">[ active (running) ]</span>
                     </div>
@@ -2016,7 +2054,7 @@ TEMPLATE = r"""
                 <div class="card-header-bar">
                     <div class="card-header-left">
                         <span class="cmd-title">$ uptime --history --days=30</span>
-                        <span class="cmd-subtitle">// 最近 30 天可用率与中断历史</span>
+                        <span class="cmd-subtitle">// 30-DAY UPTIME HISTORY & SLA MATRIX</span>
                     </div>
                     <span class="mono text-muted" style="font-size:0.8rem">30d SLA: <b class="text-success" id="uptime_sla_val">99.98%</b></span>
                 </div>
@@ -2032,7 +2070,7 @@ TEMPLATE = r"""
                 <div class="card-header-bar">
                     <div class="card-header-left">
                         <span class="cmd-title">$ tail -f /var/log/netwatch/events.log</span>
-                        <span class="cmd-subtitle">// 实时事件与告警日志</span>
+                        <span class="cmd-subtitle">// REALTIME EVENT LOGS & ALERTS</span>
                     </div>
                     <div style="display:flex; gap:6px;">
                         <button class="btn-cli active" onclick="filterLogs('all', this)">[ ALL ]</button>
@@ -2046,7 +2084,7 @@ TEMPLATE = r"""
 
                 <div style="display:flex; gap:8px; margin-bottom:10px; align-items:center;">
                     <span class="text-success font-bold">$ grep</span>
-                    <input type="text" id="log_grep_input" style="flex:1; background:var(--bg-input); border:1px solid var(--border-tier2); color:var(--text-primary); padding:6px 12px; border-radius:var(--radius-sm); font-family:var(--font-mono); font-size:0.82rem; outline:none;" placeholder="搜索关键字 (timeout, tcp, latency)..." onkeyup="applyLogGrep()" />
+                    <input type="text" id="log_grep_input" style="flex:1; background:var(--bg-input); border:1px solid var(--border-tier2); color:var(--text-primary); padding:6px 12px; border-radius:var(--radius-sm); font-family:var(--font-mono); font-size:0.82rem; outline:none;" placeholder="Search log keywords (timeout, tcp, latency)..." onkeyup="applyLogGrep()" />
                 </div>
 
                 <div class="log-stream-box-cli" id="log_stream_box">
@@ -2067,7 +2105,7 @@ TEMPLATE = r"""
                 <div class="card-header-bar">
                     <div class="card-header-left">
                         <span class="cmd-title">$ cat /etc/netwatch/targets</span>
-                        <span class="cmd-subtitle">// 监测目标表与策略配置 (支持手动添加/编辑/删除)</span>
+                        <span class="cmd-subtitle">// MONITORING TARGETS & POLICY CONFIGURATION</span>
                     </div>
                     <button class="btn-cli-primary" onclick="openAddTargetModal()">[ + ADD TARGET ]</button>
                 </div>
@@ -2098,7 +2136,7 @@ TEMPLATE = r"""
                 <div class="card-header-bar">
                     <div class="card-header-left">
                         <span class="cmd-title">$ diagnose --full</span>
-                        <span class="cmd-subtitle">// 12 阶段全链路诊断任务流</span>
+                        <span class="cmd-subtitle">// 12-STAGE END-TO-END DIAGNOSTIC PIPELINE</span>
                     </div>
                 </div>
 
@@ -2121,7 +2159,7 @@ TEMPLATE = r"""
                 <div class="card-header-bar">
                     <div class="card-header-left">
                         <span class="cmd-title">$ alerts --unresolved</span>
-                        <span class="cmd-subtitle">// 未解决告警与报告导出</span>
+                        <span class="cmd-subtitle">// UNRESOLVED ALERTS & EXPORT REPORTS</span>
                     </div>
                     <div style="display:flex; gap:6px;">
                         <button class="btn-cli" onclick="exportReportFmt('markdown')">[ EXPORT MD ]</button>
@@ -2142,7 +2180,7 @@ TEMPLATE = r"""
         <!-- ── FOOTER ── -->
         <footer class="terminal-footer">
             <div>
-                <b>NETWATCH NETWORK OPERATIONS TERMINAL v3.0.0</b><br>
+                <b>NETWATCH NETWORK OPERATIONS TERMINAL v3.1.0</b><br>
                 <span>monitoring network health in realtime | status: operational</span>
             </div>
             <div class="footer-links">
@@ -2181,16 +2219,16 @@ TEMPLATE = r"""
             <div style="display:flex; flex-direction:column; gap:12px; font-family:var(--font-mono); font-size:0.84rem;">
                 <input type="hidden" id="target_id_input" />
                 <div>
-                    <label class="text-muted" style="display:block; margin-bottom:4px;">TARGET NAME (目标名称):</label>
-                    <input type="text" id="target_name_input" style="width:100%; background:var(--bg-input); border:1px solid var(--border-tier2); color:var(--text-primary); padding:8px 12px; border-radius:var(--radius-sm); font-family:var(--font-mono); outline:none;" placeholder="例如: 浙江联通 CDN" />
+                    <label class="text-muted" style="display:block; margin-bottom:4px;">TARGET NAME:</label>
+                    <input type="text" id="target_name_input" style="width:100%; background:var(--bg-input); border:1px solid var(--border-tier2); color:var(--text-primary); padding:8px 12px; border-radius:var(--radius-sm); font-family:var(--font-mono); outline:none;" placeholder="e.g. Zhejiang Unicom CDN" />
                 </div>
                 <div>
-                    <label class="text-muted" style="display:block; margin-bottom:4px;">HOST & PORT (目标地址与端口):</label>
-                    <input type="text" id="target_host_input" style="width:100%; background:var(--bg-input); border:1px solid var(--border-tier2); color:var(--text-primary); padding:8px 12px; border-radius:var(--radius-sm); font-family:var(--font-mono); outline:none;" placeholder="例如: zj-cu-v4.ip.zstaticcdn.com:80" />
+                    <label class="text-muted" style="display:block; margin-bottom:4px;">HOST & PORT:</label>
+                    <input type="text" id="target_host_input" style="width:100%; background:var(--bg-input); border:1px solid var(--border-tier2); color:var(--text-primary); padding:8px 12px; border-radius:var(--radius-sm); font-family:var(--font-mono); outline:none;" placeholder="e.g. zj-cu-v4.ip.zstaticcdn.com:80" />
                 </div>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
                     <div>
-                        <label class="text-muted" style="display:block; margin-bottom:4px;">PROTOCOL (协议类型):</label>
+                        <label class="text-muted" style="display:block; margin-bottom:4px;">PROTOCOL:</label>
                         <select id="target_type_input" style="width:100%; background:var(--bg-input); border:1px solid var(--border-tier2); color:var(--text-primary); padding:8px 12px; border-radius:var(--radius-sm); font-family:var(--font-mono); outline:none;">
                             <option value="tcp">TCP PING</option>
                             <option value="dns">DNS LOOKUP</option>
@@ -2198,17 +2236,17 @@ TEMPLATE = r"""
                         </select>
                     </div>
                     <div>
-                        <label class="text-muted" style="display:block; margin-bottom:4px;">INTERVAL (检测频率/秒):</label>
+                        <label class="text-muted" style="display:block; margin-bottom:4px;">INTERVAL (SEC):</label>
                         <input type="number" id="target_freq_input" value="30" style="width:100%; background:var(--bg-input); border:1px solid var(--border-tier2); color:var(--text-primary); padding:8px 12px; border-radius:var(--radius-sm); font-family:var(--font-mono); outline:none;" />
                     </div>
                 </div>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
                     <div>
-                        <label class="text-muted" style="display:block; margin-bottom:4px;">WARN THRESHOLD (告警阈值/ms):</label>
+                        <label class="text-muted" style="display:block; margin-bottom:4px;">WARN THRESHOLD (MS):</label>
                         <input type="number" id="target_warn_input" value="160" style="width:100%; background:var(--bg-input); border:1px solid var(--border-tier2); color:var(--text-primary); padding:8px 12px; border-radius:var(--radius-sm); font-family:var(--font-mono); outline:none;" />
                     </div>
                     <div>
-                        <label class="text-muted" style="display:block; margin-bottom:4px;">CRIT THRESHOLD (严重阈值/ms):</label>
+                        <label class="text-muted" style="display:block; margin-bottom:4px;">CRIT THRESHOLD (MS):</label>
                         <input type="number" id="target_crit_input" value="250" style="width:100%; background:var(--bg-input); border:1px solid var(--border-tier2); color:var(--text-primary); padding:8px 12px; border-radius:var(--radius-sm); font-family:var(--font-mono); outline:none;" />
                     </div>
                 </div>
@@ -2243,12 +2281,29 @@ TEMPLATE = r"""
     let validSamplesCount = 0;
     let pingHistory = [];
 
+    function copyAllIdentities() {
+        const listen = (document.getElementById('hero_ip_listen').textContent || '').trim();
+        const egress = (document.getElementById('hero_ip_egress').textContent || '').trim();
+        const visitor = (document.getElementById('hero_ip_visitor').textContent || '').trim();
+        const local = (document.getElementById('hero_ip_local').textContent || '').trim();
+
+        const text = [
+            "=== NETWATCH NETWORK IDENTITIES ===",
+            `Server Listen  : ${listen}`,
+            `Server Egress  : ${egress}`,
+            `Visitor Client : ${visitor}`,
+            `Local Interface: ${local}`
+        ].join("\n");
+
+        copyText(text, "Network Identities");
+    }
+
     function copyText(text, label) {
         if (!text) return;
         const cleanText = text.trim();
         if (navigator.clipboard && window.isSecureContext) {
             navigator.clipboard.writeText(cleanText).then(() => {
-                showToast(`✓ ${label || '内容'} 已复制到剪贴板`);
+                showToast(`✓ ${label || 'Content'} copied to clipboard`);
             }).catch(() => fallbackCopyText(cleanText, label));
         } else {
             fallbackCopyText(cleanText, label);
@@ -2264,7 +2319,7 @@ TEMPLATE = r"""
         ta.select();
         try {
             document.execCommand('copy');
-            showToast(`✓ ${label || '内容'} 已复制到剪贴板`);
+            showToast(`✓ ${label || 'Content'} copied to clipboard`);
         } catch(e) {}
         document.body.removeChild(ta);
     }
@@ -2294,10 +2349,10 @@ TEMPLATE = r"""
         if (!extra || !btn) return;
         if (extra.style.display === 'none' || !extra.style.display) {
             extra.style.display = 'flex';
-            btn.textContent = '[ ▲ 折叠网络身份信息 ]';
+            btn.textContent = '[ ▲ HIDE METADATA SOURCES ]';
         } else {
             extra.style.display = 'none';
-            btn.textContent = '[ ▼ 查看更多网络身份与来源信息 ]';
+            btn.textContent = '[ ▼ VIEW METADATA SOURCES ]';
         }
     }
 
@@ -2360,13 +2415,13 @@ TEMPLATE = r"""
 
             const ip = data.ipInfo || {};
             document.getElementById('hero_ip_listen').textContent = ip.serverListen || '';
-            document.getElementById('hero_src_listen').textContent = `SOURCE: ${ip.serverListenSource || ''}`;
+            document.getElementById('hero_src_listen').textContent = `LISTEN SOURCE: ${ip.serverListenSource || ''}`;
             document.getElementById('hero_ip_egress').textContent = ip.serverEgress || '';
-            document.getElementById('hero_src_egress').textContent = `SOURCE: ${ip.serverEgressSource || ''}`;
+            document.getElementById('hero_src_egress').textContent = `EGRESS SOURCE: ${ip.serverEgressSource || ''}`;
             document.getElementById('hero_ip_visitor').textContent = ip.visitorIp || '';
-            document.getElementById('hero_src_visitor').textContent = `SOURCE: ${ip.visitorIpSource || ''}`;
+            document.getElementById('hero_src_visitor').textContent = `VISITOR SOURCE: ${ip.visitorIpSource || ''}`;
             document.getElementById('hero_ip_local').textContent = ip.localInterface || '';
-            document.getElementById('hero_src_local').textContent = `SOURCE: ${ip.localInterfaceSource || ''}`;
+            document.getElementById('hero_src_local').textContent = `LOCAL SOURCE: ${ip.localInterfaceSource || ''}`;
         } catch(e) {}
     }
 
@@ -2422,9 +2477,9 @@ TEMPLATE = r"""
     }
 
     const TARGET_CONFIG = {
-        "ping_cu": { name: "浙江联通", color: "#FF6B6B", glow: "rgba(255,107,107,0.7)" },
-        "ping_cm": { name: "浙江移动", color: "#BD93F9", glow: "rgba(189,147,249,0.7)" },
-        "ping_ct": { name: "浙江电信", color: "#50FA7B", glow: "rgba(80,250,123,0.7)" },
+        "ping_cu": { name: "Zhejiang Unicom", color: "#FF6B6B", glow: "rgba(255,107,107,0.7)" },
+        "ping_cm": { name: "Zhejiang Mobile", color: "#BD93F9", glow: "rgba(189,147,249,0.7)" },
+        "ping_ct": { name: "Zhejiang Telecom", color: "#50FA7B", glow: "rgba(80,250,123,0.7)" },
         "ping_cloudflare": { name: "Cloudflare", color: "#8BE9FD", glow: "rgba(139,233,253,0.7)" },
         "ping_google": { name: "Google", color: "#FFB86C", glow: "rgba(255,184,108,0.7)" }
     };
@@ -2438,10 +2493,9 @@ TEMPLATE = r"""
         canvas.width = w; canvas.height = h;
 
         ctx.clearRect(0, 0, w, h);
-
         if (!samples || samples.length === 0) return;
 
-        // Compute max latency across all targets and samples
+        // 1. Determine Max Latency
         let allLats = [];
         samples.forEach(s => {
             if (s.latency !== null && s.latency !== undefined) allLats.push(s.latency);
@@ -2463,7 +2517,7 @@ TEMPLATE = r"""
         const chartW = w - paddingLeft - paddingRight;
         const chartH = h - paddingTop - paddingBottom;
 
-        // 1. Draw Grid Lines & Y-Axis Labels
+        // 2. Draw Y-Axis Grid Lines & Labels
         ctx.font = '11px "JetBrains Mono", monospace';
         ctx.fillStyle = '#5D6A60';
         ctx.textAlign = 'right';
@@ -2473,7 +2527,6 @@ TEMPLATE = r"""
             const latVal = Math.round((maxLat / ySteps) * i);
             const y = h - paddingBottom - (latVal / maxLat) * chartH;
 
-            // Grid Line
             ctx.strokeStyle = 'rgba(146, 173, 151, 0.07)';
             ctx.lineWidth = 1;
             ctx.beginPath();
@@ -2481,11 +2534,10 @@ TEMPLATE = r"""
             ctx.lineTo(w - paddingRight, y);
             ctx.stroke();
 
-            // Y Label
             ctx.fillText(`${latVal} ms`, paddingLeft - 8, y + 4);
         }
 
-        // 2. Draw X-Axis Time Labels
+        // 3. Draw X-Axis Time Labels
         ctx.textAlign = 'center';
         const xStepCount = Math.min(8, samples.length);
         const timeInterval = Math.max(1, Math.floor(samples.length / xStepCount));
@@ -2493,38 +2545,21 @@ TEMPLATE = r"""
         for (let idx = 0; idx < samples.length; idx += timeInterval) {
             const s = samples[idx];
             const x = paddingLeft + (idx / Math.max(1, samples.length - 1)) * chartW;
-
-            // Vertical Grid Line
-            ctx.strokeStyle = 'rgba(146, 173, 151, 0.05)';
-            ctx.beginPath();
-            ctx.moveTo(x, paddingTop);
-            ctx.lineTo(x, h - paddingBottom);
-            ctx.stroke();
-
-            // Time Label
             if (s.time) {
                 ctx.fillText(s.time, x, h - 8);
             }
         }
 
-        // 3. Draw Threshold Lines
+        // 4. Draw Threshold Lines
         const y100 = h - paddingBottom - (100 / maxLat) * chartH;
         if (y100 >= paddingTop && y100 <= h - paddingBottom) {
-            ctx.strokeStyle = 'rgba(231, 198, 107, 0.35)';
+            ctx.strokeStyle = 'rgba(231, 198, 107, 0.30)';
             ctx.setLineDash([4, 4]);
             ctx.beginPath(); ctx.moveTo(paddingLeft, y100); ctx.lineTo(w - paddingRight, y100); ctx.stroke();
             ctx.setLineDash([]);
         }
 
-        const y200 = h - paddingBottom - (200 / maxLat) * chartH;
-        if (y200 >= paddingTop && y200 <= h - paddingBottom) {
-            ctx.strokeStyle = 'rgba(240, 120, 120, 0.35)';
-            ctx.setLineDash([4, 4]);
-            ctx.beginPath(); ctx.moveTo(paddingLeft, y200); ctx.lineTo(w - paddingRight, y200); ctx.stroke();
-            ctx.setLineDash([]);
-        }
-
-        // 4. Update Legend Values from latest sample
+        // 5. Update Legend Values
         const latestSample = samples[samples.length - 1];
         if (latestSample && latestSample.targets_detail) {
             Object.keys(TARGET_CONFIG).forEach(key => {
@@ -2536,60 +2571,53 @@ TEMPLATE = r"""
             });
         }
 
-        // 5. Draw Multi-Series Latency Curves
-        const stepW = chartW / Math.max(1, samples.length - 1);
-        const keysToDraw = currentTargetFilter === 'all'
-            ? Object.keys(TARGET_CONFIG)
-            : [currentTargetFilter];
+        // 6. Draw Cyber Pixel Bar Histogram
+        const numColumns = samples.length;
+        const colGap = 4;
+        const totalGap = (numColumns - 1) * colGap;
+        const colWidth = Math.max(3, Math.floor((chartW - totalGap) / numColumns));
 
-        keysToDraw.forEach(key => {
-            const conf = TARGET_CONFIG[key] || { color: '#69D6D0', glow: 'rgba(105,214,208,0.6)' };
+        const blockHeight = 4;
+        const blockGap = 2;
+        const totalBlockUnit = blockHeight + blockGap;
 
-            ctx.save();
-            ctx.strokeStyle = conf.color;
-            ctx.fillStyle = conf.color;
-            ctx.shadowColor = conf.glow;
-            ctx.shadowBlur = 6;
-            ctx.lineWidth = 2;
-            ctx.beginPath();
+        samples.forEach((s, idx) => {
+            const x = paddingLeft + idx * (colWidth + colGap);
+            let lat = s.latency;
+            if (currentTargetFilter !== 'all' && s.targets_detail && s.targets_detail[currentTargetFilter] !== undefined) {
+                lat = s.targets_detail[currentTargetFilter];
+            }
 
-            let firstPoint = true;
+            if (lat === null || lat === undefined) {
+                ctx.fillStyle = 'rgba(240, 120, 120, 0.6)';
+                ctx.fillRect(x, h - paddingBottom - blockHeight, colWidth, blockHeight);
+                return;
+            }
 
-            samples.forEach((s, idx) => {
-                let lat = null;
-                if (s.targets_detail && s.targets_detail[key] !== undefined) {
-                    lat = s.targets_detail[key];
-                } else if (key === currentTargetFilter || currentTargetFilter === 'all') {
-                    lat = s.latency;
+            const barHeightPx = (lat / maxLat) * chartH;
+            const blockCount = Math.max(1, Math.floor(barHeightPx / totalBlockUnit));
+
+            for (let b = 0; b < blockCount; b++) {
+                const blockY = h - paddingBottom - (b + 1) * totalBlockUnit;
+                const blockLatVal = ((b + 1) / (chartH / totalBlockUnit)) * maxLat;
+
+                let blockColor = '#78E08F';
+                if (blockLatVal > 200) {
+                    blockColor = '#F07878';
+                } else if (blockLatVal > 100) {
+                    blockColor = '#E7C66B';
+                } else if (currentTargetFilter !== 'all' && TARGET_CONFIG[currentTargetFilter]) {
+                    blockColor = TARGET_CONFIG[currentTargetFilter].color;
                 }
 
-                if (lat !== null && lat !== undefined) {
-                    const x = paddingLeft + idx * stepW;
-                    const y = h - paddingBottom - (lat / maxLat) * chartH;
-                    if (firstPoint) { ctx.moveTo(x, y); firstPoint = false; }
-                    else ctx.lineTo(x, y);
-                }
-            });
-            ctx.stroke();
+                ctx.fillStyle = blockColor;
+                ctx.fillRect(x, blockY, colWidth, blockHeight);
+            }
 
-            // Draw glowing series points
-            samples.forEach((s, idx) => {
-                let lat = null;
-                if (s.targets_detail && s.targets_detail[key] !== undefined) {
-                    lat = s.targets_detail[key];
-                } else if (key === currentTargetFilter) {
-                    lat = s.latency;
-                }
-
-                if (lat !== null && lat !== undefined) {
-                    const x = paddingLeft + idx * stepW;
-                    const y = h - paddingBottom - (lat / maxLat) * chartH;
-                    ctx.beginPath();
-                    ctx.arc(x, y, 2.5, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-            });
-            ctx.restore();
+            // Top peak cap indicator
+            const capY = h - paddingBottom - blockCount * totalBlockUnit - 1;
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(x, Math.max(paddingTop, capY), colWidth, 2);
         });
     }
 

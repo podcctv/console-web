@@ -1,7 +1,6 @@
 # console-web (NetWatch 赛博朋克网络运维终端)
 
-![Build & Publish Docker](https://github.com/podcctv/console-web/actions/workflows/docker-publish.yml/badge.svg)
-![Version](https://img.shields.io/badge/version-v3.0.0-78E08F?style=flat-square&logo=git)
+![Build & Publish Docker](https://github.com/podcctv/console-web/actions/workflows/docker-pub![Version](https://img.shields.io/badge/version-v3.1.0-78E08F?style=flat-square&logo=git)
 ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
 
 `console-web` 是一个基于 [Flask](https://flask.palletsprojects.com/) 和 [psutil](https://psutil.readthedocs.io/) 构建的极简赛博朋克风格系统监控面板与网络运维终端 (`NetWatch`)。界面采用暗黑终端与玻璃拟态设计，支持实时 TCP Ping 多目标延迟趋势、IPv4/IPv6 双栈链路对比、多端响应式适配、1-Click IP 复制、ACME SSL 证书自动续期及全链路故障诊断。
@@ -30,16 +29,34 @@ wget -qO- https://raw.githubusercontent.com/podcctv/console-web/main/deploy.sh |
 
 ## ✨ 核心功能
 
-- **📱 响应式多端适配 (v3.0 升级)**：
-  - 顶部 Sticky 粘性导航栏 + 毛玻璃视觉高阶质感。
-  - 移动端（<768px）内置底部 Fixed 触控导航栏与 44px+ 易用点击区。
-  - 自动将 Dual-Stack 矩阵及 `$ ip addr show` 宽表格转为移动卡片布局，彻底消除横向滚动条。
-- **📋 1-Click 一键 IP 复制与 Toast 动画**：
-  - 支持对 Listen IP、Egress IP 及本地网卡地址一键复制到剪贴板，带浮动 Toast 弹窗动画提示。
-- **📈 实时多目标 Latency 趋势图**：
-  - 对三大运营商（浙江联通、浙江移动、浙江电信）及 Cloudflare/Google DNS 进行多色彩 Cyber 风格 Canvas 趋势绘制，支持 1m/5m/15m 粒度及多目标筛选。
-- **🔒 自动 ACME IP / 域名 SSL 证书及自动续期**：
-  - 支持为公网 IP 地址或自定义域名自动向 ZeroSSL / Let's Encrypt 申请 90 天免费 SSL 证书。
+- **⚡ 内存时序数据库 (TimeSeriesDB v3.1 升级)**：
+  - 内置 Python 线程安全内存时序数据库，采用固定容量（1440 points / 24h）滑动窗口滚动存贮，零磁盘 I/O 压力。
+- **📊 赛博像素柱状图 (Pixel Bar Histogram v3.1 升级)**：
+  - 弃用传统折线图，采用高科技复古像素柱状图 (Pixel Spectrum Analyzer) 渲染。离散 4px 块状堆叠（绿色 Healthy / 橙色 Warning / 红色 Alert）及顶部白色 Peak 峰值指示。
+- **📋 统一一键 IP 复制 (`[ COPY ALL IDENTITIES ]`)**：
+  - 网络身份区域提供单一顶部复制按钮，一键提取 Listen、Egress、Visitor 及 Local 接口的结构化文本至剪贴板。
+- **🔤 纯正英文运维语言 & 老式 CRT 终端风格**：
+  - 全站 100% 纯英文提示与标示，全站强制 `Monospace` 等宽字体与 CRT 扫描线背景，呈现纯正 VT100 终端体验。
+- **📱 响应式多端适配**：
+  - 顶部 Sticky 粘性导航 + 移动端（<768px）Fixed 触控导航栏与 Mobile Card 布局。
+
+---
+
+## 📅 版本更新日志 (Changelog)
+
+📌 **版本号管理规范**：本项目遵从 [语义化版本 2.0.0 (Semantic Versioning)](https://semver.org/lang/zh-CN/) 规范（`MAJOR.MINOR.PATCH`）。每次更新同步修改 `app/main.py` (`__version__`)、`setup.cfg` (`version`) 及 `README.md`。
+
+### 🟢 `v3.1.0` (2026-07-29) - 内存时序数据库 & 像素柱状图 & 复古 CRT 终端重构
+- **In-Memory TimeSeriesDB**：新增 `TimeSeriesDB` 内存时序引擎，支持滑动时间窗口存储与分标量统计（Cur, Avg, Min, Max, P95, P99, Jitter, Loss%）。
+- **Cyber Pixel Bar Histogram**：将传统折线图升级为像素频谱柱状图 (Pixel Bar Histogram)，绘制离散 4px 堆叠块与 Peak 峰值标记。
+- **Unified Single Identity Copy**：网络身份区合并为单一 `[ COPY ALL IDENTITIES ]` 按钮，一键导出完整网络身份元数据。
+- **100% Pure English Localization**：界面所有标题、表头、按钮、模态框及日志消息全面英文化。
+- **Retro CRT Monospace Styling**：强制全站 `Monospace` 字体，融入 CRT 扫描线显像管质感。
+
+### 🟢 `v3.0.0` (2026-07-29) - 响应式多端重构与视觉交付
+- **Visual Design System**：全站确立暗黑终端 UI，规范绿色（`#78E08F`）仅用于健康状态与主要操作。
+- **Mobile Responsive Navbar**：桌面端顶部 Sticky 导航；移动端（<768px）新增 Fixed 底部导航栏与 44px+ 触控交互。
+- **Mobile Card Breakdown**：在移动端将协议对比矩阵与网卡列表宽表格重构为 Mobile Card 上下堆叠组件。��网 IP 地址或自定义域名自动向 ZeroSSL / Let's Encrypt 申请 90 天免费 SSL 证书。
   - 后台守护进程自动监测证书过期天数，**小于 30 天时自动触发静默自动续期**。
 - **⚡ 12 阶段全链路网络诊断流**：
   - 支持 `$ diagnose --full` 自动排查 DNS 解析、TCP 连通性、MTU/MSS、TLS 握手及路由 Hop。
