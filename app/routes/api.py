@@ -267,6 +267,23 @@ def check_github_actions_build():
         pass
     return {"ready": True, "status": "unknown", "conclusion": None, "message": "Could not check GitHub Actions API (manual update permitted)."}
 
+def fetch_remote_github_version():
+    """Fetch latest declared __version__ from raw GitHub main branch."""
+    try:
+        req = urllib.request.Request(
+            "https://raw.githubusercontent.com/podcctv/console-web/main/app/config.py",
+            headers={"User-Agent": "NetWatch-Agent"}
+        )
+        with urllib.request.urlopen(req, timeout=4) as response:
+            if response.status == 200:
+                text = response.read().decode()
+                for line in text.splitlines():
+                    if line.strip().startswith("__version__"):
+                        return line.split("=")[-1].strip().strip('"').strip("'")
+    except Exception as e:
+        logger.warning("Failed to fetch remote main version: %s", e)
+    return None
+
 def parse_semver(v_str):
     try:
         parts = [int(x) for x in str(v_str).lstrip("v").strip().split(".")]
@@ -278,35 +295,22 @@ def parse_semver(v_str):
 
 @api_bp.route("/api/version/check")
 def check_version():
-    latest_ver = __version__
-    release_notes = "Currently running the latest version."
-    
-    try:
-        req = urllib.request.Request(
-            "https://api.github.com/repos/podcctv/console-web/releases/latest",
-            headers={"User-Agent": "NetWatch-Agent"}
-        )
-        with urllib.request.urlopen(req, timeout=4) as response:
-            if response.status == 200:
-                data = json.loads(response.read().decode())
-                tag_name = data.get("tag_name", "").lstrip("v")
-                if tag_name:
-                    latest_ver = tag_name
-                    release_notes = data.get("body", "New version available on GitHub.")
-    except Exception:
+    latest_ver = fetch_remote_github_version() or __version__
+    release_notes = f"Latest version v{latest_ver} published on GitHub main branch."
+
+    if latest_ver == __version__:
         try:
-            res = subprocess.run(
-                ["git", "ls-remote", "--tags", "origin"],
-                cwd=str(BASE_DIR), capture_output=True, text=True, timeout=5
+            req = urllib.request.Request(
+                "https://api.github.com/repos/podcctv/console-web/releases/latest",
+                headers={"User-Agent": "NetWatch-Agent"}
             )
-            if res.returncode == 0 and res.stdout:
-                lines = [line.strip() for line in res.stdout.strip().split("\n") if line.strip()]
-                if lines:
-                    last_tag_line = lines[-1]
-                    tag = last_tag_line.split("refs/tags/")[-1].replace("^{}", "").lstrip("v")
-                    if tag:
-                        latest_ver = tag
-                        release_notes = f"Remote version v{tag} detected on origin."
+            with urllib.request.urlopen(req, timeout=4) as response:
+                if response.status == 200:
+                    data = json.loads(response.read().decode())
+                    tag_name = data.get("tag_name", "").lstrip("v")
+                    if tag_name:
+                        latest_ver = tag_name
+                        release_notes = data.get("body", "New release version available on GitHub.")
         except Exception:
             pass
 
@@ -339,28 +343,44 @@ def update_version():
             "docker_build": build_status
         }), 400
 
+    output = ""
+    success = False
+    
+    # Try Git pull first
     try:
         res = subprocess.run(
             ["git", "pull", "origin", "main"],
             cwd=str(BASE_DIR), capture_output=True, text=True, timeout=30
         )
-        output = f"STDOUT:\n{res.stdout}\nSTDERR:\n{res.stderr}"
+        output = f"GIT PULL STDOUT:\n{res.stdout}\nSTDERR:\n{res.stderr}"
         if res.returncode == 0:
-            return jsonify({
-                "status": "success",
-                "message": "Git pull succeeded! Code updated to latest version after Docker image build completion.",
-                "docker_build": build_status,
-                "logs": output
-            })
-        else:
-            return jsonify({
-                "status": "error",
-                "message": f"Git pull failed with exit code {res.returncode}",
-                "logs": output
-            }), 500
+            success = True
     except Exception as e:
+        output += f"\nGit pull unavailable: {e}"
+
+    # If git is not present or failed (e.g. inside Docker), trigger Docker container pull / restart
+    if not success:
+        try:
+            res_dock = subprocess.run(
+                ["sh", "-c", "docker pull ghcr.io/podcctv/console-web:latest && docker restart console-web"],
+                capture_output=True, text=True, timeout=30
+            )
+            output += f"\nDOCKER PULL STDOUT:\n{res_dock.stdout}\nSTDERR:\n{res_dock.stderr}"
+            if res_dock.returncode == 0:
+                success = True
+        except Exception as e:
+            output += f"\nDocker pull unavailable: {e}"
+
+    if success:
+        return jsonify({
+            "status": "success",
+            "message": "System updated successfully! Code/Container synced to latest version.",
+            "docker_build": build_status,
+            "logs": output
+        })
+    else:
         return jsonify({
             "status": "error",
-            "message": str(e),
-            "logs": ""
+            "message": "Failed to auto-update via Git or Docker container pull.",
+            "logs": output
         }), 500
