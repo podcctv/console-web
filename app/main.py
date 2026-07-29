@@ -1446,8 +1446,15 @@ TEMPLATE = r"""
         .cli-table tr:hover { background: rgba(255,255,255,0.02); }
 
         /* ── System Resources & Threshold Colors ── */
-        .grid-2col-cli { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px; }
-        .ascii-bar-row { display: grid; grid-template-columns: 80px 1fr 60px 160px; align-items: center; font-family: var(--font-mono); font-size: 0.84rem; margin-bottom: 8px; }
+        .grid-2col-cli { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 1100px) {
+            .grid-2col-cli { grid-template-columns: 1fr; }
+        }
+        .ascii-bar-row {
+            display: grid; grid-template-columns: 75px 1fr 50px 175px; align-items: center; gap: 10px;
+            font-family: var(--font-mono); font-size: 0.84rem; margin-bottom: 10px; white-space: nowrap;
+        }
+        .ascii-bar-row > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .ascii-label { color: var(--text-muted); font-weight: 700; }
         .ascii-bar { letter-spacing: 1px; }
         .bar-green { color: var(--status-success); }
@@ -1822,18 +1829,17 @@ TEMPLATE = r"""
 
                 <!-- System Resources -->
                 <div class="card-cli-tier2">
-                    <div class="card-header-bar">
-                        <div class="card-header-left">
-                            <span class="cmd-title">$ systemctl status netwatch</span>
-                            <span class="cmd-subtitle">// 实时资源与 Load Average</span>
+                    <div class="card-header-bar" style="flex-wrap: nowrap; gap: 8px;">
+                        <div class="card-header-left" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            <span class="cmd-title" style="white-space: nowrap;">$ systemctl status netwatch</span>
+                            <span class="cmd-subtitle" style="white-space: nowrap;">// 实时资源</span>
                         </div>
-                        <span class="badge-bracket status-healthy">[ active (running) ]</span>
+                        <span class="badge-bracket status-healthy" style="white-space: nowrap; flex-shrink: 0;">[ active (running) ]</span>
                     </div>
-                    <div style="font-family: var(--font-mono); font-size: 0.8rem; line-height: 1.5; margin-bottom: 12px; padding: 8px 12px; background: var(--bg-input); border-radius: var(--radius-sm); border: 1px solid var(--border-tier3);">
-                        <div>● <b class="text-success">netwatch.service</b> - NetWatch Operations Daemon</div>
+                    <div style="font-family: var(--font-mono); font-size: 0.8rem; line-height: 1.5; margin-bottom: 12px; padding: 8px 12px; background: var(--bg-input); border-radius: var(--radius-sm); border: 1px solid var(--border-tier3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        <div>● <b class="text-success">netwatch.service</b> - NetWatch Telemetry Daemon</div>
                         <div style="color: var(--text-muted); font-size: 0.76rem; margin-top: 2px;">
-                            Loaded: <span class="text-primary">loaded (/etc/systemd/system/netwatch.service; enabled)</span> | 
-                            Active: <span class="text-success">active (running)</span> since 3d ago
+                            Loaded: <span class="text-primary">loaded (/etc/systemd/system/netwatch.service)</span> | Active: <span class="text-success">active (running)</span>
                         </div>
                     </div>
                     <div>
@@ -1841,25 +1847,25 @@ TEMPLATE = r"""
                             <span class="ascii-label">CPU</span>
                             <span class="ascii-bar bar-green" id="ascii_cpu_bar">[██████░░░░░░░░░░]</span>
                             <span id="cpu_val" class="font-bold">28%</span>
-                            <span class="text-muted" style="font-size:0.78rem" id="cpu_load_val">load avg: 0.42, 0.36, 0.31</span>
+                            <span class="text-muted" style="font-size:0.78rem;" id="cpu_load_val">load: 0.42 / 0.36 / 0.31</span>
                         </div>
                         <div class="ascii-bar-row">
                             <span class="ascii-label">MEMORY</span>
                             <span class="ascii-bar bar-green" id="ascii_mem_bar">[██████████░░░░░░]</span>
                             <span id="mem_val" class="font-bold">63%</span>
-                            <span class="text-muted" style="font-size:0.78rem" id="mem_bytes_val">1.24 GB / 2.00 GB</span>
+                            <span class="text-muted" style="font-size:0.78rem;" id="mem_bytes_val">1.24 GB / 2.00 GB</span>
                         </div>
                         <div class="ascii-bar-row">
                             <span class="ascii-label">DISK</span>
                             <span class="ascii-bar bar-green" id="ascii_disk_bar">[███████░░░░░░░░░]</span>
                             <span id="disk_val" class="font-bold">41%</span>
-                            <span class="text-muted" style="font-size:0.78rem" id="disk_bytes_val">19.8 GB / 48.0 GB</span>
+                            <span class="text-muted" style="font-size:0.78rem;" id="disk_bytes_val">19.8 GB / 48.0 GB</span>
                         </div>
                         <div class="ascii-bar-row">
                             <span class="ascii-label">SWAP</span>
                             <span class="ascii-bar bar-green" id="ascii_swap_bar">[██░░░░░░░░░░░░░░]</span>
                             <span id="swap_val" class="font-bold">12%</span>
-                            <span class="text-muted" style="font-size:0.78rem" id="swap_bytes_val">128 MB / 1.00 GB</span>
+                            <span class="text-muted" style="font-size:0.78rem;" id="swap_bytes_val">128 MB / 1.00 GB</span>
                         </div>
                     </div>
                 </div>
@@ -2395,7 +2401,7 @@ TEMPLATE = r"""
             }
             if (data.load) {
                 const loadEl = document.getElementById('cpu_load_val');
-                if (loadEl) loadEl.textContent = `load avg: ${data.load}`;
+                if (loadEl) loadEl.textContent = `load: ${data.load}`;
             }
         } catch(e) {}
     }
