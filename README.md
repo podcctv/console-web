@@ -1,7 +1,7 @@
 # console-web (NetWatch 赛博朋克网络运维终端)
 
 ![Build & Publish Docker](https://github.com/podcctv/console-web/actions/workflows/docker-publish.yml/badge.svg)
-![Version](https://img.shields.io/badge/version-v3.4.0-78E08F?style=flat-square&logo=git)
+![Version](https://img.shields.io/badge/version-v3.5.0-78E08F?style=flat-square&logo=git)
 ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
 
 `console-web` 是一个基于 [Flask](https://flask.palletsprojects.com/) 和 [psutil](https://psutil.readthedocs.io/) 构建的极简赛博朋克风格系统监控面板与网络运维终端 (`NetWatch`)。界面采用暗黑终端与玻璃拟态设计，支持实时 TCP Ping 多目标延迟趋势、IPv4/IPv6 双栈链路对比、多端响应式适配、1-Click IP 复制、ACME SSL 证书自动续期及全链路故障诊断。
@@ -30,18 +30,20 @@ wget -qO- https://raw.githubusercontent.com/podcctv/console-web/main/deploy.sh |
 
 ## ✨ 核心功能
 
+- **📊 动态 Canvas Mini-Sparklines 实时趋势线条 (`v3.5 升级`)**：
+  - 在 CPU、内存、磁盘及**实时网络吞吐速率 (`NET RATE ↓/↑`)** 监控栏中内嵌 Canvas Mini-Sparkline 动态走势图，呈现极佳的拟态极客视觉效果。
+- **⛶ 放大全屏监控模式 (`[ ⛶ FULLSCREEN TELEMETRY ]`)**：
+  - `$ tcping --watch` 延迟图表支持一键扩展为全屏高清大屏模式，适配大屏监控看板与 NOC 运维中心。
+- **💬 30-Day SLA 热力图 赛博悬浮卡片 (`Cyber SLA Hover Card`)**：
+  - SLA 热力方块升级为平滑悬浮弹窗，实时浮现具体日期、可用性 %、峰值延迟及故障根因分析。
 - **⚡ 内存与磁盘双层时序数据库 (TimeSeriesDB v3.4 升级)**：
   - 内置 Python 线程安全内存时序数据库，采用固定容量（1440 points / 24h）滑动窗口滚动存贮，并实现磁盘自动快照持久化（`/opt/console-web/data`），服务重启后测速历史无缝恢复。
 - **🌍 优雅规范 IP 归属地自动节点命名 (`Standardized Auto Node ID v3.4 升级`)**：
   - 根据服务器出口 IP 与 ISP 自动推算生成标准无冗余的 Node ID（如 `fra-hetzner-vps01` / `hkg-aliyun-vps01` / `sjc-leaseweb-vps01` / `hgh-ct-vps01`）。
-- **📈 赛博霓虹平滑折线图 (Cyber Neon Trend Curves v3.3 升级)**：
-  - 高科技贝塞尔曲线渲染、双重 Neon 光晕 Pass、半透明区域渐变填充、数据节点 Halo 亮点及**交互式垂直 Hairline 十字光标与浮窗 Telemetry 节点数据**。
 - **🚀 版本检测与 1-Click 热更新 + GitHub Actions 锁**：
   - 主界面内置版本号与 GitHub 项目链接；版本检测自动判断 SemVer 语义化逻辑，对接 GitHub Actions Docker 镜像构建状态同步锁，完成编译后解锁热更新。
 - **📋 统一一键 IP 复制 (`[ COPY ALL IDENTITIES ]`)**：
   - 网络身份区域提供单一顶部复制按钮，一键提取 Listen、Egress、Visitor 及 Local 接口的结构化文本至剪贴板。
-- **🔤 纯正英文运维语言 & 老式 CRT 终端风格**：
-  - 全站 100% 纯英文提示与标示，全站强制 `Monospace` 等宽字体与 CRT 扫描线背景，呈现纯正 VT100 终端体验。
 
 ---
 
@@ -49,7 +51,11 @@ wget -qO- https://raw.githubusercontent.com/podcctv/console-web/main/deploy.sh |
 
 📌 **版本号管理规范**：本项目遵从 [语义化版本 2.0.0 (Semantic Versioning)](https://semver.org/lang/zh-CN/) 规范（`MAJOR.MINOR.PATCH`）。每次更新同步修改 `app/config.py` (`__version__`)、`setup.cfg` (`version`) 及 `README.md`。
 
-### 🟢 `v3.4.0` (2026-07-29) - 时序数据库磁盘持久化 (`/opt/console-web`) & 规范化 Node ID
+### 🟢 `v3.5.0` (2026-07-29) - Live Mini-Sparklines & Fullscreen Telemetry & SLA Hover Popovers
+- **Live Canvas Mini-Sparklines**：在 CPU、Memory、Disk 与 Net Traffic (RX/TX) 监控项旁内嵌 Live Sparkline Canvas 动态走势线。
+- **Fullscreen Telemetry Mode**：`$ tcping --watch` 新增 `[ ⛶ FULLSCREEN ]` 模式，一键展开全屏监控看板。
+- **Interactive SLA Hover Popovers**：30-Day SLA 热力图方块全面支持赛博悬浮浮窗，丰富展现 SLA% / Max Latency / Incident count 数据。
+- **Cyber Glassmorphism Polish**：优化玻璃拟态边框高亮与阴影 hover 动效，补全全站 Console UI 视觉层级。
 - **TSDB Disk Persistence**：增加 `TimeSeriesDB` 磁盘快照自动持久化落盘与装载恢复，支持宿主机 `/opt/console-web/data` 卷持久挂载。
 - **Standardized Node ID Structure**：重构 `get_auto_node_id()` 命名生成算法，消除重复 `-01-01` 后缀，输出标准简明 Node ID（如 `fra-hetzner-vps01` / `hkg-aliyun-vps01` / `de-vps01`）。
 - **Host Persistence Deployment**：更新 `deploy.sh` 及 `docker-compose.yml` 挂载路径为宿主机 `/opt/console-web`。
