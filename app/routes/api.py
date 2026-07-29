@@ -267,10 +267,18 @@ def check_github_actions_build():
         pass
     return {"ready": True, "status": "unknown", "conclusion": None, "message": "Could not check GitHub Actions API (manual update permitted)."}
 
+def parse_semver(v_str):
+    try:
+        parts = [int(x) for x in str(v_str).lstrip("v").strip().split(".")]
+        while len(parts) < 3:
+            parts.append(0)
+        return tuple(parts[:3])
+    except Exception:
+        return (0, 0, 0)
+
 @api_bp.route("/api/version/check")
 def check_version():
     latest_ver = __version__
-    has_update = False
     release_notes = "Currently running the latest version."
     
     try:
@@ -282,9 +290,8 @@ def check_version():
             if response.status == 200:
                 data = json.loads(response.read().decode())
                 tag_name = data.get("tag_name", "").lstrip("v")
-                if tag_name and tag_name != __version__:
+                if tag_name:
                     latest_ver = tag_name
-                    has_update = True
                     release_notes = data.get("body", "New version available on GitHub.")
     except Exception:
         try:
@@ -297,12 +304,16 @@ def check_version():
                 if lines:
                     last_tag_line = lines[-1]
                     tag = last_tag_line.split("refs/tags/")[-1].replace("^{}", "").lstrip("v")
-                    if tag and tag != __version__:
+                    if tag:
                         latest_ver = tag
-                        has_update = True
                         release_notes = f"Remote version v{tag} detected on origin."
         except Exception:
             pass
+
+    has_update = parse_semver(latest_ver) > parse_semver(__version__)
+    if not has_update:
+        latest_ver = __version__
+        release_notes = "Currently running the latest version."
 
     build_status = check_github_actions_build()
 
