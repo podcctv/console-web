@@ -239,6 +239,33 @@ def host():
 import urllib.request
 from app.config import GITHUB_REPO_URL, BASE_DIR, __version__
 
+def check_github_actions_build():
+    """Check if the latest GitHub Actions workflow run for main branch is completed successfully."""
+    try:
+        req = urllib.request.Request(
+            "https://api.github.com/repos/podcctv/console-web/actions/runs?branch=main&per_page=1",
+            headers={"User-Agent": "NetWatch-Agent"}
+        )
+        with urllib.request.urlopen(req, timeout=4) as response:
+            if response.status == 200:
+                data = json.loads(response.read().decode())
+                runs = data.get("workflow_runs", [])
+                if runs:
+                    latest_run = runs[0]
+                    status = latest_run.get("status")
+                    conclusion = latest_run.get("conclusion")
+                    run_id = latest_run.get("id")
+                    
+                    if status == "completed" and conclusion == "success":
+                        return {"ready": True, "status": "completed", "conclusion": "success", "run_id": run_id, "message": "Docker image build completed successfully!"}
+                    elif status in ("in_progress", "queued", "requested", "waiting"):
+                        return {"ready": False, "status": status, "conclusion": None, "run_id": run_id, "message": f"GitHub Actions Docker build is currently {status}... Please wait."}
+                    else:
+                        return {"ready": False, "status": status, "conclusion": conclusion, "run_id": run_id, "message": f"GitHub Actions build finished with conclusion: {conclusion}"}
+    except Exception as e:
+        pass
+    return {"ready": True, "status": "unknown", "conclusion": None, "message": "Could not check GitHub Actions API (manual update permitted)."}
+
 @api_bp.route("/api/version/check")
 def check_version():
     latest_ver = __version__
@@ -276,10 +303,13 @@ def check_version():
         except Exception:
             pass
 
+    build_status = check_github_actions_build()
+
     return jsonify({
         "current_version": __version__,
         "latest_version": latest_ver,
         "has_update": has_update,
+        "docker_build": build_status,
         "github_url": GITHUB_REPO_URL,
         "release_notes": release_notes,
         "checked_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -287,6 +317,16 @@ def check_version():
 
 @api_bp.route("/api/version/update", methods=["POST"])
 def update_version():
+    force = request.args.get("force", "false").lower() == "true"
+    build_status = check_github_actions_build()
+    
+    if not force and not build_status.get("ready", True):
+        return jsonify({
+            "status": "waiting",
+            "message": build_status.get("message", "GitHub Actions Docker image build is in progress. Please wait for completion."),
+            "docker_build": build_status
+        }), 400
+
     try:
         res = subprocess.run(
             ["git", "pull", "origin", "main"],
@@ -296,7 +336,8 @@ def update_version():
         if res.returncode == 0:
             return jsonify({
                 "status": "success",
-                "message": "Git pull succeeded! Code updated to latest version.",
+                "message": "Git pull succeeded! Code updated to latest version after Docker image build completion.",
+                "docker_build": build_status,
                 "logs": output
             })
         else:

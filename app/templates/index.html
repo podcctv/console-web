@@ -1867,6 +1867,8 @@
         else if (key === 'ESCAPE') { closeKeyboardHelp(); }
     });
 
+    let versionPollTimer = null;
+
     async function checkVersionStatus() {
         try {
             const res = await fetch('/api/version/check');
@@ -1878,13 +1880,40 @@
             }
 
             const updateWrap = document.getElementById('update_notification_badge');
-            const latestVerEl = document.getElementById('latest_ver_num');
+            const updateBtn = document.getElementById('btn_do_auto_update');
+            const dockerBuild = data.docker_build || { ready: true };
 
             if (data.has_update) {
-                if (latestVerEl) latestVerEl.textContent = `v${data.latest_version}`;
                 if (updateWrap) updateWrap.style.display = 'inline-block';
+
+                if (!dockerBuild.ready) {
+                    if (updateBtn) {
+                        updateBtn.disabled = true;
+                        updateBtn.style.opacity = '0.7';
+                        updateBtn.style.animation = 'pulse 1.5s infinite';
+                        updateBtn.textContent = `[ ⏳ GH ACTIONS BUILD IN PROGRESS (${(dockerBuild.status || 'BUILDING').toUpperCase()})... ]`;
+                    }
+                    if (!versionPollTimer) {
+                        versionPollTimer = setInterval(checkVersionStatus, 8000);
+                    }
+                } else {
+                    if (updateBtn) {
+                        updateBtn.disabled = false;
+                        updateBtn.style.opacity = '1.0';
+                        updateBtn.style.animation = 'none';
+                        updateBtn.textContent = `[ 🚀 NEW IMAGE READY: v${data.latest_version} - UPDATE NOW ]`;
+                    }
+                    if (versionPollTimer) {
+                        clearInterval(versionPollTimer);
+                        versionPollTimer = null;
+                    }
+                }
             } else {
                 if (updateWrap) updateWrap.style.display = 'none';
+                if (versionPollTimer) {
+                    clearInterval(versionPollTimer);
+                    versionPollTimer = null;
+                }
             }
         } catch(e) {}
     }
@@ -1901,6 +1930,12 @@
             if (res.ok && data.status === 'success') {
                 alert('✅ 自动更新成功！系统代码已同步至最新主分支。\n页面将在 3 秒后自动刷新。');
                 setTimeout(() => window.location.reload(), 3000);
+            } else if (data.status === 'waiting') {
+                alert('⏳ Docker 镜像尚在 GitHub Actions 构建中:\n' + (data.message || '请稍候...'));
+                if (btn) {
+                    btn.disabled = true;
+                    btn.textContent = '[ ⏳ GH ACTIONS DOCKER BUILD IN PROGRESS... ]';
+                }
             } else {
                 alert('⚠️ 自动更新失败:\n' + (data.message || '未知错误'));
                 if (btn) {
