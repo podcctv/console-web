@@ -1,7 +1,7 @@
 # console-web (NetWatch 赛博朋克网络运维终端)
 
 ![Build & Publish Docker](https://github.com/podcctv/console-web/actions/workflows/docker-publish.yml/badge.svg)
-![Version](https://img.shields.io/badge/version-v3.6.2-78E08F?style=flat-square&logo=git)
+![Version](https://img.shields.io/badge/version-v3.7.0-78E08F?style=flat-square&logo=git)
 ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
 
 `console-web` 是一个基于 [Flask](https://flask.palletsprojects.com/) 和 [psutil](https://psutil.readthedocs.io/) 构建的极简赛博朋克风格系统监控面板与网络运维终端 (`NetWatch`)。界面采用暗黑终端与玻璃拟态设计，支持实时 TCP Ping 多目标延迟趋势、IPv4/IPv6 双栈链路对比、多端响应式适配、1-Click IP 复制、ACME SSL 证书自动续期及全链路故障诊断。
@@ -44,6 +44,10 @@ wget -qO- https://raw.githubusercontent.com/podcctv/console-web/main/deploy.sh |
   - 主界面内置版本号与 GitHub 项目链接；版本检测自动判断 SemVer 语义化逻辑，对接 GitHub Actions Docker 镜像构建状态同步锁，完成编译后解锁热更新。
 - **📋 统一一键 IP 复制 (`[ COPY ALL IDENTITIES ]`)**：
   - 网络身份区域提供单一顶部复制按钮，一键提取 Listen、Egress、Visitor 及 Local 接口的结构化文本至剪贴板。
+
+### 🟢 `v3.7.0` (2026-07-29) - Bytecode Invalidation & Memory Module Hot-Reload Engine
+- **In-Memory Module Reloading**：新增 `importlib.invalidate_caches()` 及 `sys.modules` 动态热重载逻辑，在线更新完成后立刻在 Python 内存中刷刷新 `app.config.__version__` 模块。
+- **stale `.pyc` Bytecode Cleanup**：热更新解压后自动清空 `__pycache__` 字节码缓存目录，配合 `SIGHUP` 信号，确保 Docker 容器/服务进程平滑重启后 100% 呈现最新版本号。
 
 ### 🟢 `v3.6.2` (2026-07-29) - Dynamic Version Injection & Click-to-Check Manual Updates
 - **Dynamic Flask Version Rendering**：`views.py` 动态向 `index.html` 注入后端权威 `__version__`，彻底解决网页刷新后版本号倒退回旧版静态文本（`v3.3.0`）的问题。

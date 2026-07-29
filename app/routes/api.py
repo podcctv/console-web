@@ -6,6 +6,9 @@ import zipfile
 import platform
 import socket
 import time
+import signal
+import shutil
+import importlib
 import threading
 import subprocess
 import shlex
@@ -339,7 +342,7 @@ def check_version():
 def update_code_from_github_zip():
     """Download main.zip from GitHub and overwrite application files directly for Docker/Standalone environments."""
     url = "https://github.com/podcctv/console-web/archive/refs/heads/main.zip"
-    req = urllib.request.Request(url, headers={"User-Agent": "NetWatch-Updater/3.6"})
+    req = urllib.request.Request(url, headers={"User-Agent": "NetWatch-Updater/3.7"})
     
     with urllib.request.urlopen(req, timeout=20) as resp:
         content = resp.read()
@@ -361,6 +364,23 @@ def update_code_from_github_zip():
         file_bytes = z.read(member.filename)
         target_path.write_bytes(file_bytes)
         updated_files.append(rel_path)
+
+    # Invalidate bytecode cache & dynamically reload app modules in memory
+    try:
+        importlib.invalidate_caches()
+        for pycache in BASE_DIR.glob("**/__pycache__"):
+            try:
+                shutil.rmtree(pycache, ignore_errors=True)
+            except Exception:
+                pass
+        for mod_name in list(sys.modules.keys()):
+            if mod_name.startswith("app.") or mod_name == "app":
+                try:
+                    importlib.reload(sys.modules[mod_name])
+                except Exception:
+                    pass
+    except Exception:
+        pass
 
     return updated_files
 
@@ -414,16 +434,24 @@ def update_version():
             output += f"\nDocker pull unavailable: {e}"
 
     if success:
-        # Schedule process restart after 1.5s so Docker container or Gunicorn reloads with new code
+        # Schedule process restart after 1s so Docker container or Gunicorn reloads with new code
         def delayed_restart():
-            time.sleep(1.5)
+            time.sleep(1.0)
+            try:
+                ppid = os.getppid()
+                if ppid > 1 and hasattr(signal, "SIGHUP"):
+                    os.kill(ppid, signal.SIGHUP)
+            except Exception:
+                pass
             os._exit(0)
 
         threading.Thread(target=delayed_restart, daemon=True).start()
 
+        # In case modules were reloaded in memory, read new version
+        from app.config import __version__ as new_version
         return jsonify({
             "status": "success",
-            "message": "System updated successfully! Code files overwritten and container restart scheduled.",
+            "message": f"System updated successfully! Code overwritten to version v{new_version}. Daemon restart scheduled.",
             "docker_build": build_status,
             "logs": output
         })
