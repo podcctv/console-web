@@ -1213,15 +1213,24 @@ TEMPLATE = r"""
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,600;0,700;1,400&family=PingFang+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         /* ═══════════════════════════════════════════════════════════
-           NETWATCH Terminal Operational System Design Tokens (v2.5)
-           面向专业网络运维团队的实时网络诊断与监控终端
+           NETWATCH Terminal Operational System Design Tokens (v3.0)
+           面向专业网络运维团队的响应式实时网络诊断与监控终端
            ═══════════════════════════════════════════════════════════ */
         :root {
             --bg-page: #040605;
+            --bg-panel: #080D09;
+            --bg-panel-secondary: #070A08;
             --bg-tier1: #080D09;
             --bg-tier2: #070A08;
             --bg-tier3: rgba(255, 255, 255, 0.015);
             --bg-input: #060907;
+
+            --border-default: rgba(140, 165, 145, 0.14);
+            --border-active: rgba(120, 224, 143, 0.45);
+            --border-tier1: rgba(120, 224, 143, 0.22);
+            --border-tier2: rgba(140, 165, 145, 0.14);
+            --border-tier3: rgba(140, 165, 145, 0.08);
+            --border-hover: rgba(120, 224, 143, 0.35);
 
             --text-primary: #E2ECE4;
             --text-secondary: #9EB0A3;
@@ -1232,13 +1241,11 @@ TEMPLATE = r"""
             --status-cyan: #69D6D0;
             --status-blue: #6BB8FF;
             --status-warning: #E7C66B;
+            --status-danger: #F07878;
             --status-critical: #F07878;
+            --status-info: #69D6D0;
             --status-purple: #B59AF2;
-
-            --border-tier1: rgba(120, 224, 143, 0.22);
-            --border-tier2: rgba(140, 165, 145, 0.14);
-            --border-tier3: rgba(140, 165, 145, 0.08);
-            --border-hover: rgba(120, 224, 143, 0.35);
+            --accent-primary: #78E08F;
 
             --radius-sm: 4px;
             --radius-md: 6px;
@@ -1249,6 +1256,10 @@ TEMPLATE = r"""
         }
 
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html, body {
+            overflow-x: hidden; width: 100%;
+        }
 
         body {
             background: radial-gradient(circle at 50% -20%, rgba(80, 160, 100, 0.06), transparent 50%), var(--bg-page);
@@ -1271,6 +1282,29 @@ TEMPLATE = r"""
         .text-secondary { color: var(--text-secondary) !important; }
         .text-primary { color: var(--text-primary) !important; }
         .font-bold { font-weight: 700; }
+
+        /* ── Floating Toast Container ── */
+        #toast_container {
+            position: fixed; top: 18px; right: 18px; z-index: 2000;
+            display: flex; flex-direction: column; gap: 8px; pointer-events: none;
+        }
+        .toast-notification {
+            background: rgba(8, 14, 10, 0.96); border: 1px solid var(--status-success);
+            color: var(--status-success); font-family: var(--font-mono); font-size: 0.82rem; font-weight: 600;
+            padding: 9px 16px; border-radius: var(--radius-sm); box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            display: flex; align-items: center; gap: 8px; pointer-events: auto;
+            animation: toastIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes toastIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ── Copy Button ── */
+        .btn-copy-sm {
+            background: rgba(105, 214, 208, 0.08); border: 1px solid rgba(105, 214, 208, 0.25);
+            color: var(--status-cyan); font-family: var(--font-mono); font-size: 0.72rem;
+            padding: 2px 6px; border-radius: 3px; cursor: pointer; transition: all 0.12s ease;
+            display: inline-flex; align-items: center; gap: 4px; outline: none; vertical-align: middle;
+        }
+        .btn-copy-sm:hover { background: rgba(105, 214, 208, 0.20); border-color: var(--status-cyan); }
 
         /* ── Sticky Navigation ── */
         .terminal-nav-bar {
@@ -1308,9 +1342,26 @@ TEMPLATE = r"""
             background: currentColor; box-shadow: 0 0 8px currentColor;
         }
 
+        /* ── Mobile Bottom Navigation Bar ── */
+        .mobile-bottom-nav {
+            display: none;
+            position: fixed; bottom: 0; left: 0; right: 0; height: 60px;
+            background: rgba(5, 8, 6, 0.96); backdrop-filter: blur(12px);
+            border-top: 1px solid var(--border-tier2); z-index: 120;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        .mobile-nav-item {
+            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: transparent; border: none; color: var(--text-muted);
+            font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600; cursor: pointer;
+            padding: 6px 0; gap: 3px; min-height: 44px; transition: all 0.15s ease; outline: none;
+        }
+        .mobile-nav-item.active { color: var(--status-success); font-weight: 700; }
+        .mobile-nav-item .nav-icon { font-size: 1rem; line-height: 1; }
+
         /* ── Main Layout Container ── */
         .page-container {
-            max-width: 1520px; width: calc(100% - 48px);
+            max-width: 1480px; width: calc(100% - 48px);
             margin: 0 auto; display: flex; flex-direction: column; gap: 20px;
             padding: 20px 0 50px 0;
         }
@@ -1384,11 +1435,11 @@ TEMPLATE = r"""
         .hero-status-reason { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.4; }
 
         .ip-table-grid {
-            display: grid; grid-template-columns: 140px 1fr 140px; gap: 6px 12px; font-family: var(--font-mono); font-size: 0.84rem;
+            display: grid; grid-template-columns: 140px 1fr 50px; gap: 6px 10px; align-items: center; font-family: var(--font-mono); font-size: 0.84rem;
         }
         .ip-k { color: var(--text-muted); font-weight: 600; }
-        .ip-v { color: var(--text-primary); font-weight: 600; }
-        .ip-src { color: var(--text-muted); font-size: 0.76rem; }
+        .ip-v { color: var(--text-primary); font-weight: 600; word-break: break-all; }
+        .ip-src { color: var(--text-muted); font-size: 0.76rem; grid-column: span 3; margin-top: -4px; margin-bottom: 4px; }
 
         /* ── Metric Strip (6 Columns Continuous) ── */
         .metric-strip-cli {
@@ -1419,7 +1470,7 @@ TEMPLATE = r"""
             margin-bottom: 12px;
         }
         .canvas-wrapper {
-            position: relative; width: 100%; height: 260px;
+            position: relative; width: 100%; height: 320px;
             background: #030504; border: 1px solid var(--border-tier3); border-radius: var(--radius-sm);
             overflow: hidden;
         }
@@ -1433,23 +1484,36 @@ TEMPLATE = r"""
         .dualstack-table th { text-align: left; padding: 8px 12px; color: var(--text-muted); border-bottom: 1px solid var(--border-tier2); font-size: 0.78rem; }
         .dualstack-table td { padding: 10px 12px; border-bottom: 1px solid var(--border-tier3); }
 
+        .dualstack-cards-mobile { display: none; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+        .ds-card-item {
+            background: var(--bg-input); border: 1px solid var(--border-tier3);
+            border-radius: var(--radius-sm); padding: 12px 14px; display: flex; flex-direction: column; gap: 6px;
+        }
+        .ds-card-header { display: flex; justify-content: space-between; align-items: center; font-family: var(--font-mono); font-size: 0.84rem; font-weight: 700; }
+        .ds-card-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-family: var(--font-mono); font-size: 0.8rem; margin-top: 4px; }
+        .ds-metric-box { background: rgba(255,255,255,0.02); padding: 6px 10px; border-radius: 3px; border: 1px solid var(--border-tier3); }
+        .ds-delta-line { font-family: var(--font-mono); font-size: 0.78rem; color: var(--status-warning); padding-top: 2px; }
+
         .recommendation-banner {
             font-family: var(--font-mono); font-size: 0.84rem; color: var(--status-success);
             background: rgba(120,224,143,0.06); border: 1px solid rgba(120,224,143,0.22);
             padding: 10px 16px; border-radius: var(--radius-sm);
         }
 
-        /* ── CLI Tables ── */
+        /* ── CLI Tables & Mobile Interface Cards ── */
         .cli-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
         .cli-table th { font-family: var(--font-mono); color: var(--text-muted); font-size: 0.76rem; text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border-tier2); }
         .cli-table td { padding: 10px 12px; border-bottom: 1px solid var(--border-tier3); font-family: var(--font-mono); }
         .cli-table tr:hover { background: rgba(255,255,255,0.02); }
 
+        .interfaces-cards-mobile { display: none; flex-direction: column; gap: 10px; }
+        .if-card-item {
+            background: var(--bg-input); border: 1px solid var(--border-tier3);
+            border-radius: var(--radius-sm); padding: 12px 14px; display: flex; flex-direction: column; gap: 6px;
+        }
+
         /* ── System Resources & Threshold Colors ── */
         .grid-2col-cli { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        @media (max-width: 1100px) {
-            .grid-2col-cli { grid-template-columns: 1fr; }
-        }
         .ascii-bar-row {
             display: grid; grid-template-columns: 75px 1fr 50px 175px; align-items: center; gap: 10px;
             font-family: var(--font-mono); font-size: 0.84rem; margin-bottom: 10px; white-space: nowrap;
@@ -1462,7 +1526,8 @@ TEMPLATE = r"""
         .bar-red { color: var(--status-critical); }
 
         /* ── 30-Day Uptime Heatmap ── */
-        .heatmap-grid-cli { display: grid; grid-template-columns: repeat(30, 1fr); gap: 5px; margin-top: 10px; }
+        .heatmap-scroll-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
+        .heatmap-grid-cli { display: grid; grid-template-columns: repeat(30, 1fr); min-width: 580px; gap: 5px; margin-top: 10px; }
         .heatmap-sq {
             aspect-ratio: 1/1; border-radius: 3px; cursor: pointer; transition: all 0.15s ease;
             position: relative;
@@ -1483,8 +1548,8 @@ TEMPLATE = r"""
         }
         .log-row { display: flex; gap: 10px; padding: 2px 6px; border-radius: 2px; }
         .log-row.critical-row { border-left: 2px solid var(--status-critical); background: rgba(240,120,120,0.04); }
-        .log-time { color: var(--text-muted); width: 85px; }
-        .log-level { font-weight: 700; width: 90px; text-align: left; }
+        .log-time { color: var(--text-muted); width: 85px; flex-shrink: 0; }
+        .log-level { font-weight: 700; width: 90px; text-align: left; flex-shrink: 0; }
         .level-info { color: var(--status-cyan); }
         .level-warning { color: var(--status-warning); }
         .level-critical { color: var(--status-critical); }
@@ -1518,14 +1583,48 @@ TEMPLATE = r"""
         .footer-links a { color: var(--text-secondary); text-decoration: none; }
         .footer-links a:hover { color: var(--status-success); }
 
+        /* ── Responsive Media Queries ── */
         @media (max-width: 1024px) {
-            .hero-grid-3col { grid-template-columns: 1fr; }
+            .hero-grid-3col { grid-template-columns: 1fr 1fr; }
+            .hero-col-actions { grid-column: span 2; border-left: none !important; border-top: 1px solid var(--border-tier2); padding-left: 0 !important; padding-top: 14px; flex-direction: row !important; }
             .metric-strip-cli { grid-template-columns: repeat(3, 1fr); }
             .grid-2col-cli { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 767px) {
+            body { padding-bottom: 70px; }
+            .page-container { width: calc(100% - 24px); padding: 12px 0 40px 0; gap: 14px; }
+            .terminal-nav-bar { padding: 10px 14px; }
+            .nav-tabs-cli { display: none; }
+            .nav-brand-subtitle { display: none; }
+            .nav-sync-time { display: none; }
+            .mobile-bottom-nav { display: flex; }
+
+            .hero-grid-3col { grid-template-columns: 1fr; gap: 14px; }
+            .hero-col { border-right: none !important; border-left: none !important; padding-right: 0 !important; padding-left: 0 !important; }
+            .hero-col-actions { grid-column: span 1; flex-direction: column !important; }
+            .ip-table-grid { grid-template-columns: 110px 1fr 50px; gap: 6px 8px; font-size: 0.8rem; }
+
+            .metric-strip-cli { grid-template-columns: repeat(2, 1fr); }
+            .metric-strip-item { padding: 10px 12px; }
+            .metric-value-line { font-size: 1.4rem; }
+
+            .canvas-wrapper { height: 260px; }
+
+            .dualstack-table { display: none; }
+            .dualstack-cards-mobile { display: flex; }
+
+            .cli-table { display: none; }
+            .interfaces-cards-mobile { display: flex; }
+
+            .ascii-bar-row { grid-template-columns: 60px 1fr 45px 110px; font-size: 0.78rem; gap: 6px; }
+
+            .btn-cli, .btn-cli-primary { min-height: 44px; justify-content: center; }
         }
     </style>
 </head>
 <body>
+    <div id="toast_container"></div>
 
     <!-- ── 1. STICKY TOP GLOBAL STATUS BAR ── -->
     <header class="terminal-nav-bar">
@@ -1591,24 +1690,34 @@ TEMPLATE = r"""
                         <div class="ip-table-grid">
                             <span class="ip-k">SERVER LISTEN</span>
                             <span class="ip-v text-cyan" id="hero_ip_listen">72.18.80.151:8180</span>
-                            <span class="ip-src" id="hero_src_listen">SOURCE: bind 0.0.0.0</span>
+                            <button class="btn-copy-sm" onclick="copyText(document.getElementById('hero_ip_listen').textContent, 'Server Listen IP')">复制</button>
 
                             <span class="ip-k">SERVER EGRESS</span>
                             <span class="ip-v text-cyan" id="hero_ip_egress">37.114.48.47</span>
-                            <span class="ip-src" id="hero_src_egress">SOURCE: ipify API</span>
-
-                            <span class="ip-k">VISITOR CLIENT</span>
-                            <span class="ip-v" id="hero_ip_visitor">127.0.0.1</span>
-                            <span class="ip-src" id="hero_src_visitor">SOURCE: request client</span>
+                            <button class="btn-copy-sm" onclick="copyText(document.getElementById('hero_ip_egress').textContent, 'Server Egress IP')">复制</button>
 
                             <span class="ip-k">LOCAL INTERFACE</span>
                             <span class="ip-v" id="hero_ip_local">37.114.48.47 / 24</span>
-                            <span class="ip-src" id="hero_src_local">SOURCE: eth0</span>
+                            <button class="btn-copy-sm" onclick="copyText(document.getElementById('hero_ip_local').textContent, 'Local Interface')">复制</button>
+                        </div>
+
+                        <!-- Mobile Collapsible Accordion -->
+                        <div id="mobile_identity_toggle" style="margin-top: 10px;">
+                            <button class="btn-cli" id="btn_toggle_identity" style="width:100%; font-size:0.78rem;" onclick="toggleMobileIdentity()">
+                                [ ▼ 查看更多网络身份与来源信息 ]
+                            </button>
+                            <div id="mobile_identity_extra" style="display:none; flex-direction:column; gap:6px; margin-top:8px; padding:10px; background:var(--bg-input); border-radius:var(--radius-sm); border:1px solid var(--border-tier3); font-family:var(--font-mono); font-size:0.8rem;">
+                                <div>VISITOR CLIENT: <b class="text-primary" id="hero_ip_visitor">127.0.0.1</b> <button class="btn-copy-sm" onclick="copyText(document.getElementById('hero_ip_visitor').textContent, 'Visitor IP')">复制</button></div>
+                                <div style="font-size:0.74rem; color:var(--text-muted);" id="hero_src_visitor">SOURCE: request client</div>
+                                <div style="font-size:0.74rem; color:var(--text-muted);" id="hero_src_listen">LISTEN SOURCE: bind 0.0.0.0</div>
+                                <div style="font-size:0.74rem; color:var(--text-muted);" id="hero_src_egress">EGRESS SOURCE: ipify API</div>
+                                <div style="font-size:0.74rem; color:var(--text-muted);" id="hero_src_local">LOCAL SOURCE: eth0</div>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Right: Action Buttons -->
-                    <div class="hero-col" style="border-left: 1px solid var(--border-tier2); padding-left: 16px; align-items: stretch; justify-content: center; gap: 10px;">
+                    <div class="hero-col hero-col-actions" style="border-left: 1px solid var(--border-tier2); padding-left: 16px; align-items: stretch; justify-content: center; gap: 10px;">
                         <button class="btn-cli-primary" id="btn_run_diag" onclick="switchNavTab('diagnostics'); startFullDiagnostics();">[> RUN FULL DIAGNOSTIC ]</button>
                         <button class="btn-cli" onclick="switchNavTab('events');">[ VIEW EVENTS ]</button>
                         <button class="btn-cli" onclick="exportDiagnosticReport();">[ EXPORT REPORT ]</button>
@@ -1776,6 +1885,36 @@ TEMPLATE = r"""
                     </tbody>
                 </table>
 
+                <!-- Mobile Card Layout for Dual-Stack -->
+                <div class="dualstack-cards-mobile">
+                    <div class="ds-card-item">
+                        <div class="ds-card-header">
+                            <span>TCP LATENCY</span>
+                            <span class="badge-bracket status-healthy" style="font-size:0.7rem;">[ IPv4 PREFERRED ]</span>
+                        </div>
+                        <div class="ds-card-metrics">
+                            <div class="ds-metric-box">IPv4: <b class="text-success">68 ms</b></div>
+                            <div class="ds-metric-box">IPv6: <b class="text-warning">121 ms</b></div>
+                        </div>
+                        <div class="ds-delta-line">Δ Delta: IPv6 +53ms (44% slower)</div>
+                    </div>
+                    <div class="ds-card-item">
+                        <div class="ds-card-header">DNS LOOKUP</div>
+                        <div class="ds-card-metrics">
+                            <div class="ds-metric-box">IPv4: <b>18 ms</b></div>
+                            <div class="ds-metric-box">IPv6: <b>32 ms</b></div>
+                        </div>
+                        <div class="ds-delta-line">Δ Delta: IPv6 +14ms</div>
+                    </div>
+                    <div class="ds-card-item">
+                        <div class="ds-card-header">ROUTE HOPS & LOSS</div>
+                        <div class="ds-card-metrics">
+                            <div class="ds-metric-box">Hops: <b>12 (v4) / 18 (v6)</b></div>
+                            <div class="ds-metric-box">Loss: <b class="text-success">0.0%</b></div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="recommendation-banner" id="ds_recommendation">
                     > IPv4 latency is 53ms lower than IPv6. Recommended route preference: IPv4.
                 </div>
@@ -1880,8 +2019,10 @@ TEMPLATE = r"""
                     </div>
                     <span class="mono text-muted" style="font-size:0.8rem">30d SLA: <b class="text-success" id="uptime_sla_val">99.98%</b></span>
                 </div>
-                <div class="heatmap-grid-cli" id="heatmap_container">
-                    <!-- Populated by JS -->
+                <div class="heatmap-scroll-wrapper">
+                    <div class="heatmap-grid-cli" id="heatmap_container">
+                        <!-- Populated by JS -->
+                    </div>
                 </div>
             </div>
 
@@ -2076,12 +2217,88 @@ TEMPLATE = r"""
                 </div>
             </div>
         </div>
-    </div>
+    <!-- MOBILE FIXED BOTTOM NAVIGATION BAR -->
+    <nav class="mobile-bottom-nav">
+        <button class="mobile-nav-item active" onclick="switchNavTab('overview', this)">
+            <span class="nav-icon">📊</span>
+            <span>OVERVIEW</span>
+        </button>
+        <button class="mobile-nav-item" onclick="switchNavTab('targets', this)">
+            <span class="nav-icon">🎯</span>
+            <span>TARGETS</span>
+        </button>
+        <button class="mobile-nav-item" onclick="switchNavTab('diagnostics', this)">
+            <span class="nav-icon">⚡</span>
+            <span>DIAGNOSTICS</span>
+        </button>
+        <button class="mobile-nav-item" onclick="switchNavTab('events', this)">
+            <span class="nav-icon">📜</span>
+            <span>EVENTS</span>
+        </button>
+    </nav>
 
     <script>
     let autoScrollLogs = true;
     let validSamplesCount = 0;
     let pingHistory = [];
+
+    function copyText(text, label) {
+        if (!text) return;
+        const cleanText = text.trim();
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(cleanText).then(() => {
+                showToast(`✓ ${label || '内容'} 已复制到剪贴板`);
+            }).catch(() => fallbackCopyText(cleanText, label));
+        } else {
+            fallbackCopyText(cleanText, label);
+        }
+    }
+
+    function fallbackCopyText(text, label) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+            document.execCommand('copy');
+            showToast(`✓ ${label || '内容'} 已复制到剪贴板`);
+        } catch(e) {}
+        document.body.removeChild(ta);
+    }
+
+    function showToast(msg) {
+        let container = document.getElementById('toast_container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'toast_container';
+            document.body.appendChild(container);
+        }
+        const t = document.createElement('div');
+        t.className = 'toast-notification';
+        t.innerHTML = `<span>${msg}</span>`;
+        container.appendChild(t);
+        setTimeout(() => {
+            t.style.opacity = '0';
+            t.style.transform = 'translateY(-10px)';
+            t.style.transition = 'all 0.25s ease';
+            setTimeout(() => t.remove(), 250);
+        }, 1500);
+    }
+
+    function toggleMobileIdentity() {
+        const extra = document.getElementById('mobile_identity_extra');
+        const btn = document.getElementById('btn_toggle_identity');
+        if (!extra || !btn) return;
+        if (extra.style.display === 'none' || !extra.style.display) {
+            extra.style.display = 'flex';
+            btn.textContent = '[ ▲ 折叠网络身份信息 ]';
+        } else {
+            extra.style.display = 'none';
+            btn.textContent = '[ ▼ 查看更多网络身份与来源信息 ]';
+        }
+    }
 
     function switchNavTab(tabId, btn) {
         if (!tabId) return;
@@ -2095,11 +2312,13 @@ TEMPLATE = r"""
         targetView.classList.add('active-view');
         targetView.style.display = 'flex';
 
-        document.querySelectorAll('.nav-tab-btn').forEach(b => b.classList.remove('active'));
-        if (!btn) {
-            btn = Array.from(document.querySelectorAll('.nav-tab-btn')).find(b => b.getAttribute('onclick') && b.getAttribute('onclick').includes(tabId));
-        }
-        if (btn) btn.classList.add('active');
+        document.querySelectorAll('.nav-tab-btn, .mobile-nav-item').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.nav-tab-btn, .mobile-nav-item').forEach(b => {
+            const onclickAttr = b.getAttribute('onclick');
+            if (onclickAttr && onclickAttr.includes(`'${tabId}'`)) {
+                b.classList.add('active');
+            }
+        });
 
         localStorage.setItem('console_active_tab', tabId);
         window.location.hash = tabId;
