@@ -54,12 +54,17 @@ deploy() {
   fi
 
   echo ""
+  echo "📁 正在创建宿主机持久化目录 (/opt/console-web)..."
+  mkdir -p /opt/console-web/data /opt/console-web/logs /opt/console-web/certs 2>/dev/null || true
+
   echo "🚀 正在启动容器 [$CONTAINER_NAME]..."
   docker run -d \
     --name "$CONTAINER_NAME" \
     --restart=always \
     $PORT_MAP \
-    -v console-web-certs:/app/certs \
+    -v /opt/console-web/data:/app/data \
+    -v /opt/console-web/logs:/app/logs \
+    -v /opt/console-web/certs:/app/certs \
     --memory=128m --memory-swap=128m \
     "$IMAGE_NAME"
 

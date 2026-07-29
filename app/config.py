@@ -1,14 +1,26 @@
 import os
 from pathlib import Path
 
-# Paths
+# Base & Persistent Data Directory
 BASE_DIR = Path(__file__).resolve().parent.parent
-LOGS_DIR = BASE_DIR / "logs"
-MONITOR_TARGETS_FILE = BASE_DIR / "targets.json"
-UPTIME_FILE = BASE_DIR / "uptime_history.json"
+
+OPT_BASE = Path("/opt/console-web")
+if OPT_BASE.exists() and os.access(OPT_BASE, os.W_OK):
+    DATA_DIR = OPT_BASE / "data"
+    LOGS_DIR = OPT_BASE / "logs"
+else:
+    DATA_DIR = BASE_DIR / "data"
+    LOGS_DIR = BASE_DIR / "logs"
+
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+LOGS_DIR.mkdir(parents=True, exist_ok=True)
+
+MONITOR_TARGETS_FILE = DATA_DIR / "targets.json"
+UPTIME_FILE = DATA_DIR / "uptime_history.json"
+TSDB_DATA_FILE = DATA_DIR / "tsdb_history.json"
 
 # Version & Repository
-__version__ = "3.3.0"
+__version__ = "3.4.0"
 GITHUB_REPO_URL = "https://github.com/podcctv/console-web"
 
 # Default ping targets for telemetry

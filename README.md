@@ -1,7 +1,7 @@
 # console-web (NetWatch 赛博朋克网络运维终端)
 
 ![Build & Publish Docker](https://github.com/podcctv/console-web/actions/workflows/docker-publish.yml/badge.svg)
-![Version](https://img.shields.io/badge/version-v3.3.2-78E08F?style=flat-square&logo=git)
+![Version](https://img.shields.io/badge/version-v3.4.0-78E08F?style=flat-square&logo=git)
 ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
 
 `console-web` 是一个基于 [Flask](https://flask.palletsprojects.com/) 和 [psutil](https://psutil.readthedocs.io/) 构建的极简赛博朋克风格系统监控面板与网络运维终端 (`NetWatch`)。界面采用暗黑终端与玻璃拟态设计，支持实时 TCP Ping 多目标延迟趋势、IPv4/IPv6 双栈链路对比、多端响应式适配、1-Click IP 复制、ACME SSL 证书自动续期及全链路故障诊断。
@@ -24,18 +24,18 @@ curl -fsSL https://raw.githubusercontent.com/podcctv/console-web/main/deploy.sh 
 wget -qO- https://raw.githubusercontent.com/podcctv/console-web/main/deploy.sh | sh
 ```
 
-> 💡 **部署说明**：脚本会自动检查并安装 Docker（如未安装），从 GHCR (`ghcr.io/podcctv/console-web:latest`) 拉取预构建镜像并在 `8180` 端口运行容器，部署成功后会直接输出提示与访问 URL。
+> 💡 **部署说明**：脚本会自动检查并安装 Docker（如未安装），从 GHCR (`ghcr.io/podcctv/console-web:latest`) 拉取预构建镜像并在 `8180` 端口运行容器，数据与证书默认自动持久化挂载至宿主机 `/opt/console-web` 目录。
 
 ---
 
 ## ✨ 核心功能
 
-- **⚡ 内存时序数据库 (TimeSeriesDB v3.1 升级)**：
-  - 内置 Python 线程安全内存时序数据库，采用固定容量（1440 points / 24h）滑动窗口滚动存贮，零磁盘 I/O 压力。
+- **⚡ 内存与磁盘双层时序数据库 (TimeSeriesDB v3.4 升级)**：
+  - 内置 Python 线程安全内存时序数据库，采用固定容量（1440 points / 24h）滑动窗口滚动存贮，并实现磁盘自动快照持久化（`/opt/console-web/data`），服务重启后测速历史无缝恢复。
+- **🌍 优雅规范 IP 归属地自动节点命名 (`Standardized Auto Node ID v3.4 升级`)**：
+  - 根据服务器出口 IP 与 ISP 自动推算生成标准无冗余的 Node ID（如 `fra-hetzner-vps01` / `hkg-aliyun-vps01` / `sjc-leaseweb-vps01` / `hgh-ct-vps01`）。
 - **📈 赛博霓虹平滑折线图 (Cyber Neon Trend Curves v3.3 升级)**：
   - 高科技贝塞尔曲线渲染、双重 Neon 光晕 Pass、半透明区域渐变填充、数据节点 Halo 亮点及**交互式垂直 Hairline 十字光标与浮窗 Telemetry 节点数据**。
-- **🌍 IP 归属地自动节点命名 (`Auto Node ID`)**：
-  - 根据服务器出口 IP 与 ISP 自动推算生成真实标准的节点名称（如 `fra-hetzner-01` / `hkg-aliyun-01` / `sjc-leaseweb-01`）。
 - **🚀 版本检测与 1-Click 热更新 + GitHub Actions 锁**：
   - 主界面内置版本号与 GitHub 项目链接；版本检测自动判断 SemVer 语义化逻辑，对接 GitHub Actions Docker 镜像构建状态同步锁，完成编译后解锁热更新。
 - **📋 统一一键 IP 复制 (`[ COPY ALL IDENTITIES ]`)**：
@@ -49,7 +49,10 @@ wget -qO- https://raw.githubusercontent.com/podcctv/console-web/main/deploy.sh |
 
 📌 **版本号管理规范**：本项目遵从 [语义化版本 2.0.0 (Semantic Versioning)](https://semver.org/lang/zh-CN/) 规范（`MAJOR.MINOR.PATCH`）。每次更新同步修改 `app/config.py` (`__version__`)、`setup.cfg` (`version`) 及 `README.md`。
 
-### 🟢 `v3.3.2` (2026-07-29) - 赛博折线图 & 交互光标 & 真实 IP Node ID & GitHub 热更新
+### 🟢 `v3.4.0` (2026-07-29) - 时序数据库磁盘持久化 (`/opt/console-web`) & 规范化 Node ID
+- **TSDB Disk Persistence**：增加 `TimeSeriesDB` 磁盘快照自动持久化落盘与装载恢复，支持宿主机 `/opt/console-web/data` 卷持久挂载。
+- **Standardized Node ID Structure**：重构 `get_auto_node_id()` 命名生成算法，消除重复 `-01-01` 后缀，输出标准简明 Node ID（如 `fra-hetzner-vps01` / `hkg-aliyun-vps01` / `de-vps01`）。
+- **Host Persistence Deployment**：更新 `deploy.sh` 及 `docker-compose.yml` 挂载路径为宿主机 `/opt/console-web`。
 - **Ultra-Smooth Cyber Curves**：升级 `$ tcping --watch` 为贝塞尔平滑折线图、双重 Neon 光晕 Pass、区域渐变填充及 Halo 节点数据点。
 - **Interactive Hairline Crosshair & Tooltip**：新增 Canvas 悬浮垂直十字光标与浮窗 telemetry 节点数据展示。
 - **Dynamic IP Geolocation Node ID**：根据服务器出口 IP 归属地与 ISP 自动生成真实 Node ID（如 `fra-hetzner-01` / `hkg-aliyun-01` / `sjc-leaseweb-01`）。

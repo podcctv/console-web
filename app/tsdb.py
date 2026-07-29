@@ -1,13 +1,42 @@
+import json
+import logging
 import threading
 from datetime import datetime
 from typing import Dict, List, Any, Optional
+from app.config import TSDB_DATA_FILE
+
+logger = logging.getLogger(__name__)
 
 class TimeSeriesDB:
-    """High-performance, thread-safe in-memory time-series telemetry engine with bounded retention."""
+    """High-performance, thread-safe in-memory time-series telemetry engine with bounded retention & disk persistence."""
     def __init__(self, max_points_per_series: int = 1440):
         self.max_points = max_points_per_series
         self._series: Dict[str, List[Dict[str, Any]]] = {}
         self._lock = threading.Lock()
+        self.load_from_disk()
+
+    def load_from_disk(self):
+        """Restore historical telemetry points from persistent disk storage."""
+        if TSDB_DATA_FILE.exists():
+            try:
+                content = TSDB_DATA_FILE.read_text(encoding="utf-8")
+                data = json.loads(content)
+                if isinstance(data, dict):
+                    with self._lock:
+                        self._series = data
+                    logger.info("Loaded TSDB telemetry history (%d series) from %s", len(self._series), TSDB_DATA_FILE)
+            except Exception as e:
+                logger.warning("Failed to load TSDB history from disk: %s", e)
+
+    def save_to_disk(self):
+        """Persist current telemetry series buffer to disk file."""
+        try:
+            with self._lock:
+                snapshot = {k: v[-self.max_points:] for k, v in self._series.items()}
+            TSDB_DATA_FILE.parent.mkdir(parents=True, exist_ok=True)
+            TSDB_DATA_FILE.write_text(json.dumps(snapshot), encoding="utf-8")
+        except Exception as e:
+            logger.warning("Failed to persist TSDB snapshot to disk: %s", e)
 
     def insert(self, series_id: str, timestamp: float, value: Optional[float], metadata: Optional[Dict[str, Any]] = None):
         with self._lock:
@@ -22,6 +51,10 @@ class TimeSeriesDB:
             })
             if len(buf) > self.max_points:
                 buf.pop(0)
+
+        # Trigger disk snapshot every 5 samples for global series
+        if series_id == "global" and len(buf) % 5 == 0:
+            self.save_to_disk()
 
     def query(self, series_id: str = "global", limit: int = 60) -> List[Dict[str, Any]]:
         with self._lock:

@@ -8,9 +8,8 @@ services:
     ports:
       - "8180:8080"
     volumes:
-      - console-web-certs:/app/certs
+      - /opt/console-web/data:/app/data
+      - /opt/console-web/logs:/app/logs
+      - /opt/console-web/certs:/app/certs
     restart: unless-stopped
-
-volumes:
-  console-web-certs:
 

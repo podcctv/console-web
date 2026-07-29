@@ -196,7 +196,7 @@ def get_auto_node_id(ip: str = None) -> str:
             elif "beijing" in city: city_code = "pek"
             elif "guangzhou" in city or "shenzhen" in city: city_code = "can"
             elif "san jose" in city or "san francisco" in city or "los angeles" in city: city_code = "sjc"
-            else: city_code = f"{country.lower()}-01"
+            else: city_code = country.lower()
 
             isp_code = "node"
             if "hetzner" in isp: isp_code = "hetzner"
@@ -209,9 +209,12 @@ def get_auto_node_id(ip: str = None) -> str:
             elif "mobile" in isp or "chinamobile" in isp: isp_code = "cm"
             elif "aws" in isp or "amazon" in isp: isp_code = "aws"
             elif "google" in isp: isp_code = "gcp"
-            elif isp: isp_code = isp.split()[0].lower()
+            elif isp:
+                clean_w = ''.join(ch for ch in isp.split()[0] if ch.isalpha()).lower()
+                if len(clean_w) >= 2:
+                    isp_code = clean_w[:10]
 
-            node_id = f"{city_code}-{isp_code}-01"
+            node_id = f"{city_code}-{isp_code}-vps01"
     except Exception as e:
         logger.warning("Auto node ID generation error: %s", e)
 
