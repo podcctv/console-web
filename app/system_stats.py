@@ -125,8 +125,21 @@ def get_uptime_history_data():
             })
             
     avg_sla = round(sum(valid_slas) / len(valid_slas), 2) if valid_slas else 100.0
+    recorded_cnt = len(valid_slas)
+    has_full_coverage = recorded_cnt >= 30
+
+    if has_full_coverage:
+        disclaimer = f"Data coverage: 30 / 30 days (Full 30d SLA)"
+        sla_display = f"{avg_sla:.2f}%"
+    else:
+        disclaimer = f"Data coverage: {recorded_cnt} / 30 days (30d SLA N/A - Insufficient Data)"
+        sla_display = f"N/A ({recorded_cnt}d SLA: {avg_sla:.2f}%)"
+
     return {
         "days": days_data,
         "sla30d": avg_sla,
-        "recorded_days": len(valid_slas)
+        "sla_display": sla_display,
+        "recorded_days": recorded_cnt,
+        "has_full_coverage": has_full_coverage,
+        "coverage_disclaimer": disclaimer
     }

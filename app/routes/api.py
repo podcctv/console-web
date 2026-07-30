@@ -46,6 +46,11 @@ def api_status_summary():
     valid_samples = [s for s in history_samples if s.get("latency") is not None]
     total_checks = 7
     
+    # Calculate past 1h spikes & incident statistics
+    spikes_1h = len([s for s in history_samples if s.get("latency") and s["latency"] > 250])
+    active_incidents = 0
+    recovered_incidents = spikes_1h
+
     if len(valid_samples) == 0:
         overall_status = "INITIALIZING"
         reason = "Waiting for valid TCP ping samples... (0/3 collected)"
@@ -53,27 +58,50 @@ def api_status_summary():
     else:
         completed_checks = 7
         recent = valid_samples[-10:]
-        avg_lat = sum(s["latency"] for s in recent) / len(recent)
-        loss_pct = int(((len(recent) - len([s for s in recent if s.get("latency")])) / max(1, len(recent))) * 100)
+        recent_lats = [s["latency"] for s in recent if s.get("latency") is not None]
+        avg_lat = sum(recent_lats) / len(recent_lats) if recent_lats else 0.0
         
-        if loss_pct > 20 or avg_lat > 250:
+        # Calculate recent Jitter (consecutive delay variation)
+        if len(recent_lats) > 1:
+            diffs = [abs(recent_lats[i] - recent_lats[i-1]) for i in range(1, len(recent_lats))]
+            recent_jitter = sum(diffs) / len(diffs)
+        else:
+            recent_jitter = 0.0
+
+        loss_pct = int(((len(recent) - len(recent_lats)) / max(1, len(recent))) * 100)
+        
+        if loss_pct > 20 or avg_lat > 250 or recent_jitter > 100:
             overall_status = "CRITICAL"
-            reason = f"High latency / packet loss detected (avg {avg_lat:.0f}ms, loss {loss_pct}%)"
-        elif avg_lat > 160:
+            active_incidents = 1
+            reason = f"High latency / jitter / packet loss detected (avg {avg_lat:.0f}ms, jitter {recent_jitter:.0f}ms, loss {loss_pct}%)"
+        elif avg_lat > 160 or recent_jitter > 30:
             overall_status = "DEGRADED"
-            reason = f"Elevated network latency (avg {avg_lat:.0f}ms)"
+            reason = f"Elevated network latency / jitter (avg {avg_lat:.0f}ms, jitter {recent_jitter:.0f}ms)"
         else:
             overall_status = "HEALTHY"
-            reason = "All primary network checks passed."
-            
+            reason = "All primary network checks operational."
+
+    summary_detail = (
+        f"{spikes_1h} high-latency spikes detected in the last hour. All related incidents recovered."
+        if spikes_1h > 0 and overall_status == "HEALTHY"
+        else f"{reason}"
+    )
+
+    now_dt = datetime.now()
     return jsonify({
         "nodeId": get_auto_node_id(egress_ip),
         "overallStatus": overall_status,
         "statusReason": reason,
+        "summaryDetail": summary_detail,
+        "spikes1hCount": spikes_1h,
+        "activeIncidents": active_incidents,
+        "recoveredIncidents": recovered_incidents,
         "validSamples": len(valid_samples),
         "completedChecks": completed_checks,
         "totalChecks": total_checks,
-        "lastSuccessfulSync": datetime.now().strftime("%H:%M:%S"),
+        "lastSuccessfulSync": now_dt.strftime("%H:%M:%S"),
+        "lastUpdateReadable": f"Last update {now_dt.strftime('%H:%M:%S')}",
+        "lastUpdateTimestamp": time.time(),
         "realtimeConnected": True,
         "ipInfo": {
             "serverListen": f"{listen_ip}:8180",

@@ -612,8 +612,9 @@
                 <span class="live-dot-pulse"></span>
                 <span id="top_stream_text">● LIVE STREAM: CONNECTED</span>
             </span>
-            <span class="nav-sync-time">SYNC: <span id="nav_last_sync" class="text-cyan">--:--:--</span></span>
+            <span class="nav-sync-time" id="nav_sync_wrapper" title="Last successful data update">UPDATED: <span id="nav_last_sync" class="text-cyan">--:--:--</span></span>
             <button class="btn-cli" onclick="fetchSummary(); fetchPings();" aria-label="Refresh Telemetry Summary">[ REFRESH ]</button>
+            <button class="btn-cli-secondary" onclick="openCommandPalette()" aria-label="Open Command Palette (Ctrl+K)">[ ⌨️ Cmd (Ctrl+K) ]</button>
             <button class="btn-cli" onclick="showKeyboardHelp()" aria-label="View Keyboard Shortcuts Help">[ ? HELP ]</button>
         </div>
     </header>
@@ -641,14 +642,14 @@
         <!-- ── VT100 INTERACTIVE QUICK COMMAND BAR ── -->
         <section aria-label="Quick Command Shortcuts" style="background:var(--bg-tier2); border:1px solid var(--border-tier2); border-radius:var(--radius-md); padding:10px 16px; margin-bottom:20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; font-family:var(--font-mono); font-size:0.8rem;">
             <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                <span class="text-muted" style="font-weight:700; color:var(--text-secondary);">$ quick-cmd ></span>
+                <button class="btn-cli-primary" style="font-weight:700; min-height:36px;" onclick="openCommandPalette()" aria-label="Open Command Palette ($ quick-cmd >)">$ quick-cmd ></button>
                 <button class="btn-cli" onclick="execQuickCmd('ping_all')" aria-label="Refresh All Probes Ping" title="Refresh all telemetry data">[ $ ping --all ]</button>
                 <button class="btn-cli" onclick="execQuickCmd('diagnose')" aria-label="Run Full Diagnostics Pipeline" title="Run full diagnostic suite">[ $ diagnose --full ]</button>
                 <button class="btn-cli" onclick="execQuickCmd('export_report')" aria-label="Export Diagnostic Report" title="Export diagnostic report">[ $ export --report ]</button>
                 <button class="btn-cli" onclick="execQuickCmd('check_update')" aria-label="Check Version Updates" title="Check version updates">[ $ check --version ]</button>
             </div>
             <div style="display:flex; align-items:center; gap:12px;" class="text-muted">
-                <span>SHORTCUTS: <b class="text-success">[ R ]</b> Refresh <b class="text-success">[ D ]</b> Diag <b class="text-success">[ ? ]</b> Help</span>
+                <span>PRESS <b class="text-success">[ Ctrl + K ]</b> TO SEARCH COMMANDS</span>
             </div>
         </section>
 
@@ -753,34 +754,34 @@
             <!-- ── 3. METRIC STRIP (6 COLUMNS) ── -->
             <div class="metric-strip-cli">
                 <div class="metric-strip-item">
-                    <div class="metric-title">TCP LATENCY</div>
+                    <div class="metric-title" title="Current aggregate TCP ping latency across active probes">CURRENT AGGREGATE LATENCY</div>
                     <div class="metric-value-line text-cyan" id="metric_latency">- <span class="unit">ms</span></div>
-                    <div class="metric-sub"><span id="metric_latency_sub">1h avg: -</span> <span class="mono text-muted" id="mb_latency">normal</span></div>
+                    <div class="metric-sub"><span id="metric_latency_sub">1h range avg: -</span> <span class="mono text-muted" id="mb_latency">normal</span></div>
                 </div>
                 <div class="metric-strip-item">
-                    <div class="metric-title">PACKET LOSS</div>
+                    <div class="metric-title" title="Packet loss percentage over recent 10 probe cycles">PACKET LOSS</div>
                     <div class="metric-value-line text-success" id="metric_loss">0.0<span class="unit">%</span></div>
                     <div class="metric-sub"><span id="metric_samples_sub">0 samples</span> <span class="mono text-muted">normal</span></div>
                 </div>
                 <div class="metric-strip-item">
-                    <div class="metric-title">JITTER</div>
+                    <div class="metric-title" title="Mean consecutive delay variation (RFC 3550 standard)">CONSECUTIVE JITTER</div>
                     <div class="metric-value-line text-cyan" id="metric_jitter">0.0 <span class="unit">ms</span></div>
-                    <div class="metric-sub"><span>±0.0ms</span> <span class="mono text-muted">stable</span></div>
+                    <div class="metric-sub"><span id="metric_jitter_sub">Threshold 30ms</span> <span class="mono text-muted" id="mb_jitter">stable</span></div>
                 </div>
                 <div class="metric-strip-item">
-                    <div class="metric-title">AVAILABILITY</div>
+                    <div class="metric-title" title="Past 24h rolling availability percentage">AVAILABILITY</div>
                     <div class="metric-value-line text-success" id="metric_avail">99.98<span class="unit">%</span></div>
-                    <div class="metric-sub"><span>SLA target</span> <span class="mono text-muted">normal</span></div>
+                    <div class="metric-sub"><span>Past 24h · Target ≥99.90%</span> <span class="mono text-muted">normal</span></div>
                 </div>
                 <div class="metric-strip-item">
-                    <div class="metric-title">ACTIVE TARGETS</div>
+                    <div class="metric-title" title="Monitoring probe targets status">ACTIVE TARGETS</div>
                     <div class="metric-value-line text-primary" id="metric_targets">5 <span class="unit">/ 5</span></div>
-                    <div class="metric-sub"><span>5 normal, 0 warn</span> <span class="mono text-muted">active</span></div>
+                    <div class="metric-sub"><span id="metric_targets_sub">5 healthy, 0 warn</span> <span class="mono text-muted">active</span></div>
                 </div>
                 <div class="metric-strip-item">
-                    <div class="metric-title">UNRESOLVED EVENTS</div>
+                    <div class="metric-title" title="Unresolved active incident tickets">ACTIVE INCIDENTS</div>
                     <div class="metric-value-line text-success" id="metric_events">0 <span class="unit">open</span></div>
-                    <div class="metric-sub"><span>0 critical</span> <span class="mono text-muted">clear</span></div>
+                    <div class="metric-sub"><span id="metric_events_sub">0 active, 0 recovered</span> <span class="mono text-muted">clear</span></div>
                 </div>
             </div>
 
@@ -821,7 +822,7 @@
                         <button class="btn-cli active" id="target_btn_all" style="padding:3px 8px; font-size:0.76rem;" onclick="toggleTargetFilter('all')">
                             [ ALL TARGETS ]
                         </button>
-                        <button class="btn-cli active" id="target_btn_ping_cu" style="padding:3px 8px; font-size:0.76rem; border-color:#FF6B6B; color:#FF6B6B; background:rgba(255,107,107,0.14);" onclick="toggleTargetFilter('ping_cu')">
+                        <button class="btn-cli active" id="target_btn_ping_cu" style="padding:3px 8px; font-size:0.76rem; border-color:#6BB8FF; color:#6BB8FF; background:rgba(107,184,255,0.14);" onclick="toggleTargetFilter('ping_cu')">
                             ● Zhejiang Unicom <span id="leg_val_cu" class="mono text-muted">-ms</span>
                         </button>
                         <button class="btn-cli active" id="target_btn_ping_cm" style="padding:3px 8px; font-size:0.76rem; border-color:#BD93F9; color:#BD93F9; background:rgba(189,147,249,0.14);" onclick="toggleTargetFilter('ping_cm')">
@@ -1206,6 +1207,48 @@
         </div>
     </div>
 
+    <!-- VT100 COMMAND PALETTE MODAL (Ctrl + K) -->
+    <div class="modal-cli-overlay" id="command_palette_modal" style="display:none; z-index:10060;" onclick="closeCommandPaletteOnOverlay(event)" role="dialog" aria-modal="true" aria-labelledby="cmd_palette_title">
+        <div class="modal-cli-box" style="width: min(620px, 94vw); border-color: var(--border-active); box-shadow: 0 0 50px rgba(0,0,0,0.9);">
+            <div class="card-header-bar" style="margin-bottom:12px;">
+                <div class="card-header-left">
+                    <span class="cmd-title" id="cmd_palette_title">$ quick-cmd --palette</span>
+                    <span class="cmd-subtitle">// PRESS ESC TO CLOSE</span>
+                </div>
+                <button class="btn-cli" onclick="closeCommandPalette()">[ ESC ]</button>
+            </div>
+            <div style="margin-bottom:14px;">
+                <input type="text" id="cmd_palette_input" style="width:100%; min-height:46px; background:var(--bg-input); border:1px solid var(--border-tier2); color:var(--text-primary); padding:10px 14px; border-radius:var(--radius-sm); font-family:var(--font-mono); font-size:0.92rem; outline:none;" placeholder="Type a command or filter (ping, diag, export, theme)..." onkeyup="filterCommandPalette()" />
+            </div>
+            <div id="cmd_palette_list" style="display:flex; flex-direction:column; gap:6px; max-height:340px; overflow-y:auto; font-family:var(--font-mono); font-size:0.84rem;">
+                <div class="cmd-palette-item" onclick="runPaletteCmd('ping_all')" style="padding:10px 12px; background:var(--bg-tier2); border:1px solid var(--border-tier3); border-radius:var(--radius-sm); cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
+                    <div><b class="text-success">$ ping --all</b> <span class="text-muted" style="margin-left:8px;">// Refresh all telemetry probes</span></div>
+                    <span class="badge-bracket status-healthy">[ RUN ]</span>
+                </div>
+                <div class="cmd-palette-item" onclick="runPaletteCmd('diagnose')" style="padding:10px 12px; background:var(--bg-tier2); border:1px solid var(--border-tier3); border-radius:var(--radius-sm); cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
+                    <div><b class="text-cyan">$ diagnose --full</b> <span class="text-muted" style="margin-left:8px;">// Run 12-stage diagnostic pipeline</span></div>
+                    <span class="badge-bracket status-cyan">[ RUN ]</span>
+                </div>
+                <div class="cmd-palette-item" onclick="runPaletteCmd('export_report')" style="padding:10px 12px; background:var(--bg-tier2); border:1px solid var(--border-tier3); border-radius:var(--radius-sm); cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
+                    <div><b class="text-primary">$ export --report</b> <span class="text-muted" style="margin-left:8px;">// Export Markdown & JSON diagnostic report</span></div>
+                    <span class="badge-bracket">[ EXPORT ]</span>
+                </div>
+                <div class="cmd-palette-item" onclick="runPaletteCmd('check_update')" style="padding:10px 12px; background:var(--bg-tier2); border:1px solid var(--border-tier3); border-radius:var(--radius-sm); cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
+                    <div><b class="text-warning">$ check --version</b> <span class="text-muted" style="margin-left:8px;">// Check for version update & auto-update</span></div>
+                    <span class="badge-bracket status-warning">[ CHECK ]</span>
+                </div>
+                <div class="cmd-palette-item" onclick="runPaletteCmd('theme')" style="padding:10px 12px; background:var(--bg-tier2); border:1px solid var(--border-tier3); border-radius:var(--radius-sm); cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
+                    <div><b>$ theme --switch</b> <span class="text-muted" style="margin-left:8px;">// Cycle cyber neon accent color</span></div>
+                    <span class="badge-bracket">[ SWITCH ]</span>
+                </div>
+                <div class="cmd-palette-item" onclick="runPaletteCmd('sound')" style="padding:10px 12px; background:var(--bg-tier2); border:1px solid var(--border-tier3); border-radius:var(--radius-sm); cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
+                    <div><b>$ sound --toggle</b> <span class="text-muted" style="margin-left:8px;">// Toggle Web Audio synthesize feedback</span></div>
+                    <span class="badge-bracket">[ TOGGLE ]</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- KEYBOARD HELP MODAL -->
     <div class="modal-cli-overlay" id="keyboard_modal" style="display:none;" onclick="closeKeyboardHelp(event)">
         <div class="modal-cli-box">
@@ -1374,10 +1417,61 @@
             err.style.display = 'block';
             return true;
         } else {
-            err.style.display = 'none';
-            return true;
+    /* ── VT100 Command Palette (Ctrl+K) Controller ── */
+    function openCommandPalette() {
+        const modal = document.getElementById('command_palette_modal');
+        const input = document.getElementById('cmd_palette_input');
+        if (modal) {
+            modal.style.display = 'flex';
+            if (input) { input.value = ''; input.focus(); }
+            filterCommandPalette();
         }
     }
+
+    function closeCommandPalette() {
+        const modal = document.getElementById('command_palette_modal');
+        if (modal) modal.style.display = 'none';
+    }
+
+    function closeCommandPaletteOnOverlay(e) {
+        if (e.target.id === 'command_palette_modal') closeCommandPalette();
+    }
+
+    function filterCommandPalette() {
+        const input = document.getElementById('cmd_palette_input');
+        const filter = (input ? input.value : '').toLowerCase().trim();
+        const items = document.querySelectorAll('#cmd_palette_list .cmd-palette-item');
+        items.forEach(item => {
+            const text = item.textContent.toLowerCase();
+            if (!filter || text.includes(filter)) {
+                item.style.display = 'flex';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+
+    function runPaletteCmd(cmd) {
+        closeCommandPalette();
+        if (cmd === 'theme') {
+            const themes = ['green', 'cyan', 'magenta', 'amber'];
+            const current = document.documentElement.getAttribute('data-theme') || 'green';
+            const next = themes[(themes.indexOf(current) + 1) % themes.length];
+            setCyberTheme(next);
+            showToast('info', `Theme switched to ${next.toUpperCase()}`);
+        } else if (cmd === 'sound') {
+            toggleCyberSound();
+        } else {
+            execQuickCmd(cmd);
+        }
+    }
+
+    document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+            e.preventDefault();
+            openCommandPalette();
+        }
+    });
 
     function copyAllIdentities() {
         const listen = (document.getElementById('hero_ip_listen').textContent || '').trim();
@@ -1500,7 +1594,7 @@
             
             if (syncTime) syncTime.textContent = data.lastSuccessfulSync || '--:--:--';
             if (checksRatio) checksRatio.textContent = `${data.completedChecks} / ${data.totalChecks}`;
-            if (reasonEl) reasonEl.textContent = data.statusReason || '';
+            if (reasonEl) reasonEl.textContent = data.summaryDetail || data.statusReason || '';
             const nodeEl = document.getElementById('hero_node_id');
             if (nodeEl && data.nodeId) nodeEl.textContent = `NODE_ID: ${data.nodeId}`;
             
@@ -1512,6 +1606,12 @@
                 else if (st === 'CRITICAL') badgeClass = 'status-critical';
                 statusEl.innerHTML = `<span class="badge-bracket ${badgeClass}">[ ${st} ]</span>`;
             }
+
+            // Update Active Incidents KPI Card
+            const metricEv = document.getElementById('metric_events');
+            if (metricEv) metricEv.innerHTML = `${data.activeIncidents || 0} <span class="unit">open</span>`;
+            const metricEvSub = document.getElementById('metric_events_sub');
+            if (metricEvSub) metricEvSub.textContent = `${data.activeIncidents || 0} active, ${data.recoveredIncidents || 0} recovered`;
 
             const ip = data.ipInfo || {};
             document.getElementById('hero_ip_listen').textContent = ip.serverListen || '';
@@ -1922,6 +2022,90 @@
         } else if (tooltipEl) {
             tooltipEl.style.display = 'none';
         }
+    }
+
+    /* ── Time Range & Granularity Auto-Linkage Engine ── */
+    const RANGE_GRANULARITY_MAP = {
+        '1h': '1m',
+        '6h': '5m',
+        '24h': '15m',
+        '7d': '15m',
+        '30d': '15m'
+    };
+
+    function setPingRange(range, btn) {
+        if (btn) {
+            const btns = btn.parentElement ? btn.parentElement.querySelectorAll('button') : [];
+            btns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        const sel = document.getElementById('ping_granularity');
+        if (sel && RANGE_GRANULARITY_MAP[range]) {
+            sel.value = RANGE_GRANULARITY_MAP[range];
+        }
+
+        showToast('info', `Time range set to ${range.toUpperCase()} (Auto granularity: ${sel ? sel.value : '1m'})`);
+        fetchPings();
+    }
+
+    function exportPingCSV() {
+        if (!pingHistory || pingHistory.length === 0) {
+            showToast('warning', 'No telemetry ping data available to export.');
+            return;
+        }
+
+        let csv = 'timestamp,time,target,latency_ms\n';
+        pingHistory.forEach(pt => {
+            const t = pt.time || '';
+            const ts = pt.timestamp || '';
+            if (pt.targets_detail) {
+                Object.keys(pt.targets_detail).forEach(k => {
+                    csv += `${ts},${t},${k},${pt.targets_detail[k] ?? ''}\n`;
+                });
+            } else {
+                csv += `${ts},${t},global,${pt.latency ?? ''}\n`;
+            }
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `netwatch_ping_telemetry_${new Date().toISOString().slice(0,10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('success', 'Ping telemetry exported as CSV.');
+    }
+
+    function filterLogs(level, btn) {
+        if (btn) {
+            const btns = btn.parentElement ? btn.parentElement.querySelectorAll('button') : [];
+            btns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        const rows = document.querySelectorAll('#log_stream_box .log-row');
+        rows.forEach(row => {
+            if (level === 'all') {
+                row.style.display = 'flex';
+            } else {
+                const text = row.textContent.toLowerCase();
+                if (text.includes(`[${level.toLowerCase()}]`)) {
+                    row.style.display = 'flex';
+                } else {
+                    row.style.display = 'none';
+                }
+            }
+        });
+    }
+
+    function clearLogView() {
+        const box = document.getElementById('log_stream_box');
+        if (box) {
+            box.innerHTML = '<div class="log-row"><span class="log-time">SYS</span> <span class="log-level level-info">[INFO]</span> <span class="log-msg">Local view cleared. Server events & telemetry persist.</span></div>';
+        }
+        showToast('info', 'Local log view cleared (Stored events remain intact).');
     }
 
     let chartMouseX = null;

@@ -79,7 +79,11 @@ class TimeSeriesDB:
             p50 = sorted_v[int(len(sorted_v) * 0.50)]
             p95 = sorted_v[int(len(sorted_v) * 0.95)]
             p99 = sorted_v[min(len(sorted_v) - 1, int(len(sorted_v) * 0.99))]
-            jitter = (mx - mn) / 2.0 if len(valid) > 1 else 0.0
+            if len(valid) > 1:
+                diffs = [abs(valid[i] - valid[i-1]) for i in range(1, len(valid))]
+                jitter = sum(diffs) / len(diffs)
+            else:
+                jitter = 0.0
             loss_pct = round(((len(buf) - len(valid)) / len(buf)) * 100, 1) if buf else 0.0
             return {
                 "cur": round(cur, 1), "avg": round(avg, 1), "min": round(mn, 1),
