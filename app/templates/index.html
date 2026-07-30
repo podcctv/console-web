@@ -13,35 +13,38 @@
            面向专业网络运维团队的响应式实时网络诊断与监控终端
            ═══════════════════════════════════════════════════════════ */
         :root {
-            --bg-page: #040605;
-            --bg-panel: #080D09;
-            --bg-panel-secondary: #070A08;
-            --bg-tier1: #080D09;
-            --bg-tier2: #070A08;
+            --bg-page: #030705;
+            --bg-panel: #07100b;
+            --bg-panel-hover: #09160e;
+            --bg-panel-secondary: #050b07;
+            --bg-tier1: #07100b;
+            --bg-tier2: #050b07;
             --bg-tier3: rgba(255, 255, 255, 0.015);
-            --bg-input: #060907;
+            --bg-input: #040805;
 
-            --border-default: rgba(140, 165, 145, 0.14);
-            --border-active: rgba(120, 224, 143, 0.45);
-            --border-tier1: rgba(120, 224, 143, 0.22);
-            --border-tier2: rgba(140, 165, 145, 0.14);
-            --border-tier3: rgba(140, 165, 145, 0.08);
-            --border-hover: rgba(120, 224, 143, 0.35);
+            --border-subtle: rgba(117, 255, 155, 0.10);
+            --border-default: rgba(117, 255, 155, 0.18);
+            --border-active: rgba(117, 255, 155, 0.45);
+            --border-tier1: rgba(117, 255, 155, 0.18);
+            --border-tier2: rgba(117, 255, 155, 0.10);
+            --border-tier3: rgba(117, 255, 155, 0.06);
+            --border-hover: rgba(117, 255, 155, 0.32);
 
-            --text-primary: #E2ECE4;
-            --text-secondary: #9EB0A3;
-            --text-muted: #64756A;
-            --text-dim: #45524A;
+            --text-primary: #d7e7dc;
+            --text-secondary: #8b9d90;
+            --text-muted: #526157;
+            --text-dim: #3b4740;
 
-            --status-success: #78E08F;
-            --status-cyan: #69D6D0;
-            --status-blue: #6BB8FF;
-            --status-warning: #E7C66B;
-            --status-danger: #F07878;
-            --status-critical: #F07878;
-            --status-info: #69D6D0;
-            --status-purple: #B59AF2;
-            --accent-primary: #78E08F;
+            --status-success: #72f59a;
+            --status-cyan: #62d9cc;
+            --status-blue: #6bb8ff;
+            --status-warning: #e7c765;
+            --status-danger: #ff6f6f;
+            --status-critical: #ff6f6f;
+            --status-info: #62d9cc;
+            --status-purple: #b59af2;
+            --accent-green: #72f59a;
+            --accent-green-soft: rgba(114, 245, 154, 0.10);
 
             --radius-sm: 4px;
             --radius-md: 6px;
@@ -578,29 +581,16 @@
         <div class="nav-brand" style="display:flex; align-items:center; gap:8px;">
             <span class="nav-logo-symbol">NW_</span>
             <span class="nav-brand-title">NETWATCH</span>
-            <span class="nav-brand-subtitle" style="margin-right:4px;">// NETWORK OPERATIONS TERMINAL</span>
-            <span id="version_badge_ui" style="background:rgba(120,224,143,0.12); border:1px solid var(--border-active); color:var(--text-success); font-family:var(--font-mono); font-size:0.72rem; padding:2px 6px; border-radius:var(--radius-sm); font-weight:700; cursor:pointer;" onclick="manualCheckVersion()" title="Click to manually check for version updates">v{{ version or "3.8.1" }}</span>
-            <a href="https://github.com/podcctv/console-web" target="_blank" rel="noopener" aria-label="Visit console-web GitHub Repository" style="font-size:0.72rem; text-decoration:none; display:inline-flex; align-items:center; gap:4px; border:1px solid rgba(139,233,253,0.4); color:var(--text-cyan); padding:2px 6px; border-radius:var(--radius-sm); background:rgba(139,233,253,0.08); font-family:var(--font-mono); font-weight:600;">
-                [ 🐙 GitHub ]
-            </a>
+            <span id="version_badge_ui" style="color:var(--text-muted); font-size:0.75rem; font-weight:600; cursor:pointer;" onclick="manualCheckVersion()">v{{ version or "3.9.4" }}</span>
+            <span id="hero_node_badge" class="mono text-muted" style="font-size:0.75rem;">[node: fra1-vps-01]</span>
             <span id="update_notification_badge" style="display:none;">
-                <button class="btn-cli" id="btn_do_auto_update" onclick="triggerAutoUpdate()" style="border-color:#FFB86C; color:#FFB86C; background:rgba(255,184,108,0.15); font-size:0.72rem; padding:2px 6px;" aria-label="Auto update system version">
-                    [ 🚀 NEW: <span id="latest_ver_num">v3.8.1</span> - UPDATE NOW ]
+                <button class="btn-cli" id="btn_do_auto_update" onclick="triggerAutoUpdate()" style="border-color:var(--status-warning); color:var(--status-warning); font-size:0.72rem; padding:2px 6px;" aria-label="Auto update system version">
+                    [ 🚀 UPDATE: <span id="latest_ver_num">v3.9.4</span> ]
                 </button>
             </span>
-            <!-- Theme Accent Selector & Sound Toggle -->
-            <div style="display:flex; align-items:center; gap:6px; margin-left:4px;">
-                <div class="theme-selector-group" style="display:inline-flex; gap:4px; align-items:center; background:var(--bg-input); border:1px solid var(--border-tier2); padding:3px 6px; border-radius:var(--radius-sm);" title="Choose Cyber Accent Color">
-                    <button class="theme-btn active" id="theme_btn_green" style="background:#78E08F;" onclick="setCyberTheme('green')" aria-label="Switch to Matrix Green Theme" title="Matrix Green"></button>
-                    <button class="theme-btn" id="theme_btn_cyan" style="background:#8BE9FD;" onclick="setCyberTheme('cyan')" aria-label="Switch to Neon Cyan Theme" title="Neon Cyan"></button>
-                    <button class="theme-btn" id="theme_btn_magenta" style="background:#FF79C6;" onclick="setCyberTheme('magenta')" aria-label="Switch to Synthwave Magenta Theme" title="Synthwave Magenta"></button>
-                    <button class="theme-btn" id="theme_btn_amber" style="background:#FFB86C;" onclick="setCyberTheme('amber')" aria-label="Switch to Solarized Amber Theme" title="Solarized Amber"></button>
-                </div>
-                <button class="btn-cli" id="sound_toggle_btn" onclick="toggleCyberSound()" style="font-size:0.72rem; padding:2px 6px;" aria-label="Toggle Audio Sound Feedback" title="Toggle Cyber Audio Feedback">[ 🔊 SOUND: ON ]</button>
-            </div>
         </div>
 
-        <nav class="nav-tabs-cli" role="navigation" aria-label="主导航通道 / Navigation Tabs">
+        <nav class="nav-tabs-cli" role="navigation" aria-label="Navigation Tabs">
             <button class="nav-tab-btn active" role="tab" aria-selected="true" aria-controls="tab_overview" onclick="switchNavTab('overview', this)">$ overview</button>
             <button class="nav-tab-btn" role="tab" aria-selected="false" aria-controls="tab_targets" onclick="switchNavTab('targets', this)">$ targets</button>
             <button class="nav-tab-btn" role="tab" aria-selected="false" aria-controls="tab_diagnostics" onclick="switchNavTab('diagnostics', this)">$ diagnostics</button>
@@ -610,143 +600,111 @@
         <div class="nav-right-status">
             <span class="live-indicator online" id="top_live_indicator" role="status" aria-live="polite">
                 <span class="live-dot-pulse"></span>
-                <span id="top_stream_text">● LIVE STREAM: CONNECTED</span>
+                <span id="top_stream_text">● LIVE</span>
             </span>
-            <span class="nav-sync-time" id="nav_sync_wrapper" title="Last successful data update">UPDATED: <span id="nav_last_sync" class="text-cyan">--:--:--</span></span>
-            <button class="btn-cli" onclick="fetchSummary(); fetchPings();" aria-label="Refresh Telemetry Summary">[ REFRESH ]</button>
-            <button class="btn-cli-secondary" onclick="openCommandPalette()" aria-label="Open Command Palette (Ctrl+K)">[ ⌨️ Cmd (Ctrl+K) ]</button>
-            <button class="btn-cli" onclick="showKeyboardHelp()" aria-label="View Keyboard Shortcuts Help">[ ? HELP ]</button>
+            <span class="nav-sync-time" id="nav_sync_wrapper" style="color:var(--text-muted);">UPDATED: <span id="nav_last_sync" class="text-secondary">--:--:--</span></span>
+            <button class="btn-cli" onclick="fetchSummary(); fetchPings();" aria-label="Refresh Telemetry" style="padding:3px 8px; font-size:0.76rem;" title="Refresh Telemetry">[ ↻ ]</button>
+            <button class="btn-cli-secondary" onclick="openCommandPalette()" aria-label="Open Command Palette (Ctrl+K)" style="padding:3px 8px; font-size:0.76rem;">[ ⌘K ]</button>
+
+            <!-- More Options Dropdown -->
+            <div class="nav-dropdown-wrapper" style="position:relative; display:inline-block;">
+                <button class="btn-cli" onclick="toggleNavMoreMenu(event)" aria-label="More navigation options" style="padding:3px 8px; font-size:0.76rem; font-weight:700;">
+                    [ ··· ]
+                </button>
+                <div id="nav_more_menu" class="nav-dropdown-menu" style="display:none; position:absolute; right:0; top:calc(100% + 8px); z-index:200; background:rgba(7,16,11,0.98); border:1px solid var(--border-active); border-radius:var(--radius-sm); padding:10px; min-width:210px; box-shadow:0 8px 24px rgba(0,0,0,0.8); backdrop-filter:blur(10px); flex-direction:column; gap:8px;">
+                    <div style="font-size:0.72rem; color:var(--text-muted); font-weight:700; border-bottom:1px solid var(--border-tier3); padding-bottom:4px; margin-bottom:2px;">SYSTEM CONTROLS</div>
+                    <a href="https://github.com/podcctv/console-web" target="_blank" rel="noopener" style="color:var(--status-cyan); text-decoration:none; font-family:var(--font-mono); font-size:0.78rem; display:flex; align-items:center; gap:6px;">
+                        <span>🐙 GitHub Repository</span>
+                    </a>
+                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.78rem; color:var(--text-primary); cursor:pointer;" onclick="manualCheckVersion()">
+                        <span>Version Check</span>
+                        <span class="mono text-success" style="font-weight:700;">v{{ version or "3.9.4" }}</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:0.78rem; color:var(--text-primary);">Audio Feedback</span>
+                        <button class="btn-cli" id="sound_toggle_btn" onclick="toggleCyberSound()" style="font-size:0.72rem; padding:2px 6px;">[ 🔊 ON ]</button>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:0.78rem; color:var(--text-primary);">Cyber Accent</span>
+                        <div class="theme-selector-group" style="display:inline-flex; gap:4px; align-items:center; background:var(--bg-input); border:1px solid var(--border-tier2); padding:3px 6px; border-radius:var(--radius-sm);">
+                            <button class="theme-btn active" id="theme_btn_green" style="background:#72f59a;" onclick="setCyberTheme('green')" aria-label="Matrix Green"></button>
+                            <button class="theme-btn" id="theme_btn_cyan" style="background:#62d9cc;" onclick="setCyberTheme('cyan')" aria-label="Neon Cyan"></button>
+                            <button class="theme-btn" id="theme_btn_magenta" style="background:#FF79C6;" onclick="setCyberTheme('magenta')" aria-label="Synthwave Magenta"></button>
+                            <button class="theme-btn" id="theme_btn_amber" style="background:#e7c765;" onclick="setCyberTheme('amber')" aria-label="Solarized Amber"></button>
+                        </div>
+                    </div>
+                    <button class="btn-cli" onclick="showKeyboardHelp()" style="width:100%; justify-content:center; margin-top:4px; font-size:0.76rem;">[ ? HELP SHORTCUTS ]</button>
+                </div>
+            </div>
         </div>
     </header>
 
     <!-- ── MAIN WORKSPACE CONTAINER ── -->
     <main class="page-container" id="main_content" role="main">
 
-        <!-- ── GLOBAL STATE FEEDBACK BANNER ── -->
-        <div id="global_state_feedback" class="state-feedback-card" role="status" aria-live="polite" style="display:none; margin-bottom:16px;">
-            <div style="display:flex; align-items:center; gap:12px; justify-content:space-between; flex-wrap:wrap;">
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <span id="state_feedback_icon" style="font-size:1.2rem;">⏳</span>
-                    <div>
-                        <div id="state_feedback_title" class="font-bold" style="font-size:0.86rem; color:var(--text-primary);">SYSTEM NOTIFICATION</div>
-                        <div id="state_feedback_msg" class="text-muted" style="font-size:0.8rem;">Processing telemetry data...</div>
-                    </div>
-                </div>
-                <div id="state_feedback_actions" style="display:flex; gap:8px;">
-                    <button id="state_feedback_retry_btn" class="btn-cli-secondary" style="display:none; min-height:36px;" onclick="retryLastAction()">[ 🚀 RETRY / RECOVER ]</button>
-                    <button class="btn-cli" style="min-height:36px;" onclick="hideStateFeedback()">[ ACK ]</button>
-                </div>
-            </div>
-        </div>
-
         <!-- ── VT100 INTERACTIVE QUICK COMMAND BAR ── -->
-        <section aria-label="Quick Command Shortcuts" style="background:var(--bg-tier2); border:1px solid var(--border-tier2); border-radius:var(--radius-md); padding:10px 16px; margin-bottom:20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; font-family:var(--font-mono); font-size:0.8rem;">
-            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                <button class="btn-cli-primary" style="font-weight:700; min-height:36px;" onclick="openCommandPalette()" aria-label="Open Command Palette ($ quick-cmd >)">$ quick-cmd ></button>
-                <button class="btn-cli" onclick="execQuickCmd('ping_all')" aria-label="Refresh All Probes Ping" title="Refresh all telemetry data">[ $ ping --all ]</button>
-                <button class="btn-cli" onclick="execQuickCmd('diagnose')" aria-label="Run Full Diagnostics Pipeline" title="Run full diagnostic suite">[ $ diagnose --full ]</button>
-                <button class="btn-cli" onclick="execQuickCmd('export_report')" aria-label="Export Diagnostic Report" title="Export diagnostic report">[ $ export --report ]</button>
-                <button class="btn-cli" onclick="execQuickCmd('check_update')" aria-label="Check Version Updates" title="Check version updates">[ $ check --version ]</button>
+        <section aria-label="Quick Command Shortcuts" style="background:var(--bg-panel); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:10px 16px; margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; font-family:var(--font-mono); font-size:0.8rem; cursor:pointer;" onclick="openCommandPalette()">
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                <span class="text-success font-bold">$ quick-cmd ></span>
+                <span class="text-secondary">Type or search terminal commands...</span>
             </div>
             <div style="display:flex; align-items:center; gap:12px;" class="text-muted">
-                <span>PRESS <b class="text-success">[ Ctrl + K ]</b> TO SEARCH COMMANDS</span>
+                <span style="font-size:0.75rem;">Press <b class="text-success">[ Ctrl + K ]</b> to open Command Palette</span>
             </div>
         </section>
 
         <!-- ═══════════════════════════════════════════════════════════
              TAB 1: OVERVIEW ($ overview)
              ═══════════════════════════════════════════════════════════ -->
-        <section id="tab_overview" class="tab-view active-view" role="region" aria-label="概览看板 / Overview Dashboard">
+        <section id="tab_overview" class="tab-view active-view" role="region" aria-label="Overview Dashboard">
 
-            <!-- ── HERO VALUE PROPOSITION & PRIMARY CTA SECTION ── -->
-            <div class="hero-banner-card" role="region" aria-label="核心操作首屏 / Hero Operational Section">
-                <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px;">
-                    <div style="flex:1; min-width:290px;">
-                        <div class="badge-bracket status-healthy" style="font-size:0.75rem; margin-bottom:8px;">[ NETWATCH // OPERATIONAL SYSTEM ]</div>
-                        <h1 class="page-title-hero" style="font-family:var(--font-mono); font-size:1.45rem; font-weight:700; color:var(--text-primary); margin-bottom:8px; line-height:1.35;">
-                            NetWatch 赛博朋克网络运维终端
-                        </h1>
-                        <p class="hero-desc-text text-secondary" style="font-size:0.84rem; line-height:1.6; margin-bottom:16px; max-width:720px;">
-                            一屏掌控 TCP Ping 延迟矩阵、双栈网络对比、系统资源 Telemetry 走势与 ACME 证书管理。支持 1-Click 一键全链路诊断与智能故障恢复。
-                        </p>
-                        <div class="hero-cta-cluster" style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-                            <button class="btn-cli-hero-primary" id="hero_main_cta" onclick="execQuickCmd('diagnose')" aria-label="启动全链路一键网络诊断 / Run Full Diagnostic Suite">
-                                [ 🚀 启动全链路一键网络诊断 ]
-                            </button>
-                            <button class="btn-cli-secondary" onclick="execQuickCmd('ping_all')" aria-label="刷新全网链路测速 / Refresh All Telemetry">
-                                [ ⚡ 刷新全网测速 ]
-                            </button>
-                            <button class="btn-cli-tertiary" onclick="execQuickCmd('export_report')" aria-label="导出运维诊断报告 / Export Report">
-                                [ 📄 导出运维诊断报告 ]
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ── 2. HERO STATUS SECTION (3 COLUMNS) ── -->
-            <div class="card-cli-tier1">
+            <!-- ── HERO SYSTEM OVERVIEW SECTION ── -->
+            <div class="card-cli-tier1" role="region" aria-label="System Overview">
                 <div class="card-header-bar">
                     <div class="card-header-left">
-                        <span class="cmd-title">root@netwatch:~$ ./status --summary</span>
+                        <span class="cmd-title">root@netwatch:~$ system overview</span>
                     </div>
                     <span class="mono text-muted" style="font-size:0.78rem" id="hero_node_id">NODE_ID: fra1-vps-01</span>
                 </div>
 
-                <div class="hero-grid-3col">
-                    <!-- Left: Overall Health -->
-                    <div class="hero-col" style="border-right: 1px solid var(--border-tier2); padding-right: 16px;">
-                        <div>
-                            <div class="hero-status-title">NETWORK STATUS</div>
-                            <div class="hero-main-status" id="hero_status_badge">
-                                <span class="badge-bracket status-initializing">[ INITIALIZING ]</span>
-                            </div>
-                            <div class="hero-status-reason" id="hero_status_reason">Waiting for valid TCP ping samples...</div>
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:20px; padding:6px 0 10px 0;">
+                    <div style="flex:1; min-width:300px;">
+                        <div style="font-size:1.55rem; font-weight:700; font-family:var(--font-mono); margin-bottom:6px;" id="hero_status_badge">
+                            <span class="text-success">NETWORK OPERATIONAL</span>
                         </div>
-                        <div class="mono text-muted" style="font-size:0.78rem;" id="hero_status_checks">
-                            Probes: <b class="text-cyan" id="hero_checks_ratio">0 / 7</b> completed
+                        <div style="font-size:0.88rem; color:var(--text-secondary); line-height:1.55; margin-bottom:8px;" id="hero_status_reason">
+                            All 5 monitoring targets are reachable. No active incidents detected.
+                        </div>
+                        <div class="mono text-muted" style="font-size:0.78rem;" id="hero_status_sub_detail">
+                            Last diagnostic completed 2 minutes ago. Next sample in 15 seconds.
                         </div>
                     </div>
 
-                    <!-- Middle: Network Identity & IP Classification -->
-                    <div class="hero-col" style="padding: 0 10px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                            <div class="hero-status-title" style="margin-bottom:0;">NETWORK IDENTITY & IP PROFILES</div>
-                            <button class="btn-copy-sm" onclick="copyAllIdentities()" style="padding: 3px 8px; font-size: 0.72rem; font-weight:700;">[ COPY ALL IDENTITIES ]</button>
-                        </div>
-                        <div class="ip-table-grid" style="grid-template-columns: 130px 1fr;">
-                            <span class="ip-k">SERVER LISTEN</span>
-                            <span class="ip-v text-cyan" id="hero_ip_listen">72.18.80.151:8180</span>
-
-                            <span class="ip-k">SERVER EGRESS</span>
-                            <span class="ip-v text-cyan" id="hero_ip_egress">37.114.48.47</span>
-
-                            <span class="ip-k">VISITOR CLIENT</span>
-                            <span class="ip-v text-primary" id="hero_ip_visitor">127.0.0.1</span>
-
-                            <span class="ip-k">LOCAL INTERFACE</span>
-                            <span class="ip-v" id="hero_ip_local">37.114.48.47 / 24</span>
-                        </div>
-
-                        <!-- Mobile Collapsible Accordion -->
-                        <div id="mobile_identity_toggle" style="margin-top: 10px;">
-                            <button class="btn-cli" id="btn_toggle_identity" style="width:100%; font-size:0.78rem;" onclick="toggleMobileIdentity()">
-                                [ ▼ VIEW METADATA SOURCES ]
-                            </button>
-                            <div id="mobile_identity_extra" style="display:none; flex-direction:column; gap:6px; margin-top:8px; padding:10px; background:var(--bg-input); border-radius:var(--radius-sm); border:1px solid var(--border-tier3); font-family:var(--font-mono); font-size:0.8rem;">
-                                <div style="font-size:0.74rem; color:var(--text-muted);" id="hero_src_listen">LISTEN SOURCE: bind 0.0.0.0</div>
-                                <div style="font-size:0.74rem; color:var(--text-muted);" id="hero_src_egress">EGRESS SOURCE: ipify API</div>
-                                <div style="font-size:0.74rem; color:var(--text-muted);" id="hero_src_visitor">VISITOR SOURCE: request headers</div>
-                                <div style="font-size:0.74rem; color:var(--text-muted);" id="hero_src_local">LOCAL SOURCE: eth0</div>
-                            </div>
+                    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:10px; min-width:220px;">
+                        <button class="btn-cli-hero-primary" id="hero_main_cta" onclick="switchNavTab('diagnostics'); startFullDiagnostics();" aria-label="Run Full Diagnostic Suite" style="font-size:0.88rem; padding:10px 18px; min-height:42px;">
+                            [ RUN FULL DIAGNOSTICS ]
+                        </button>
+                        <div style="display:flex; gap:12px; font-family:var(--font-mono); font-size:0.78rem;">
+                            <a href="#events" onclick="switchNavTab('events'); return false;" class="text-cyan" style="text-decoration:none;">View events</a>
+                            <span class="text-muted">·</span>
+                            <a href="#export" onclick="exportDiagnosticReport(); return false;" class="text-cyan" style="text-decoration:none;">Export report</a>
+                            <span class="text-muted">·</span>
+                            <a href="#identity" onclick="toggleMobileIdentity(); return false;" class="text-cyan" style="text-decoration:none;">Node details</a>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Right: Action Buttons -->
-                    <div class="hero-col hero-col-actions" style="border-left: 1px solid var(--border-tier2); padding-left: 16px; align-items: stretch; justify-content: center; gap: 10px;">
-                        <button class="btn-cli-primary" id="btn_run_diag" onclick="switchNavTab('diagnostics'); startFullDiagnostics();">[> RUN FULL DIAGNOSTICS ]</button>
-                        <button class="btn-cli" onclick="switchNavTab('events');">[ VIEW EVENTS ]</button>
-                        <button class="btn-cli" onclick="exportDiagnosticReport();">[ EXPORT REPORT ]</button>
+                <!-- Metadata Accordion Drawer -->
+                <div id="mobile_identity_extra" style="display:none; margin-top:12px; padding:12px 16px; background:var(--bg-input); border-radius:var(--radius-sm); border:1px solid var(--border-tier3); font-family:var(--font-mono); font-size:0.8rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid var(--border-tier3); padding-bottom:6px;">
+                        <span class="text-success font-bold">NETWORK IDENTITY & NODE PROFILES</span>
+                        <button class="btn-copy-sm" onclick="copyAllIdentities()">[ COPY ALL IDENTITIES ]</button>
+                    </div>
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:8px;">
+                        <div><span class="text-muted">LISTEN:</span> <span class="text-cyan" id="hero_ip_listen">72.18.80.151:8180</span></div>
+                        <div><span class="text-muted">EGRESS:</span> <span class="text-cyan" id="hero_ip_egress">37.114.48.47</span></div>
+                        <div><span class="text-muted">VISITOR:</span> <span class="text-primary" id="hero_ip_visitor">127.0.0.1</span></div>
+                        <div><span class="text-muted">INTERFACE:</span> <span class="text-primary" id="hero_ip_local">37.114.48.47 / 24</span></div>
                     </div>
                 </div>
             </div>
@@ -1680,6 +1638,21 @@
             }
         });
     }
+
+    function toggleNavMoreMenu(e) {
+        if (e) e.stopPropagation();
+        const menu = document.getElementById('nav_more_menu');
+        if (menu) {
+            menu.style.display = (menu.style.display === 'none' || !menu.style.display) ? 'flex' : 'none';
+        }
+    }
+
+    document.addEventListener('click', (e) => {
+        const menu = document.getElementById('nav_more_menu');
+        if (menu && !menu.contains(e.target)) {
+            menu.style.display = 'none';
+        }
+    });
 
     function setChartMode(mode) {
         currentChartMode = mode;

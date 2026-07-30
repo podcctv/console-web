@@ -1,7 +1,7 @@
 # console-web (NetWatch 赛博朋克网络运维终端)
 
 ![Build & Publish Docker](https://github.com/podcctv/console-web/actions/workflows/docker-publish.yml/badge.svg)
-![Version](https://img.shields.io/badge/version-v3.9.3-78E08F?style=flat-square&logo=git)
+![Version](https://img.shields.io/badge/version-v3.9.4-78E08F?style=flat-square&logo=git)
 ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
 
 `console-web` 是一个基于 [Flask](https://flask.palletsprojects.com/) 和 [psutil](https://psutil.readthedocs.io/) 构建的极简赛博朋克风格系统监控面板与网络运维终端 (`NetWatch`)。界面采用暗黑终端与玻璃拟态设计，支持实时 TCP Ping 多目标延迟趋势、IPv4/IPv6 双栈链路对比、多端响应式适配、1-Click IP 复制、ACME SSL 证书自动续期及全链路故障诊断。
@@ -15,13 +15,13 @@
 在 Linux 服务器（Ubuntu、Debian、CentOS、Alpine 等）上直接运行以下指令，即可一键自动安装 Docker 并完成镜像部署：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/podcctv/console-web/main/deploy.sh | sh
+curl -fsSL https://raw.githubusercontent.com/podcctv/console-web/main/deploy.sh | Sh
 ```
 
 或者使用 `wget` 执行：
 
 ```bash
-wget -qO- https://raw.githubusercontent.com/podcctv/console-web/main/deploy.sh | sh
+wget -qO- https://raw.githubusercontent.com/podcctv/console-web/main/deploy.sh | Sh
 ```
 
 > 💡 **部署说明**：脚本会自动检查并安装 Docker（如未安装），从 GHCR (`ghcr.io/podcctv/console-web:latest`) 拉取预构建镜像并在 `8180` 端口运行容器，数据与证书默认自动持久化挂载至宿主机 `/opt/console-web` 目录。
@@ -44,6 +44,12 @@ wget -qO- https://raw.githubusercontent.com/podcctv/console-web/main/deploy.sh |
   - 主界面内置版本号与 GitHub 项目链接；版本检测自动判断 SemVer 语义化逻辑，对接 GitHub Actions Docker 镜像构建状态同步锁，完成编译后解锁热更新。
 - **📋 统一一键 IP 复制 (`[ COPY ALL IDENTITIES ]`)**：
   - 网络身份区域提供单一顶部复制按钮，一键提取 Listen、Egress、Visitor 及 Local 接口的结构化文本至剪贴板。
+
+### 🟢 `v3.9.4` (2026-07-30) - Minimal Terminal Operations Workspace Redesign
+- **🎨 Minimal Terminal Operations Workspace Design Tokens**: 全面重构 design tokens (`#030705` 页面基底，降低 40% 绿框与高饱和绿色，禁止纯黑纯绿)。
+- **🖥️ 3-Section Compact Header Navigation**: 顶部简化为 `NW_NETWATCH v3.9.4` / `Overview · Targets · Diagnostics · Events` / `● LIVE` / `[⌘K]`，将 GitHub、音效、主题与帮助收纳进 `[···]` 下拉菜单。
+- **💻 Terminal Command Section Titles**: 全站统一采用 `$ netwatch status --summary` / `$ tcping --watch` / `$ network compare` 命令行锚点标题叙事。
+- **⚡ Single-Column Hero State Summary**: Hero 区改为简洁终端状态叙事 Block，右侧配以强视觉级别的 `[ RUN FULL DIAGNOSTICS ]` 核心操作按钮。
 
 ### 🟢 `v3.9.3` (2026-07-30) - Fix TCPing "Waiting for Valid Samples" Overlay Blocking Bug
 - **📈 TCPing Empty State Overlay Fix**: 修复 `fetchPings()` 中仅根据 `stats.samples_count === 0` 强制展示遮罩层的 Bug。重构为 `hasValidData = validSamplesCount > 0 || pingHistory.length > 0` 联合判定，确保存在历史数据或有效点时自动隐藏 `chart_empty_box` 遮罩，Canvas 图表立刻可见。
