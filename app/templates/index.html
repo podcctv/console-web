@@ -1704,12 +1704,16 @@
             const stats = data.stats || {};
             
             pingHistory = stats.history || [];
-            validSamplesCount = stats.samples_count || 0;
+            validSamplesCount = (stats.samples_count !== undefined && stats.samples_count !== null) 
+                ? stats.samples_count 
+                : (pingHistory ? pingHistory.filter(s => s && (s.latency !== null || s.targets_detail)).length : 0);
 
             const emptyBox = document.getElementById('chart_empty_box');
             const emptyProg = document.getElementById('chart_empty_progress');
 
-            if (validSamplesCount === 0) {
+            const hasValidData = validSamplesCount > 0 || (pingHistory && pingHistory.length > 0);
+
+            if (!hasValidData) {
                 if (emptyBox) emptyBox.style.display = 'flex';
                 if (emptyProg) emptyProg.textContent = `> waiting for valid samples... (${validSamplesCount} / 3 collected)`;
             } else {

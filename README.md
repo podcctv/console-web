@@ -1,7 +1,7 @@
 # console-web (NetWatch 赛博朋克网络运维终端)
 
 ![Build & Publish Docker](https://github.com/podcctv/console-web/actions/workflows/docker-publish.yml/badge.svg)
-![Version](https://img.shields.io/badge/version-v3.9.2-78E08F?style=flat-square&logo=git)
+![Version](https://img.shields.io/badge/version-v3.9.3-78E08F?style=flat-square&logo=git)
 ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
 
 `console-web` 是一个基于 [Flask](https://flask.palletsprojects.com/) 和 [psutil](https://psutil.readthedocs.io/) 构建的极简赛博朋克风格系统监控面板与网络运维终端 (`NetWatch`)。界面采用暗黑终端与玻璃拟态设计，支持实时 TCP Ping 多目标延迟趋势、IPv4/IPv6 双栈链路对比、多端响应式适配、1-Click IP 复制、ACME SSL 证书自动续期及全链路故障诊断。
@@ -44,6 +44,9 @@ wget -qO- https://raw.githubusercontent.com/podcctv/console-web/main/deploy.sh |
   - 主界面内置版本号与 GitHub 项目链接；版本检测自动判断 SemVer 语义化逻辑，对接 GitHub Actions Docker 镜像构建状态同步锁，完成编译后解锁热更新。
 - **📋 统一一键 IP 复制 (`[ COPY ALL IDENTITIES ]`)**：
   - 网络身份区域提供单一顶部复制按钮，一键提取 Listen、Egress、Visitor 及 Local 接口的结构化文本至剪贴板。
+
+### 🟢 `v3.9.3` (2026-07-30) - Fix TCPing "Waiting for Valid Samples" Overlay Blocking Bug
+- **📈 TCPing Empty State Overlay Fix**: 修复 `fetchPings()` 中仅根据 `stats.samples_count === 0` 强制展示遮罩层的 Bug。重构为 `hasValidData = validSamplesCount > 0 || pingHistory.length > 0` 联合判定，确保存在历史数据或有效点时自动隐藏 `chart_empty_box` 遮罩，Canvas 图表立刻可见。
 
 ### 🟢 `v3.9.2` (2026-07-30) - Latency Line Chart Render Fix & Multi-Source Target Extraction
 - **📈 Latency Line Chart Render Fix**: 修复 `getSampleLat()` 多维度延迟提取逻辑，解决旧磁盘历史点 `targets_detail` 为空导致 JS 条件判断把空对象估值为真、忽略 `latency` 兜底值从而引发折线图不渲染的 Bug。
