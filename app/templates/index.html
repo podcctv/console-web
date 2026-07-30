@@ -581,11 +581,11 @@
         <div class="nav-brand" style="display:flex; align-items:center; gap:8px;">
             <span class="nav-logo-symbol">NW_</span>
             <span class="nav-brand-title">NETWATCH</span>
-            <span id="version_badge_ui" style="color:var(--text-muted); font-size:0.75rem; font-weight:600; cursor:pointer;" onclick="manualCheckVersion()">v{{ version or "3.9.4" }}</span>
+            <span id="version_badge_ui" style="color:var(--text-muted); font-size:0.75rem; font-weight:600; cursor:pointer;" onclick="manualCheckVersion()">v{{ version or "3.9.6" }}</span>
             <span id="hero_node_badge" class="mono text-muted" style="font-size:0.75rem;">[node: fra1-vps-01]</span>
-            <span id="update_notification_badge" style="display:none;">
-                <button class="btn-cli" id="btn_do_auto_update" onclick="triggerAutoUpdate()" style="border-color:var(--status-warning); color:var(--status-warning); font-size:0.72rem; padding:2px 6px;" aria-label="Auto update system version">
-                    [ 🚀 UPDATE: <span id="latest_ver_num">v3.9.4</span> ]
+            <span id="update_notification_badge" style="display:inline-block;">
+                <button class="btn-cli" id="btn_do_auto_update" onclick="triggerAutoUpdate()" style="border-color:var(--status-success); color:var(--status-success); font-size:0.72rem; padding:2px 6px; font-weight:700;" aria-label="Auto update system version">
+                    [ 🚀 AUTO UPDATE ]
                 </button>
             </span>
         </div>
@@ -611,14 +611,18 @@
                 <button class="btn-cli" onclick="toggleNavMoreMenu(event)" aria-label="More navigation options" style="padding:3px 8px; font-size:0.76rem; font-weight:700;">
                     [ ··· ]
                 </button>
-                <div id="nav_more_menu" class="nav-dropdown-menu" style="display:none; position:absolute; right:0; top:calc(100% + 8px); z-index:200; background:rgba(7,16,11,0.98); border:1px solid var(--border-active); border-radius:var(--radius-sm); padding:10px; min-width:210px; box-shadow:0 8px 24px rgba(0,0,0,0.8); backdrop-filter:blur(10px); flex-direction:column; gap:8px;">
+                <div id="nav_more_menu" class="nav-dropdown-menu" style="display:none; position:absolute; right:0; top:calc(100% + 8px); z-index:200; background:rgba(7,16,11,0.98); border:1px solid var(--border-active); border-radius:var(--radius-sm); padding:10px; min-width:220px; box-shadow:0 8px 24px rgba(0,0,0,0.8); backdrop-filter:blur(10px); flex-direction:column; gap:8px;">
                     <div style="font-size:0.72rem; color:var(--text-muted); font-weight:700; border-bottom:1px solid var(--border-tier3); padding-bottom:4px; margin-bottom:2px;">SYSTEM CONTROLS</div>
                     <a href="https://github.com/podcctv/console-web" target="_blank" rel="noopener" style="color:var(--status-cyan); text-decoration:none; font-family:var(--font-mono); font-size:0.78rem; display:flex; align-items:center; gap:6px;">
                         <span>🐙 GitHub Repository</span>
                     </a>
                     <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.78rem; color:var(--text-primary); cursor:pointer;" onclick="manualCheckVersion()">
                         <span>Version Check</span>
-                        <span class="mono text-success" style="font-weight:700;">v{{ version or "3.9.4" }}</span>
+                        <span class="mono text-success" style="font-weight:700;">v{{ version or "3.9.6" }}</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.78rem; color:var(--status-success); cursor:pointer;" onclick="triggerAutoUpdate()">
+                        <span>🚀 1-Click Auto Update</span>
+                        <span class="mono text-muted" style="font-size:0.7rem;">[RUN]</span>
                     </div>
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <span style="font-size:0.78rem; color:var(--text-primary);">Audio Feedback</span>
@@ -1672,7 +1676,7 @@
 
     async function fetchPings() {
         try {
-            const res = await fetch('/pings');
+            const res = await fetch('/api/pings');
             const data = await res.json();
             const stats = data.stats || {};
             
@@ -1710,6 +1714,20 @@
             setElText('ping_stat_p99', stats.p99 !== null && stats.p99 !== undefined ? `${stats.p99} ms` : '- ms');
             setElText('ping_stat_jitter', `±${stats.jitter || 0}ms`);
             setElText('ping_stat_loss', `${stats.loss || 0}%`);
+
+            // Direct real-time updates for legend items
+            ALL_TARGET_KEYS.forEach(key => {
+                let val = data[key];
+                if (val === undefined || val === null) {
+                    const latest = pingHistory[pingHistory.length - 1];
+                    val = getSampleLat(latest, key);
+                }
+                const shortKey = key.replace('ping_', '');
+                const legEl = document.getElementById(`leg_val_${shortKey}`);
+                if (legEl) {
+                    legEl.textContent = (val !== null && val !== undefined) ? `${Math.round(val)}ms` : '-ms';
+                }
+            });
 
             setElHtml('metric_latency', stats.cur !== null && stats.cur !== undefined ? `${stats.cur} <span class="unit">ms</span>` : `- <span class="unit">ms</span>`);
             setElText('metric_latency_sub', stats.avg !== null && stats.avg !== undefined ? `1h avg: ${stats.avg}ms` : '1h avg: -');
@@ -2563,17 +2581,32 @@
                 }
 
                 if (isManual) {
-                    showCyberModal('🚀 发现 GitHub 新版本 (NEW VERSION DISCOVERED)', `当前版本: v${data.current_version}\n最新版本: v${data.latest_version}\n\n更新说明: ${data.release_notes || '请点击右侧 [ UPDATE NOW ] 按钮完成一键热更新。'}`, 'info');
+                    showCyberModal(
+                        '🚀 发现 GitHub 新版本 (NEW VERSION DISCOVERED)', 
+                        `当前版本: v${data.current_version}\n最新版本: v${data.latest_version}\n\n更新说明: ${data.release_notes || '点击下方 [ CONFIRM ] 按钮完成一键平滑热更新。'}`, 
+                        'info',
+                        () => triggerAutoUpdate()
+                    );
                 }
             } else {
-                if (updateWrap) updateWrap.style.display = 'none';
+                if (updateWrap) updateWrap.style.display = 'inline-block';
+                if (updateBtn) {
+                    updateBtn.disabled = false;
+                    updateBtn.style.opacity = '1.0';
+                    updateBtn.textContent = `[ 🚀 AUTO UPDATE ]`;
+                }
                 if (versionPollTimer) {
                     clearInterval(versionPollTimer);
                     versionPollTimer = null;
                 }
 
                 if (isManual) {
-                    showCyberModal('✅ 版本检查完成 (SYSTEM UP TO DATE)', `当前运行版本: v${data.current_version}\n\n当前系统代码已是 GitHub main 分支最新版本，无需更新。`, 'success');
+                    showCyberModal(
+                        '✅ 版本检测与一键更新 (SYSTEM VERSION & UPDATE)', 
+                        `当前运行版本: v${data.current_version}\nGitHub main 分支: v${data.latest_version}\n\n当前系统运行正常。若需强制重新拉取 GitHub main 最新代码覆盖更新，请点击下方 [ CONFIRM ] 按钮。`, 
+                        'success',
+                        () => triggerAutoUpdate()
+                    );
                 }
             }
         } catch(e) {
