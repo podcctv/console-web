@@ -75,6 +75,22 @@
             z-index: 999; background-size: 100% 3px, 6px 100%; pointer-events: none; opacity: 0.55;
         }
 
+        /* ── WCAG 2.2 Accessibility Focus & Skip Link ── */
+        :focus-visible {
+            outline: 2px solid var(--status-success) !important;
+            outline-offset: 2px !important;
+            box-shadow: 0 0 10px rgba(120, 224, 143, 0.5) !important;
+        }
+
+        .skip-link {
+            position: absolute; top: -120px; left: 16px; z-index: 10000;
+            background: var(--status-success); color: #040605; font-family: var(--font-mono);
+            font-weight: 700; font-size: 0.85rem; padding: 10px 18px; border-radius: var(--radius-sm);
+            text-decoration: none; box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+            transition: top 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .skip-link:focus { top: 16px; }
+
         .mono { font-family: var(--font-mono); }
         .text-success { color: var(--status-success) !important; }
         .text-cyan { color: var(--status-cyan) !important; }
@@ -84,6 +100,70 @@
         .text-secondary { color: var(--text-secondary) !important; }
         .text-primary { color: var(--text-primary) !important; }
         .font-bold { font-weight: 700; }
+
+        /* ── Hero Banner & Visual Hierarchy Components ── */
+        .hero-banner-card {
+            background: linear-gradient(135deg, rgba(8, 13, 9, 0.98), rgba(4, 6, 5, 0.96));
+            border: 1px solid var(--border-tier1);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+            position: relative;
+            overflow: hidden;
+        }
+        .hero-banner-card::before {
+            content: ""; position: absolute; top: 0; right: 0; width: 300px; height: 100%;
+            background: radial-gradient(circle at 100% 0%, rgba(120, 224, 143, 0.08), transparent 70%);
+            pointer-events: none;
+        }
+
+        .btn-cli-hero-primary {
+            background: var(--status-success); color: #040605;
+            font-family: var(--font-mono); font-size: 0.92rem; font-weight: 700;
+            border: 1px solid var(--status-success); padding: 12px 22px;
+            border-radius: var(--radius-sm); cursor: pointer;
+            box-shadow: 0 0 20px rgba(120, 224, 143, 0.4);
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            min-height: 48px; min-width: 48px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn-cli-hero-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px rgba(120, 224, 143, 0.6); background: #8ef5a4;
+        }
+        .btn-cli-secondary {
+            background: rgba(120, 224, 143, 0.12); color: var(--text-success);
+            border: 1px solid var(--border-active); font-family: var(--font-mono);
+            font-size: 0.86rem; font-weight: 600; padding: 10px 18px;
+            border-radius: var(--radius-sm); cursor: pointer; transition: all 0.15s ease;
+            min-height: 48px; min-width: 48px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+        }
+        .btn-cli-secondary:hover {
+            background: rgba(120, 224, 143, 0.22); border-color: var(--status-success);
+        }
+        .btn-cli-tertiary {
+            background: transparent; color: var(--text-secondary);
+            border: 1px solid var(--border-tier2); font-family: var(--font-mono);
+            font-size: 0.84rem; font-weight: 500; padding: 10px 16px;
+            border-radius: var(--radius-sm); cursor: pointer; transition: all 0.15s ease;
+            min-height: 48px; min-width: 48px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+        }
+        .btn-cli-tertiary:hover {
+            border-color: var(--text-primary); color: var(--text-primary); background: rgba(255,255,255,0.03);
+        }
+
+        /* ── State Feedback Banner ── */
+        .state-feedback-card {
+            background: var(--bg-input); border: 1px solid var(--border-tier2);
+            border-radius: var(--radius-md); padding: 14px 20px; font-family: var(--font-mono);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.3); transition: all 0.2s ease;
+        }
+
+        /* ── Field Validation Errors ── */
+        .field-error-text {
+            color: var(--status-critical); font-family: var(--font-mono); font-size: 0.76rem;
+            margin-top: 4px; display: block; font-weight: 600;
+        }
 
         /* ── Floating Toast Container ── */
         #toast_container {
@@ -105,6 +185,7 @@
             color: var(--status-cyan); font-family: var(--font-mono); font-size: 0.72rem;
             padding: 2px 6px; border-radius: 3px; cursor: pointer; transition: all 0.12s ease;
             display: inline-flex; align-items: center; gap: 4px; outline: none; vertical-align: middle;
+            min-height: 32px;
         }
         .btn-copy-sm:hover { background: rgba(105, 214, 208, 0.20); border-color: var(--status-cyan); }
 
@@ -489,74 +570,118 @@
     </style>
 </head>
 <body>
+    <a href="#main_content" class="skip-link">[ 跳至主体内容 / Skip to Main Content ]</a>
     <div id="toast_container"></div>
 
     <!-- ── 1. STICKY TOP GLOBAL STATUS BAR ── -->
-    <header class="terminal-nav-bar">
+    <header class="terminal-nav-bar" role="banner">
         <div class="nav-brand" style="display:flex; align-items:center; gap:8px;">
             <span class="nav-logo-symbol">NW_</span>
             <span class="nav-brand-title">NETWATCH</span>
             <span class="nav-brand-subtitle" style="margin-right:4px;">// NETWORK OPERATIONS TERMINAL</span>
-            <span id="version_badge_ui" style="background:rgba(120,224,143,0.12); border:1px solid var(--border-active); color:var(--text-success); font-family:var(--font-mono); font-size:0.72rem; padding:2px 6px; border-radius:var(--radius-sm); font-weight:700; cursor:pointer;" onclick="manualCheckVersion()" title="Click to manually check for version updates">v{{ version or "3.6.2" }}</span>
-            <a href="https://github.com/podcctv/console-web" target="_blank" rel="noopener" style="font-size:0.72rem; text-decoration:none; display:inline-flex; align-items:center; gap:4px; border:1px solid rgba(139,233,253,0.4); color:var(--text-cyan); padding:2px 6px; border-radius:var(--radius-sm); background:rgba(139,233,253,0.08); font-family:var(--font-mono); font-weight:600;">
+            <span id="version_badge_ui" style="background:rgba(120,224,143,0.12); border:1px solid var(--border-active); color:var(--text-success); font-family:var(--font-mono); font-size:0.72rem; padding:2px 6px; border-radius:var(--radius-sm); font-weight:700; cursor:pointer;" onclick="manualCheckVersion()" title="Click to manually check for version updates">v{{ version or "3.8.1" }}</span>
+            <a href="https://github.com/podcctv/console-web" target="_blank" rel="noopener" aria-label="Visit console-web GitHub Repository" style="font-size:0.72rem; text-decoration:none; display:inline-flex; align-items:center; gap:4px; border:1px solid rgba(139,233,253,0.4); color:var(--text-cyan); padding:2px 6px; border-radius:var(--radius-sm); background:rgba(139,233,253,0.08); font-family:var(--font-mono); font-weight:600;">
                 [ 🐙 GitHub ]
             </a>
             <span id="update_notification_badge" style="display:none;">
-                <button class="btn-cli" id="btn_do_auto_update" onclick="triggerAutoUpdate()" style="border-color:#FFB86C; color:#FFB86C; background:rgba(255,184,108,0.15); font-size:0.72rem; padding:2px 6px;">
-                    [ 🚀 NEW: <span id="latest_ver_num">v3.4.0</span> - UPDATE NOW ]
+                <button class="btn-cli" id="btn_do_auto_update" onclick="triggerAutoUpdate()" style="border-color:#FFB86C; color:#FFB86C; background:rgba(255,184,108,0.15); font-size:0.72rem; padding:2px 6px;" aria-label="Auto update system version">
+                    [ 🚀 NEW: <span id="latest_ver_num">v3.8.1</span> - UPDATE NOW ]
                 </button>
             </span>
             <!-- Theme Accent Selector & Sound Toggle -->
             <div style="display:flex; align-items:center; gap:6px; margin-left:4px;">
                 <div class="theme-selector-group" style="display:inline-flex; gap:4px; align-items:center; background:var(--bg-input); border:1px solid var(--border-tier2); padding:3px 6px; border-radius:var(--radius-sm);" title="Choose Cyber Accent Color">
-                    <button class="theme-btn active" id="theme_btn_green" style="background:#78E08F;" onclick="setCyberTheme('green')" title="Matrix Green"></button>
-                    <button class="theme-btn" id="theme_btn_cyan" style="background:#8BE9FD;" onclick="setCyberTheme('cyan')" title="Neon Cyan"></button>
-                    <button class="theme-btn" id="theme_btn_magenta" style="background:#FF79C6;" onclick="setCyberTheme('magenta')" title="Synthwave Magenta"></button>
-                    <button class="theme-btn" id="theme_btn_amber" style="background:#FFB86C;" onclick="setCyberTheme('amber')" title="Solarized Amber"></button>
+                    <button class="theme-btn active" id="theme_btn_green" style="background:#78E08F;" onclick="setCyberTheme('green')" aria-label="Switch to Matrix Green Theme" title="Matrix Green"></button>
+                    <button class="theme-btn" id="theme_btn_cyan" style="background:#8BE9FD;" onclick="setCyberTheme('cyan')" aria-label="Switch to Neon Cyan Theme" title="Neon Cyan"></button>
+                    <button class="theme-btn" id="theme_btn_magenta" style="background:#FF79C6;" onclick="setCyberTheme('magenta')" aria-label="Switch to Synthwave Magenta Theme" title="Synthwave Magenta"></button>
+                    <button class="theme-btn" id="theme_btn_amber" style="background:#FFB86C;" onclick="setCyberTheme('amber')" aria-label="Switch to Solarized Amber Theme" title="Solarized Amber"></button>
                 </div>
-                <button class="btn-cli" id="sound_toggle_btn" onclick="toggleCyberSound()" style="font-size:0.72rem; padding:2px 6px;" title="Toggle Cyber Audio Feedback">[ 🔊 SOUND: ON ]</button>
+                <button class="btn-cli" id="sound_toggle_btn" onclick="toggleCyberSound()" style="font-size:0.72rem; padding:2px 6px;" aria-label="Toggle Audio Sound Feedback" title="Toggle Cyber Audio Feedback">[ 🔊 SOUND: ON ]</button>
             </div>
         </div>
 
-        <div class="nav-tabs-cli">
-            <button class="nav-tab-btn active" onclick="switchNavTab('overview', this)">$ overview</button>
-            <button class="nav-tab-btn" onclick="switchNavTab('targets', this)">$ targets</button>
-            <button class="nav-tab-btn" onclick="switchNavTab('diagnostics', this)">$ diagnostics</button>
-            <button class="nav-tab-btn" onclick="switchNavTab('events', this)">$ events</button>
-        </div>
+        <nav class="nav-tabs-cli" role="navigation" aria-label="主导航通道 / Navigation Tabs">
+            <button class="nav-tab-btn active" role="tab" aria-selected="true" aria-controls="tab_overview" onclick="switchNavTab('overview', this)">$ overview</button>
+            <button class="nav-tab-btn" role="tab" aria-selected="false" aria-controls="tab_targets" onclick="switchNavTab('targets', this)">$ targets</button>
+            <button class="nav-tab-btn" role="tab" aria-selected="false" aria-controls="tab_diagnostics" onclick="switchNavTab('diagnostics', this)">$ diagnostics</button>
+            <button class="nav-tab-btn" role="tab" aria-selected="false" aria-controls="tab_events" onclick="switchNavTab('events', this)">$ events</button>
+        </nav>
 
         <div class="nav-right-status">
-            <span class="live-indicator online" id="top_live_indicator">
+            <span class="live-indicator online" id="top_live_indicator" role="status" aria-live="polite">
                 <span class="live-dot-pulse"></span>
                 <span id="top_stream_text">● LIVE STREAM: CONNECTED</span>
             </span>
             <span class="nav-sync-time">SYNC: <span id="nav_last_sync" class="text-cyan">--:--:--</span></span>
-            <button class="btn-cli" onclick="fetchSummary(); fetchPings();">[ REFRESH ]</button>
-            <button class="btn-cli" onclick="showKeyboardHelp()">[ ? HELP ]</button>
+            <button class="btn-cli" onclick="fetchSummary(); fetchPings();" aria-label="Refresh Telemetry Summary">[ REFRESH ]</button>
+            <button class="btn-cli" onclick="showKeyboardHelp()" aria-label="View Keyboard Shortcuts Help">[ ? HELP ]</button>
         </div>
     </header>
 
     <!-- ── MAIN WORKSPACE CONTAINER ── -->
-    <main class="page-container">
+    <main class="page-container" id="main_content" role="main">
+
+        <!-- ── GLOBAL STATE FEEDBACK BANNER ── -->
+        <div id="global_state_feedback" class="state-feedback-card" role="status" aria-live="polite" style="display:none; margin-bottom:16px;">
+            <div style="display:flex; align-items:center; gap:12px; justify-content:space-between; flex-wrap:wrap;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span id="state_feedback_icon" style="font-size:1.2rem;">⏳</span>
+                    <div>
+                        <div id="state_feedback_title" class="font-bold" style="font-size:0.86rem; color:var(--text-primary);">SYSTEM NOTIFICATION</div>
+                        <div id="state_feedback_msg" class="text-muted" style="font-size:0.8rem;">Processing telemetry data...</div>
+                    </div>
+                </div>
+                <div id="state_feedback_actions" style="display:flex; gap:8px;">
+                    <button id="state_feedback_retry_btn" class="btn-cli-secondary" style="display:none; min-height:36px;" onclick="retryLastAction()">[ 🚀 RETRY / RECOVER ]</button>
+                    <button class="btn-cli" style="min-height:36px;" onclick="hideStateFeedback()">[ ACK ]</button>
+                </div>
+            </div>
+        </div>
 
         <!-- ── VT100 INTERACTIVE QUICK COMMAND BAR ── -->
-        <div style="background:var(--bg-tier2); border:1px solid var(--border-tier2); border-radius:var(--radius-md); padding:10px 16px; margin-bottom:20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; font-family:var(--font-mono); font-size:0.8rem;">
+        <section aria-label="Quick Command Shortcuts" style="background:var(--bg-tier2); border:1px solid var(--border-tier2); border-radius:var(--radius-md); padding:10px 16px; margin-bottom:20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; font-family:var(--font-mono); font-size:0.8rem;">
             <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                 <span class="text-muted" style="font-weight:700; color:var(--text-secondary);">$ quick-cmd ></span>
-                <button class="btn-cli" onclick="execQuickCmd('ping_all')" title="Refresh all telemetry data">[ $ ping --all ]</button>
-                <button class="btn-cli" onclick="execQuickCmd('diagnose')" title="Run full diagnostic suite">[ $ diagnose --full ]</button>
-                <button class="btn-cli" onclick="execQuickCmd('export_report')" title="Export diagnostic report">[ $ export --report ]</button>
-                <button class="btn-cli" onclick="execQuickCmd('check_update')" title="Check version updates">[ $ check --version ]</button>
+                <button class="btn-cli" onclick="execQuickCmd('ping_all')" aria-label="Refresh All Probes Ping" title="Refresh all telemetry data">[ $ ping --all ]</button>
+                <button class="btn-cli" onclick="execQuickCmd('diagnose')" aria-label="Run Full Diagnostics Pipeline" title="Run full diagnostic suite">[ $ diagnose --full ]</button>
+                <button class="btn-cli" onclick="execQuickCmd('export_report')" aria-label="Export Diagnostic Report" title="Export diagnostic report">[ $ export --report ]</button>
+                <button class="btn-cli" onclick="execQuickCmd('check_update')" aria-label="Check Version Updates" title="Check version updates">[ $ check --version ]</button>
             </div>
             <div style="display:flex; align-items:center; gap:12px;" class="text-muted">
                 <span>SHORTCUTS: <b class="text-success">[ R ]</b> Refresh <b class="text-success">[ D ]</b> Diag <b class="text-success">[ ? ]</b> Help</span>
             </div>
-        </div>
+        </section>
 
         <!-- ═══════════════════════════════════════════════════════════
              TAB 1: OVERVIEW ($ overview)
              ═══════════════════════════════════════════════════════════ -->
-        <div id="tab_overview" class="tab-view active-view">
+        <section id="tab_overview" class="tab-view active-view" role="region" aria-label="概览看板 / Overview Dashboard">
+
+            <!-- ── HERO VALUE PROPOSITION & PRIMARY CTA SECTION ── -->
+            <div class="hero-banner-card" role="region" aria-label="核心操作首屏 / Hero Operational Section">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px;">
+                    <div style="flex:1; min-width:290px;">
+                        <div class="badge-bracket status-healthy" style="font-size:0.75rem; margin-bottom:8px;">[ NETWATCH // OPERATIONAL SYSTEM ]</div>
+                        <h1 class="page-title-hero" style="font-family:var(--font-mono); font-size:1.45rem; font-weight:700; color:var(--text-primary); margin-bottom:8px; line-height:1.35;">
+                            NetWatch 赛博朋克网络运维终端
+                        </h1>
+                        <p class="hero-desc-text text-secondary" style="font-size:0.84rem; line-height:1.6; margin-bottom:16px; max-width:720px;">
+                            一屏掌控 TCP Ping 延迟矩阵、双栈网络对比、系统资源 Telemetry 走势与 ACME 证书管理。支持 1-Click 一键全链路诊断与智能故障恢复。
+                        </p>
+                        <div class="hero-cta-cluster" style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                            <button class="btn-cli-hero-primary" id="hero_main_cta" onclick="execQuickCmd('diagnose')" aria-label="启动全链路一键网络诊断 / Run Full Diagnostic Suite">
+                                [ 🚀 启动全链路一键网络诊断 ]
+                            </button>
+                            <button class="btn-cli-secondary" onclick="execQuickCmd('ping_all')" aria-label="刷新全网链路测速 / Refresh All Telemetry">
+                                [ ⚡ 刷新全网测速 ]
+                            </button>
+                            <button class="btn-cli-tertiary" onclick="execQuickCmd('export_report')" aria-label="导出运维诊断报告 / Export Report">
+                                [ 📄 导出运维诊断报告 ]
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <!-- ── 2. HERO STATUS SECTION (3 COLUMNS) ── -->
             <div class="card-cli-tier1">
@@ -964,30 +1089,30 @@
                 </div>
             </div>
 
-        </div> <!-- End tab_overview -->
+        </section> <!-- End tab_overview -->
 
         <!-- ═══════════════════════════════════════════════════════════
              TAB 2: TARGETS ($ cat /etc/netwatch/targets)
              ═══════════════════════════════════════════════════════════ -->
-        <div id="tab_targets" class="tab-view">
+        <section id="tab_targets" class="tab-view" role="region" aria-label="监测目标管理 / Monitoring Targets Configuration">
             <div class="card-cli-tier2">
                 <div class="card-header-bar">
                     <div class="card-header-left">
                         <span class="cmd-title">$ cat /etc/netwatch/targets</span>
                         <span class="cmd-subtitle">// MONITORING TARGETS & POLICY CONFIGURATION</span>
                     </div>
-                    <button class="btn-cli-primary" onclick="openAddTargetModal()">[ + ADD TARGET ]</button>
+                    <button class="btn-cli-primary" onclick="openAddTargetModal()" aria-label="添加监测目标 / Add Monitoring Target">[ + ADD TARGET ]</button>
                 </div>
                 <table class="cli-table">
                     <thead>
                         <tr>
-                            <th>STATUS</th>
-                            <th>NAME</th>
-                            <th>TARGET (HOST:PORT)</th>
-                            <th>TYPE</th>
-                            <th>FREQUENCY</th>
-                            <th>THRESHOLDS (WARN/CRIT)</th>
-                            <th>ACTIONS</th>
+                            <th scope="col">STATUS</th>
+                            <th scope="col">NAME</th>
+                            <th scope="col">TARGET (HOST:PORT)</th>
+                            <th scope="col">TYPE</th>
+                            <th scope="col">FREQUENCY</th>
+                            <th scope="col">THRESHOLDS (WARN/CRIT)</th>
+                            <th scope="col">ACTIONS</th>
                         </tr>
                     </thead>
                     <tbody id="targets_tbody">
@@ -995,12 +1120,12 @@
                     </tbody>
                 </table>
             </div>
-        </div>
+        </section>
 
         <!-- ═══════════════════════════════════════════════════════════
              TAB 3: DIAGNOSTICS ($ diagnose --full)
              ═══════════════════════════════════════════════════════════ -->
-        <div id="tab_diagnostics" class="tab-view">
+        <section id="tab_diagnostics" class="tab-view" role="region" aria-label="全链路诊断 / Diagnostic Pipeline">
             <div class="card-cli-tier1">
                 <div class="card-header-bar">
                     <div class="card-header-left">
@@ -1009,21 +1134,22 @@
                     </div>
                 </div>
 
-                <div style="display:flex; gap:10px; margin-bottom:16px;">
-                    <input type="text" id="diag_target_input" style="flex:1; background:var(--bg-input); border:1px solid var(--border-tier2); color:var(--text-primary); padding:8px 14px; border-radius:var(--radius-sm); font-family:var(--font-mono); font-size:0.86rem;" value="github.com" />
-                    <button class="btn-cli-primary" id="diag_run_btn" onclick="startFullDiagnostics()">[> RUN FULL DIAGNOSTIC ]</button>
+                <div style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap;">
+                    <label for="diag_target_input" class="sr-only" style="position:absolute; width:1px; height:1px; overflow:hidden;">Target Hostname</label>
+                    <input type="text" id="diag_target_input" aria-label="Diagnostic Target Host" style="flex:1; min-width:240px; background:var(--bg-input); border:1px solid var(--border-tier2); color:var(--text-primary); padding:8px 14px; border-radius:var(--radius-sm); font-family:var(--font-mono); font-size:0.86rem;" value="github.com" placeholder="e.g. github.com / 1.1.1.1" />
+                    <button class="btn-cli-primary" id="diag_run_btn" onclick="startFullDiagnostics()" aria-label="运行全链路诊断 / Run Full Diagnostic Pipeline">[> RUN FULL DIAGNOSTIC ]</button>
                 </div>
 
                 <div id="diag_stages_grid">
                     <!-- Populated by JS -->
                 </div>
             </div>
-        </div>
+        </section>
 
         <!-- ═══════════════════════════════════════════════════════════
              TAB 4: EVENTS ($ alerts --unresolved)
              ═══════════════════════════════════════════════════════════ -->
-        <div id="tab_events" class="tab-view">
+        <section id="tab_events" class="tab-view" role="region" aria-label="事件与告警日志 / Event Log & Alerts">
             <div class="card-cli-tier2">
                 <div class="card-header-bar">
                     <div class="card-header-left">
@@ -1031,28 +1157,28 @@
                         <span class="cmd-subtitle">// UNRESOLVED ALERTS & EXPORT REPORTS</span>
                     </div>
                     <div style="display:flex; gap:6px;">
-                        <button class="btn-cli" onclick="exportReportFmt('markdown')">[ EXPORT MD ]</button>
-                        <button class="btn-cli" onclick="exportReportFmt('json')">[ EXPORT JSON ]</button>
+                        <button class="btn-cli" onclick="exportReportFmt('markdown')" aria-label="Export Markdown Report">[ EXPORT MD ]</button>
+                        <button class="btn-cli" onclick="exportReportFmt('json')" aria-label="Export JSON Report">[ EXPORT JSON ]</button>
                     </div>
                 </div>
                 <table class="cli-table">
                     <thead>
-                        <tr><th>TIME</th><th>TARGET</th><th>EVENT</th><th>LEVEL</th><th>DESCRIPTION</th></tr>
+                        <tr><th scope="col">TIME</th><th scope="col">TARGET</th><th scope="col">EVENT</th><th scope="col">LEVEL</th><th scope="col">DESCRIPTION</th></tr>
                     </thead>
                     <tbody>
                         <tr><td>15:42:18</td><td>37.114.48.47:8180</td><td>Daemon Start</td><td><span class="text-cyan">[ INFO ]</span></td><td>NETWATCH daemon initialized successfully.</td></tr>
                     </tbody>
                 </table>
             </div>
-        </div>
+        </section>
 
         <!-- ── FOOTER ── -->
-        <footer class="terminal-footer">
+        <footer class="terminal-footer" role="contentinfo">
             <div>
-                <b>NETWATCH NETWORK OPERATIONS TERMINAL v3.1.1</b><br>
+                <b>NETWATCH NETWORK OPERATIONS TERMINAL v3.8.1</b><br>
                 <span>monitoring network health in realtime | status: operational</span>
             </div>
-            <div class="footer-links">
+            <div class="footer-links" role="navigation" aria-label="Footer Links">
                 <a href="#overview" onclick="switchNavTab('overview')">[ OVERVIEW ]</a>
                 <a href="#targets" onclick="switchNavTab('targets')">[ TARGETS ]</a>
                 <a href="#diagnostics" onclick="switchNavTab('diagnostics')">[ DIAGNOSTICS ]</a>
@@ -1097,52 +1223,55 @@
     </div>
 
     <!-- ADD / EDIT TARGET MODAL -->
-    <div class="modal-cli-overlay" id="target_modal" style="display:none;" onclick="closeTargetModal(event)">
+    <div class="modal-cli-overlay" id="target_modal" role="dialog" aria-modal="true" aria-labelledby="target_modal_title" style="display:none;" onclick="closeTargetModal(event)">
         <div class="modal-cli-box" style="width: min(560px, 92vw);">
             <div class="card-header-bar">
                 <span class="cmd-title" id="target_modal_title">$ nano /etc/netwatch/targets.conf</span>
-                <button class="btn-cli" onclick="closeTargetModal()">[ ESC ]</button>
+                <button class="btn-cli" onclick="closeTargetModal()" aria-label="Close Modal">[ ESC ]</button>
             </div>
-            <div style="display:flex; flex-direction:column; gap:12px; font-family:var(--font-mono); font-size:0.84rem;">
+            <form id="target_form" onsubmit="event.preventDefault(); saveTargetSubmit();" style="display:flex; flex-direction:column; gap:12px; font-family:var(--font-mono); font-size:0.84rem;">
                 <input type="hidden" id="target_id_input" />
                 <div>
-                    <label class="text-muted" style="display:block; margin-bottom:4px;">TARGET NAME:</label>
-                    <input type="text" id="target_name_input" style="width:100%; background:var(--bg-input); border:1px solid var(--border-tier2); color:var(--text-primary); padding:8px 12px; border-radius:var(--radius-sm); font-family:var(--font-mono); outline:none;" placeholder="e.g. Zhejiang Unicom CDN" />
+                    <label for="target_name_input" class="text-muted" style="display:block; margin-bottom:4px;">TARGET NAME <span class="text-critical">*</span>:</label>
+                    <input type="text" id="target_name_input" required aria-required="true" aria-describedby="target_name_error" style="width:100%; min-height:44px; background:var(--bg-input); border:1px solid var(--border-tier2); color:var(--text-primary); padding:8px 12px; border-radius:var(--radius-sm); font-family:var(--font-mono);" placeholder="e.g. Zhejiang Unicom CDN" oninput="validateTargetName()" />
+                    <span id="target_name_error" class="field-error-text" style="display:none;"></span>
                 </div>
                 <div>
-                    <label class="text-muted" style="display:block; margin-bottom:4px;">HOST & PORT:</label>
-                    <input type="text" id="target_host_input" style="width:100%; background:var(--bg-input); border:1px solid var(--border-tier2); color:var(--text-primary); padding:8px 12px; border-radius:var(--radius-sm); font-family:var(--font-mono); outline:none;" placeholder="e.g. zj-cu-v4.ip.zstaticcdn.com:80" />
+                    <label for="target_host_input" class="text-muted" style="display:block; margin-bottom:4px;">HOST & PORT <span class="text-critical">*</span>:</label>
+                    <input type="text" id="target_host_input" required aria-required="true" aria-describedby="target_host_error" style="width:100%; min-height:44px; background:var(--bg-input); border:1px solid var(--border-tier2); color:var(--text-primary); padding:8px 12px; border-radius:var(--radius-sm); font-family:var(--font-mono);" placeholder="e.g. zj-cu-v4.ip.zstaticcdn.com:80" oninput="validateTargetHost()" />
+                    <span id="target_host_error" class="field-error-text" style="display:none;"></span>
                 </div>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
                     <div>
-                        <label class="text-muted" style="display:block; margin-bottom:4px;">PROTOCOL:</label>
-                        <select id="target_type_input" style="width:100%; background:var(--bg-input); border:1px solid var(--border-tier2); color:var(--text-primary); padding:8px 12px; border-radius:var(--radius-sm); font-family:var(--font-mono); outline:none;">
+                        <label for="target_type_input" class="text-muted" style="display:block; margin-bottom:4px;">PROTOCOL:</label>
+                        <select id="target_type_input" style="width:100%; min-height:44px; background:var(--bg-input); border:1px solid var(--border-tier2); color:var(--text-primary); padding:8px 12px; border-radius:var(--radius-sm); font-family:var(--font-mono);">
                             <option value="tcp">TCP PING</option>
                             <option value="dns">DNS LOOKUP</option>
                             <option value="icmp">ICMP PING</option>
                         </select>
                     </div>
                     <div>
-                        <label class="text-muted" style="display:block; margin-bottom:4px;">INTERVAL (SEC):</label>
-                        <input type="number" id="target_freq_input" value="30" style="width:100%; background:var(--bg-input); border:1px solid var(--border-tier2); color:var(--text-primary); padding:8px 12px; border-radius:var(--radius-sm); font-family:var(--font-mono); outline:none;" />
+                        <label for="target_freq_input" class="text-muted" style="display:block; margin-bottom:4px;">INTERVAL (SEC):</label>
+                        <input type="number" id="target_freq_input" value="30" min="5" max="3600" style="width:100%; min-height:44px; background:var(--bg-input); border:1px solid var(--border-tier2); color:var(--text-primary); padding:8px 12px; border-radius:var(--radius-sm); font-family:var(--font-mono);" />
                     </div>
                 </div>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
                     <div>
-                        <label class="text-muted" style="display:block; margin-bottom:4px;">WARN THRESHOLD (MS):</label>
-                        <input type="number" id="target_warn_input" value="160" style="width:100%; background:var(--bg-input); border:1px solid var(--border-tier2); color:var(--text-primary); padding:8px 12px; border-radius:var(--radius-sm); font-family:var(--font-mono); outline:none;" />
+                        <label for="target_warn_input" class="text-muted" style="display:block; margin-bottom:4px;">WARN THRESHOLD (MS):</label>
+                        <input type="number" id="target_warn_input" value="160" min="1" max="10000" style="width:100%; min-height:44px; background:var(--bg-input); border:1px solid var(--border-tier2); color:var(--text-primary); padding:8px 12px; border-radius:var(--radius-sm); font-family:var(--font-mono);" />
                     </div>
                     <div>
-                        <label class="text-muted" style="display:block; margin-bottom:4px;">CRIT THRESHOLD (MS):</label>
-                        <input type="number" id="target_crit_input" value="250" style="width:100%; background:var(--bg-input); border:1px solid var(--border-tier2); color:var(--text-primary); padding:8px 12px; border-radius:var(--radius-sm); font-family:var(--font-mono); outline:none;" />
+                        <label for="target_crit_input" class="text-muted" style="display:block; margin-bottom:4px;">CRIT THRESHOLD (MS):</label>
+                        <input type="number" id="target_crit_input" value="250" min="1" max="10000" style="width:100%; min-height:44px; background:var(--bg-input); border:1px solid var(--border-tier2); color:var(--text-primary); padding:8px 12px; border-radius:var(--radius-sm); font-family:var(--font-mono);" />
                     </div>
                 </div>
                 <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:8px;">
-                    <button class="btn-cli" onclick="closeTargetModal()">[ CANCEL ]</button>
-                    <button class="btn-cli-primary" onclick="saveTargetSubmit()">[ SAVE CONFIG ]</button>
+                    <button type="button" class="btn-cli" onclick="closeTargetModal()">[ CANCEL ]</button>
+                    <button type="submit" class="btn-cli-primary">[ SAVE CONFIG ]</button>
                 </div>
-            </div>
+            </form>
         </div>
+    </div>
     <!-- MOBILE FIXED BOTTOM NAVIGATION BAR -->
     <nav class="mobile-bottom-nav">
         <button class="mobile-nav-item active" onclick="switchNavTab('overview', this)">
@@ -1167,6 +1296,88 @@
     let autoScrollLogs = true;
     let validSamplesCount = 0;
     let pingHistory = [];
+    let lastFailedAction = null;
+
+    /* ── Universal State Feedback & Error Recovery Engine ── */
+    function showStateFeedback(type, title, message, onRetry = null) {
+        const banner = document.getElementById('global_state_feedback');
+        const iconEl = document.getElementById('state_feedback_icon');
+        const titleEl = document.getElementById('state_feedback_title');
+        const msgEl = document.getElementById('state_feedback_msg');
+        const retryBtn = document.getElementById('state_feedback_retry_btn');
+
+        if (!banner) return;
+        lastFailedAction = onRetry;
+
+        let icon = 'ℹ️';
+        let titleColor = 'var(--text-primary)';
+        if (type === 'loading') { icon = '⏳'; titleColor = 'var(--status-cyan)'; }
+        else if (type === 'success') { icon = '✅'; titleColor = 'var(--status-success)'; }
+        else if (type === 'warning') { icon = '⚠️'; titleColor = 'var(--status-warning)'; }
+        else if (type === 'error') { icon = '❌'; titleColor = 'var(--status-critical)'; }
+
+        if (iconEl) iconEl.textContent = icon;
+        if (titleEl) { titleEl.textContent = title; titleEl.style.color = titleColor; }
+        if (msgEl) msgEl.textContent = message;
+
+        if (retryBtn) {
+            if (onRetry) {
+                retryBtn.style.display = 'inline-flex';
+            } else {
+                retryBtn.style.display = 'none';
+            }
+        }
+
+        banner.style.display = 'block';
+    }
+
+    function hideStateFeedback() {
+        const banner = document.getElementById('global_state_feedback');
+        if (banner) banner.style.display = 'none';
+        lastFailedAction = null;
+    }
+
+    function retryLastAction() {
+        if (typeof lastFailedAction === 'function') {
+            const action = lastFailedAction;
+            hideStateFeedback();
+            action();
+        }
+    }
+
+    /* ── Inline Field Validation Helpers ── */
+    function validateTargetName() {
+        const input = document.getElementById('target_name_input');
+        const err = document.getElementById('target_name_error');
+        if (!input || !err) return true;
+        if (!input.value.trim()) {
+            err.textContent = '❌ Target Name is required.';
+            err.style.display = 'block';
+            return false;
+        } else {
+            err.style.display = 'none';
+            return true;
+        }
+    }
+
+    function validateTargetHost() {
+        const input = document.getElementById('target_host_input');
+        const err = document.getElementById('target_host_error');
+        if (!input || !err) return true;
+        const val = input.value.trim();
+        if (!val) {
+            err.textContent = '❌ Host & Port is required.';
+            err.style.display = 'block';
+            return false;
+        } else if (!val.includes(':') && !val.includes('.')) {
+            err.textContent = '⚠️ Valid format example: 1.1.1.1:53 or example.com:80';
+            err.style.display = 'block';
+            return true;
+        } else {
+            err.style.display = 'none';
+            return true;
+        }
+    }
 
     function copyAllIdentities() {
         const listen = (document.getElementById('hero_ip_listen').textContent || '').trim();
