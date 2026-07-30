@@ -1302,6 +1302,20 @@
     let validSamplesCount = 0;
     let pingHistory = [];
     let lastFailedAction = null;
+    let chartMouseX = null;
+    let chartMouseY = null;
+
+    const ALL_TARGET_KEYS = ["ping_cu", "ping_cm", "ping_ct", "ping_cloudflare", "ping_google"];
+    let selectedTargets = new Set(ALL_TARGET_KEYS);
+    let currentChartMode = 'line';
+
+    const TARGET_CONFIG = {
+        "ping_cu": { name: "Zhejiang Unicom", color: "#FF6B6B", glow: "rgba(255,107,107,0.8)", fillStart: "rgba(255,107,107,0.22)" },
+        "ping_cm": { name: "Zhejiang Mobile", color: "#BD93F9", glow: "rgba(189,147,249,0.8)", fillStart: "rgba(189,147,249,0.22)" },
+        "ping_ct": { name: "Zhejiang Telecom", color: "#50FA7B", glow: "rgba(80,250,123,0.8)", fillStart: "rgba(80,250,123,0.22)" },
+        "ping_cloudflare": { name: "Cloudflare", color: "#8BE9FD", glow: "rgba(139,233,253,0.8)", fillStart: "rgba(139,233,253,0.22)" },
+        "ping_google": { name: "Google", color: "#FFB86C", glow: "rgba(255,184,108,0.8)", fillStart: "rgba(255,184,108,0.22)" }
+    };
 
     /* ── Universal State Feedback & Error Recovery Engine ── */
     function showStateFeedback(type, title, message, onRetry = null) {
@@ -1379,6 +1393,11 @@
             err.style.display = 'block';
             return true;
         } else {
+            err.style.display = 'none';
+            return true;
+        }
+    }
+
     /* ── VT100 Command Palette (Ctrl+K) Controller ── */
     function openCommandPalette() {
         const modal = document.getElementById('command_palette_modal');
@@ -1587,9 +1606,7 @@
         } catch(e) {}
     }
 
-    const ALL_TARGET_KEYS = ["ping_cu", "ping_cm", "ping_ct", "ping_cloudflare", "ping_google"];
-    let selectedTargets = new Set(ALL_TARGET_KEYS);
-    let currentChartMode = 'line';
+
 
     function toggleTargetFilter(targetId) {
         if (targetId === 'all') {
@@ -1658,21 +1675,7 @@
         }
     });
 
-    // Global State & Configuration
-    const ALL_TARGET_KEYS = ["ping_cu", "ping_cm", "ping_ct", "ping_cloudflare", "ping_google"];
-    let selectedTargets = new Set(ALL_TARGET_KEYS);
-    let currentChartMode = 'line';
-    let pingHistory = [];
-    let validSamplesCount = 0;
-    let chartMouseX = null;
-
-    const TARGET_CONFIG = {
-        "ping_cu": { name: "Zhejiang Unicom", color: "#FF6B6B", glow: "rgba(255,107,107,0.8)", fillStart: "rgba(255,107,107,0.22)" },
-        "ping_cm": { name: "Zhejiang Mobile", color: "#BD93F9", glow: "rgba(189,147,249,0.8)", fillStart: "rgba(189,147,249,0.22)" },
-        "ping_ct": { name: "Zhejiang Telecom", color: "#50FA7B", glow: "rgba(80,250,123,0.8)", fillStart: "rgba(80,250,123,0.22)" },
-        "ping_cloudflare": { name: "Cloudflare", color: "#8BE9FD", glow: "rgba(139,233,253,0.8)", fillStart: "rgba(139,233,253,0.22)" },
-        "ping_google": { name: "Google", color: "#FFB86C", glow: "rgba(255,184,108,0.8)", fillStart: "rgba(255,184,108,0.22)" }
-    };
+    // Global State & Configuration initialized at top of script
 
     function getSampleLat(s, key) {
         if (!s) return null;
@@ -1747,9 +1750,6 @@
             setElText('ping_stat_max', stats.max !== null && stats.max !== undefined ? `${stats.max} ms` : '- ms');
             setElText('ping_stat_p95', stats.p95 !== null && stats.p95 !== undefined ? `${stats.p95} ms` : '- ms');
             setElText('ping_stat_p99', stats.p99 !== null && stats.p99 !== undefined ? `${stats.p99} ms` : '- ms');
-            setElText('ping_stat_jitter', `±${stats.jitter || 0}ms`);
-            setElText('ping_stat_loss', `${stats.loss || 0}%`);
-
             // Direct real-time updates for legend items
             ALL_TARGET_KEYS.forEach(key => {
                 let val = data[key];
@@ -1782,83 +1782,8 @@
         }
     }
 
-    function toggleTargetFilter(key) {
-        if (key === 'all') {
-            if (selectedTargets.size === ALL_TARGET_KEYS.length) {
-                selectedTargets.clear();
-            } else {
-                selectedTargets = new Set(ALL_TARGET_KEYS);
-            }
-        } else {
-            if (selectedTargets.has(key)) {
-                selectedTargets.delete(key);
-            } else {
-                selectedTargets.add(key);
-            }
-        }
-        updateTargetFilterUI();
-        renderCanvasChart(pingHistory);
-    }
-
     function updateTargetFilterUI() {
-        const btnAll = document.getElementById('target_btn_all');
-        if (btnAll) {
-            if (selectedTargets.size === ALL_TARGET_KEYS.length) {
-                btnAll.classList.add('active');
-            } else {
-                btnAll.classList.remove('active');
-            }
-        }
-        ALL_TARGET_KEYS.forEach(key => {
-            const btn = document.getElementById(`target_btn_${key}`);
-            if (btn) {
-                if (selectedTargets.has(key)) {
-                    btn.classList.add('active');
-                    btn.style.opacity = '1.0';
-                } else {
-                    btn.classList.remove('active');
-                    btn.style.opacity = '0.4';
-                }
-            }
-        });
-    }
-
-    function setPingRange(range, btn) {
-        if (btn && btn.parentElement) {
-            btn.parentElement.querySelectorAll('.btn-cli').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-        }
-        const granSelect = document.getElementById('ping_granularity');
-        if (granSelect) {
-            if (range === '1h') granSelect.value = '1m';
-            else if (range === '6h') granSelect.value = '5m';
-            else granSelect.value = '15m';
-        }
-        fetchPings();
-    }
-
-    function exportPingCSV() {
-        if (!pingHistory || pingHistory.length === 0) {
-            if (typeof showToast === 'function') showToast('⚠️ No telemetry samples available to export');
-            return;
-        }
-        let csv = 'Timestamp,Time,Aggregate Latency (ms),CU (ms),CM (ms),CT (ms),Cloudflare (ms),Google (ms)\n';
-        pingHistory.forEach(s => {
-            const cu = getSampleLat(s, 'ping_cu') ?? '';
-            const cm = getSampleLat(s, 'ping_cm') ?? '';
-            const ct = getSampleLat(s, 'ping_ct') ?? '';
-            const cf = getSampleLat(s, 'ping_cloudflare') ?? '';
-            const gg = getSampleLat(s, 'ping_google') ?? '';
-            csv += `${s.timestamp || ''},${s.time || ''},${s.latency || ''},${cu},${cm},${ct},${cf},${gg}\n`;
-        });
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `netwatch_ping_telemetry_${new Date().toISOString().slice(0,10)}.csv`;
-        a.click();
-        URL.revokeObjectURL(url);
-        if (typeof showToast === 'function') showToast('📄 Telemetry CSV exported successfully');
+        updateTargetButtonUI();
     }
 
     function renderCanvasChart(samples, avgValue) {
@@ -2223,8 +2148,7 @@
         showToast('info', 'Local log view cleared (Stored events remain intact).');
     }
 
-    let chartMouseX = null;
-    let chartMouseY = null;
+    // chartMouseX & chartMouseY initialized at top of script
 
     // Attach canvas hover listener
     window.addEventListener('DOMContentLoaded', () => {
@@ -2519,20 +2443,10 @@
         }
     }
 
-    function setPingRange(r, btn) {
-        document.querySelectorAll('.card-cli-tier1 .btn-cli').forEach(b => b.classList.remove('active'));
-        if (btn) btn.classList.add('active');
-        fetchPings();
-    }
-
-    function exportPingCSV() { alert('Exported latency log to csv'); }
     function exportDiagnosticReport() { window.location.href = '/api/report/export?format=markdown'; }
     function exportReportFmt(fmt) { window.location.href = `/api/report/export?format=${fmt}`; }
-
-    function filterLogs(lvl, btn) {}
     function applyLogGrep() {}
     function toggleAutoScroll() {}
-    function clearLogView() { document.getElementById('log_stream_box').innerHTML = ''; }
 
     // Keyboard Shortcuts Listener
     window.addEventListener('keydown', (e) => {

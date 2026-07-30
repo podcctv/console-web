@@ -1,7 +1,7 @@
 # console-web (NetWatch 赛博朋克网络运维终端)
 
 ![Build & Publish Docker](https://github.com/podcctv/console-web/actions/workflows/docker-publish.yml/badge.svg)
-![Version](https://img.shields.io/badge/version-v3.9.8-78E08F?style=flat-square&logo=git)
+![Version](https://img.shields.io/badge/version-v3.9.9-78E08F?style=flat-square&logo=git)
 ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
 
 `console-web` 是一个基于 [Flask](https://flask.palletsprojects.com/) 和 [psutil](https://psutil.readthedocs.io/) 构建的极简赛博朋克风格系统监控面板与网络运维终端 (`NetWatch`)。界面采用暗黑终端与玻璃拟态设计，支持实时 TCP Ping 多目标延迟趋势、IPv4/IPv6 双栈链路对比、多端响应式适配、1-Click IP 复制、ACME SSL 证书自动续期及全链路故障诊断。
@@ -15,13 +15,13 @@
 在 Linux 服务器（Ubuntu、Debian、CentOS、Alpine 等）上直接运行以下指令，即可一键自动安装 Docker 并完成镜像部署：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/podcctv/console-web/main/deploy.sh | Sh
+curl -fsSL https://raw.githubusercontent.com/podcctv/console-web/main/deploy.sh | sh
 ```
 
 或者使用 `wget` 执行：
 
 ```bash
-wget -qO- https://raw.githubusercontent.com/podcctv/console-web/main/deploy.sh | Sh
+wget -qO- https://raw.githubusercontent.com/podcctv/console-web/main/deploy.sh | sh
 ```
 
 > 💡 **部署说明**：脚本会自动检查并安装 Docker（如未安装），从 GHCR (`ghcr.io/podcctv/console-web:latest`) 拉取预构建镜像并在 `8180` 端口运行容器，数据与证书默认自动持久化挂载至宿主机 `/opt/console-web` 目录。
@@ -44,6 +44,9 @@ wget -qO- https://raw.githubusercontent.com/podcctv/console-web/main/deploy.sh |
   - 主界面内置版本号与 GitHub 项目链接；版本检测自动判断 SemVer 语义化逻辑，对接 GitHub Actions Docker 镜像构建状态同步锁，完成编译后解锁热更新。
 - **📋 统一一键 IP 复制 (`[ COPY ALL IDENTITIES ]`)**：
   - 网络身份区域提供单一顶部复制按钮，一键提取 Listen、Egress、Visitor 及 Local 接口的结构化文本至剪贴板。
+
+### 🟢 `v3.9.9` (2026-07-30) - Fix Uncaught SyntaxError Duplicate Declarations & Latency Display
+- **🐛 JS SyntaxError & Unclosed Block Fix**: 修复 `index.html` 中 `validateTargetHost()` 缺失闭合括号及 `ALL_TARGET_KEYS` / `selectedTargets` 顶层重复声明导致的 `Uncaught SyntaxError` 脚本中断，彻底解决 TCP Ping 延迟在页面上呈 `-ms` 状态、遮罩层停滞以及 `triggerAutoUpdate is not defined` 的问题。
 
 ### 🟢 `v3.9.8` (2026-07-30) - Fix TCPing Overlay Blocking Chart Bug
 - **📈 Realtime Chart Overlay Unblocking**: 修复 `fetchPings()` 中 `#chart_empty_box` 遮罩层在有实时探测响应或历史数据时仍被强制置为 `display: flex` 遮挡 Canvas 图表与数显的 Bug，确保首个 Response 抵达时立刻隐藏遮罩并呈现 Canvas 折线图。
