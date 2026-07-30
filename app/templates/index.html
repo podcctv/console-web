@@ -1721,7 +1721,9 @@
             const emptyBox = document.getElementById('chart_empty_box');
             const emptyProg = document.getElementById('chart_empty_progress');
 
-            const hasValidData = validSamplesCount > 0 || (pingHistory && pingHistory.some(s => s && (s.latency !== null || s.targets_detail)));
+            const hasRealtimeData = ALL_TARGET_KEYS.some(k => typeof data[k] === 'number');
+            const hasHistoryData = Boolean(pingHistory && pingHistory.length > 0 && pingHistory.some(s => s && (s.latency !== null || (s.targets_detail && Object.keys(s.targets_detail).length > 0))));
+            const hasValidData = hasRealtimeData || hasHistoryData || validSamplesCount > 0;
 
             if (!hasValidData) {
                 if (emptyBox) emptyBox.style.display = 'flex';
