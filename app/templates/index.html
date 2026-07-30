@@ -1658,6 +1658,36 @@
         }
     });
 
+    // Global State & Configuration
+    const ALL_TARGET_KEYS = ["ping_cu", "ping_cm", "ping_ct", "ping_cloudflare", "ping_google"];
+    let selectedTargets = new Set(ALL_TARGET_KEYS);
+    let currentChartMode = 'line';
+    let pingHistory = [];
+    let validSamplesCount = 0;
+    let chartMouseX = null;
+
+    const TARGET_CONFIG = {
+        "ping_cu": { name: "Zhejiang Unicom", color: "#FF6B6B", glow: "rgba(255,107,107,0.8)", fillStart: "rgba(255,107,107,0.22)" },
+        "ping_cm": { name: "Zhejiang Mobile", color: "#BD93F9", glow: "rgba(189,147,249,0.8)", fillStart: "rgba(189,147,249,0.22)" },
+        "ping_ct": { name: "Zhejiang Telecom", color: "#50FA7B", glow: "rgba(80,250,123,0.8)", fillStart: "rgba(80,250,123,0.22)" },
+        "ping_cloudflare": { name: "Cloudflare", color: "#8BE9FD", glow: "rgba(139,233,253,0.8)", fillStart: "rgba(139,233,253,0.22)" },
+        "ping_google": { name: "Google", color: "#FFB86C", glow: "rgba(255,184,108,0.8)", fillStart: "rgba(255,184,108,0.22)" }
+    };
+
+    function getSampleLat(s, key) {
+        if (!s) return null;
+        if (s.targets_detail && typeof s.targets_detail[key] === 'number') {
+            return s.targets_detail[key];
+        }
+        if (s.meta && s.meta.details && typeof s.meta.details[key] === 'number') {
+            return s.meta.details[key];
+        }
+        if ((key === 'all' || !s.targets_detail || Object.keys(s.targets_detail).length === 0) && typeof s.latency === 'number') {
+            return s.latency;
+        }
+        return null;
+    }
+
     function setChartMode(mode) {
         currentChartMode = mode;
         const btnHist = document.getElementById('btn_chart_mode_hist');
@@ -1676,7 +1706,10 @@
 
     async function fetchPings() {
         try {
-            const res = await fetch('/api/pings');
+            let res = await fetch('/api/pings');
+            if (!res.ok) {
+                res = await fetch('/pings');
+            }
             const data = await res.json();
             const stats = data.stats || {};
             
@@ -1688,7 +1721,7 @@
             const emptyBox = document.getElementById('chart_empty_box');
             const emptyProg = document.getElementById('chart_empty_progress');
 
-            const hasValidData = validSamplesCount > 0 || (pingHistory && pingHistory.length > 0);
+            const hasValidData = validSamplesCount > 0 || (pingHistory && pingHistory.some(s => s && (s.latency !== null || s.targets_detail)));
 
             if (!hasValidData) {
                 if (emptyBox) emptyBox.style.display = 'flex';
@@ -1729,7 +1762,14 @@
                 }
             });
 
-            setElHtml('metric_latency', stats.cur !== null && stats.cur !== undefined ? `${stats.cur} <span class="unit">ms</span>` : `- <span class="unit">ms</span>`);
+            // Calculate aggregate display latency
+            let curLatencyDisplay = stats.cur;
+            if ((curLatencyDisplay === null || curLatencyDisplay === undefined) && data) {
+                const validVals = ALL_TARGET_KEYS.map(k => data[k]).filter(v => typeof v === 'number');
+                if (validVals.length > 0) curLatencyDisplay = Math.min(...validVals);
+            }
+
+            setElHtml('metric_latency', curLatencyDisplay !== null && curLatencyDisplay !== undefined ? `${curLatencyDisplay} <span class="unit">ms</span>` : `- <span class="unit">ms</span>`);
             setElText('metric_latency_sub', stats.avg !== null && stats.avg !== undefined ? `1h avg: ${stats.avg}ms` : '1h avg: -');
             setElText('metric_samples_sub', `${stats.total_samples || 0} samples`);
             setElHtml('metric_jitter', `${stats.jitter || 0} <span class="unit">ms</span>`);
@@ -1739,13 +1779,6 @@
             console.error('Error fetching pings or rendering chart:', e);
         }
     }
-
-    const ALL_TARGET_KEYS = ["ping_cu", "ping_cm", "ping_ct", "ping_cloudflare", "ping_google"];
-    let selectedTargets = new Set(ALL_TARGET_KEYS);
-    let currentChartMode = 'line';
-    let pingHistory = [];
-    let validSamplesCount = 0;
-    let chartMouseX = null;
 
     function toggleTargetFilter(key) {
         if (key === 'all') {
@@ -1824,28 +1857,6 @@
         a.click();
         URL.revokeObjectURL(url);
         if (typeof showToast === 'function') showToast('📄 Telemetry CSV exported successfully');
-    }
-
-    const TARGET_CONFIG = {
-        "ping_cu": { name: "Zhejiang Unicom", color: "#FF6B6B", glow: "rgba(255,107,107,0.8)", fillStart: "rgba(255,107,107,0.22)" },
-        "ping_cm": { name: "Zhejiang Mobile", color: "#BD93F9", glow: "rgba(189,147,249,0.8)", fillStart: "rgba(189,147,249,0.22)" },
-        "ping_ct": { name: "Zhejiang Telecom", color: "#50FA7B", glow: "rgba(80,250,123,0.8)", fillStart: "rgba(80,250,123,0.22)" },
-        "ping_cloudflare": { name: "Cloudflare", color: "#8BE9FD", glow: "rgba(139,233,253,0.8)", fillStart: "rgba(139,233,253,0.22)" },
-        "ping_google": { name: "Google", color: "#FFB86C", glow: "rgba(255,184,108,0.8)", fillStart: "rgba(255,184,108,0.22)" }
-    };
-
-    function getSampleLat(s, key) {
-        if (!s) return null;
-        if (s.targets_detail && typeof s.targets_detail[key] === 'number') {
-            return s.targets_detail[key];
-        }
-        if (s.meta && s.meta.details && typeof s.meta.details[key] === 'number') {
-            return s.meta.details[key];
-        }
-        if (typeof s.latency === 'number') {
-            return s.latency;
-        }
-        return null;
     }
 
     function renderCanvasChart(samples, avgValue) {
