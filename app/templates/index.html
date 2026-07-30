@@ -1716,22 +1716,33 @@
                 if (emptyBox) emptyBox.style.display = 'none';
             }
 
-            document.getElementById('ping_stat_cur').textContent = stats.cur !== null && stats.cur !== undefined ? `${stats.cur} ms` : '- ms';
-            document.getElementById('ping_stat_avg').textContent = stats.avg !== null && stats.avg !== undefined ? `${stats.avg} ms` : '- ms';
-            document.getElementById('ping_stat_min').textContent = stats.min !== null && stats.min !== undefined ? `${stats.min} ms` : '- ms';
-            document.getElementById('ping_stat_max').textContent = stats.max !== null && stats.max !== undefined ? `${stats.max} ms` : '- ms';
-            document.getElementById('ping_stat_p95').textContent = stats.p95 !== null && stats.p95 !== undefined ? `${stats.p95} ms` : '- ms';
-            document.getElementById('ping_stat_p99').textContent = stats.p99 !== null && stats.p99 !== undefined ? `${stats.p99} ms` : '- ms';
-            document.getElementById('ping_stat_jitter').textContent = `±${stats.jitter || 0}ms`;
-            document.getElementById('ping_stat_loss').textContent = `${stats.loss || 0}%`;
+            const setElText = (id, text) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = text;
+            };
+            const setElHtml = (id, html) => {
+                const el = document.getElementById(id);
+                if (el) el.innerHTML = html;
+            };
 
-            document.getElementById('metric_latency').innerHTML = stats.cur !== null && stats.cur !== undefined ? `${stats.cur} <span class="unit">ms</span>` : `- <span class="unit">ms</span>`;
-            document.getElementById('metric_latency_sub').textContent = stats.avg !== null && stats.avg !== undefined ? `1h avg: ${stats.avg}ms` : '1h avg: -';
-            document.getElementById('metric_samples_sub').textContent = `${stats.total_samples || 0} samples`;
-            document.getElementById('metric_jitter').innerHTML = `${stats.jitter || 0} <span class="unit">ms</span>`;
+            setElText('ping_stat_cur', stats.cur !== null && stats.cur !== undefined ? `${stats.cur} ms` : '- ms');
+            setElText('ping_stat_avg', stats.avg !== null && stats.avg !== undefined ? `${stats.avg} ms` : '- ms');
+            setElText('ping_stat_min', stats.min !== null && stats.min !== undefined ? `${stats.min} ms` : '- ms');
+            setElText('ping_stat_max', stats.max !== null && stats.max !== undefined ? `${stats.max} ms` : '- ms');
+            setElText('ping_stat_p95', stats.p95 !== null && stats.p95 !== undefined ? `${stats.p95} ms` : '- ms');
+            setElText('ping_stat_p99', stats.p99 !== null && stats.p99 !== undefined ? `${stats.p99} ms` : '- ms');
+            setElText('ping_stat_jitter', `±${stats.jitter || 0}ms`);
+            setElText('ping_stat_loss', `${stats.loss || 0}%`);
+
+            setElHtml('metric_latency', stats.cur !== null && stats.cur !== undefined ? `${stats.cur} <span class="unit">ms</span>` : `- <span class="unit">ms</span>`);
+            setElText('metric_latency_sub', stats.avg !== null && stats.avg !== undefined ? `1h avg: ${stats.avg}ms` : '1h avg: -');
+            setElText('metric_samples_sub', `${stats.total_samples || 0} samples`);
+            setElHtml('metric_jitter', `${stats.jitter || 0} <span class="unit">ms</span>`);
 
             renderCanvasChart(pingHistory, stats.avg);
-        } catch(e) {}
+        } catch(e) {
+            console.error('Error fetching pings or rendering chart:', e);
+        }
     }
 
     const TARGET_CONFIG = {
@@ -1741,6 +1752,20 @@
         "ping_cloudflare": { name: "Cloudflare", color: "#8BE9FD", glow: "rgba(139,233,253,0.8)", fillStart: "rgba(139,233,253,0.22)" },
         "ping_google": { name: "Google", color: "#FFB86C", glow: "rgba(255,184,108,0.8)", fillStart: "rgba(255,184,108,0.22)" }
     };
+
+    function getSampleLat(s, key) {
+        if (!s) return null;
+        if (s.targets_detail && typeof s.targets_detail[key] === 'number') {
+            return s.targets_detail[key];
+        }
+        if (s.meta && s.meta.details && typeof s.meta.details[key] === 'number') {
+            return s.meta.details[key];
+        }
+        if (typeof s.latency === 'number') {
+            return s.latency;
+        }
+        return null;
+    }
 
     function renderCanvasChart(samples, avgValue) {
         const canvas = document.getElementById('tcpingCanvas');
@@ -1759,16 +1784,12 @@
 
         let selectedLats = [];
         samples.forEach(s => {
-            if (s.targets_detail) {
-                activeKeys.forEach(k => {
-                    const val = s.targets_detail[k];
-                    if (val !== null && val !== undefined && typeof val === 'number') {
-                        selectedLats.push(val);
-                    }
-                });
-            } else if (s.latency !== null && s.latency !== undefined) {
-                selectedLats.push(s.latency);
-            }
+            activeKeys.forEach(k => {
+                const val = getSampleLat(s, k);
+                if (val !== null && typeof val === 'number') {
+                    selectedLats.push(val);
+                }
+            });
         });
 
         const maxSample = selectedLats.length > 0 ? Math.max(...selectedLats) : 100;
@@ -1810,7 +1831,7 @@
         for (let idx = 0; idx < samples.length; idx += timeInterval) {
             const s = samples[idx];
             const x = paddingLeft + (idx / Math.max(1, samples.length - 1)) * chartW;
-            if (s.time) {
+            if (s && s.time) {
                 ctx.fillText(s.time, x, h - 8);
             }
         }
@@ -1826,9 +1847,9 @@
 
         // 5. Update Legend Realtime Values
         const latestSample = samples[samples.length - 1];
-        if (latestSample && latestSample.targets_detail) {
+        if (latestSample) {
             ALL_TARGET_KEYS.forEach(key => {
-                const val = latestSample.targets_detail[key];
+                const val = getSampleLat(latestSample, key);
                 const legEl = document.getElementById(`leg_val_${key.replace('ping_','')}`);
                 if (legEl) {
                     legEl.textContent = (val !== null && val !== undefined) ? `${Math.round(val)}ms` : '-ms';
@@ -1849,7 +1870,7 @@
                 const points = [];
 
                 samples.forEach((s, idx) => {
-                    let lat = s.targets_detail ? s.targets_detail[key] : s.latency;
+                    let lat = getSampleLat(s, key);
                     const x = paddingLeft + (idx / Math.max(1, samples.length - 1)) * chartW;
                     if (lat !== null && lat !== undefined) {
                         const y = h - paddingBottom - (lat / maxLat) * chartH;
@@ -1934,7 +1955,7 @@
 
                 activeKeys.forEach((key, tIdx) => {
                     const subX = colX + tIdx * subWidth;
-                    let lat = s.targets_detail ? s.targets_detail[key] : s.latency;
+                    let lat = getSampleLat(s, key);
                     const config = TARGET_CONFIG[key] || { color: '#78E08F' };
 
                     if (lat === null || lat === undefined) {
