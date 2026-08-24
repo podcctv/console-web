@@ -61,24 +61,13 @@ try:
 except Exception as e:
     logger.warning("Failed to start ACME auto-renew daemon: %s", e)
 
-# Start background ping sampler loop thread
-def _ping_sampler_loop():
-    while True:
-        try:
-            sample_lat = None
-            for key, host in PING_TARGETS.items():
-                res = tcp_ping(host)
-                if res is not None:
-                    sample_lat = res
-                    break
-            now_ts = time.time()
-            tsdb.insert("global", now_ts, sample_lat)
-        except Exception as e:
-            logger.warning("Ping sampler daemon iteration error: %s", e)
-        time.sleep(15)
+# Start background Telemetry & In-Memory Pre-computation Engine
+try:
+    from app.telemetry_engine import start_telemetry_engine
+    start_telemetry_engine()
+except Exception as e:
+    logger.warning("Failed to start telemetry engine daemon: %s", e)
 
-_ping_thread = threading.Thread(target=_ping_sampler_loop, daemon=True)
-_ping_thread.start()
 
 logger.info(
     "console-web package initialized (pid=%s, platform=%s %s, python=%s, version=%s)",

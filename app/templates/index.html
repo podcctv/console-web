@@ -557,6 +557,145 @@
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 0 10px rgba(120, 224, 143, 0.1);
         }
 
+        /* ── Leaderboard & CN-Blocked VPS Grid & Cards ── */
+        .leaderboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+            gap: 16px;
+            margin-top: 10px;
+        }
+
+        .vps-card {
+            background: var(--bg-tier2);
+            border: 1px solid var(--border-tier2);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: all 0.25s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .vps-card:hover {
+            border-color: var(--border-active);
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6), 0 0 16px rgba(114, 245, 154, 0.12);
+            transform: translateY(-2px);
+        }
+
+        .vps-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            border-bottom: 1px solid var(--border-tier3);
+            padding-bottom: 10px;
+        }
+
+        .vps-provider-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .vps-price-tag {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--status-success);
+            font-family: var(--font-mono);
+            text-align: right;
+        }
+        .vps-price-sub {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            font-weight: normal;
+        }
+
+        .vps-spec-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-tier3);
+            border-radius: var(--radius-sm);
+            padding: 8px 10px;
+            margin-bottom: 12px;
+            font-size: 0.76rem;
+            font-family: var(--font-mono);
+        }
+        .vps-spec-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .vps-spec-label {
+            color: var(--text-muted);
+            font-size: 0.7rem;
+        }
+        .vps-spec-val {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .vps-route-bar {
+            font-size: 0.76rem;
+            font-family: var(--font-mono);
+            padding: 6px 10px;
+            border-radius: var(--radius-sm);
+            margin-bottom: 10px;
+            line-height: 1.45;
+        }
+        .vps-route-blocked {
+            background: rgba(255, 107, 107, 0.08);
+            border: 1px solid rgba(255, 107, 107, 0.28);
+            color: #ff9b9b;
+        }
+        .vps-route-opt {
+            background: rgba(98, 217, 204, 0.08);
+            border: 1px solid rgba(98, 217, 204, 0.28);
+            color: #72f59a;
+        }
+        .vps-route-std {
+            background: rgba(114, 245, 154, 0.06);
+            border: 1px solid rgba(114, 245, 154, 0.18);
+            color: var(--text-primary);
+        }
+
+        .vps-tags-wrap {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-bottom: 12px;
+        }
+        .vps-tag-pill {
+            background: var(--bg-input);
+            border: 1px solid var(--border-tier3);
+            color: var(--text-secondary);
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: var(--font-mono);
+        }
+
+        .vps-unlock-bar {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+            font-size: 0.72rem;
+            font-family: var(--font-mono);
+        }
+        .vps-unlock-pill {
+            padding: 2px 5px;
+            border-radius: 3px;
+            border: 1px solid var(--border-tier3);
+            background: rgba(0, 0, 0, 0.3);
+        }
+        .vps-unlock-ok { color: var(--status-success); border-color: rgba(114, 245, 154, 0.3); }
+        .vps-unlock-no { color: var(--text-muted); opacity: 0.6; }
+
         .term-cursor {
             display: inline-block;
             width: 8px;
@@ -592,10 +731,12 @@
 
         <nav class="nav-tabs-cli" role="navigation" aria-label="Navigation Tabs">
             <button class="nav-tab-btn active" role="tab" aria-selected="true" aria-controls="tab_overview" onclick="switchNavTab('overview', this)">$ overview</button>
+            <button class="nav-tab-btn" role="tab" aria-selected="false" aria-controls="tab_leaderboard" onclick="switchNavTab('leaderboard', this)">$ leaderboard [选品榜单]</button>
             <button class="nav-tab-btn" role="tab" aria-selected="false" aria-controls="tab_targets" onclick="switchNavTab('targets', this)">$ targets</button>
             <button class="nav-tab-btn" role="tab" aria-selected="false" aria-controls="tab_diagnostics" onclick="switchNavTab('diagnostics', this)">$ diagnostics</button>
             <button class="nav-tab-btn" role="tab" aria-selected="false" aria-controls="tab_events" onclick="switchNavTab('events', this)">$ events</button>
         </nav>
+
 
         <div class="nav-right-status">
             <span class="live-indicator online" id="top_live_indicator" role="status" aria-live="polite">
@@ -1055,9 +1196,92 @@
         </section> <!-- End tab_overview -->
 
         <!-- ═══════════════════════════════════════════════════════════
-             TAB 2: TARGETS ($ cat /etc/netwatch/targets)
+             TAB 2: LEADERBOARD ($ vps --rankings --category=cn_blocked)
+             选品榜单 & CN被墙小鸡榜
+             ═══════════════════════════════════════════════════════════ -->
+        <section id="tab_leaderboard" class="tab-view" role="region" aria-label="选品榜单 & CN被墙小鸡榜 / VPS Selection Leaderboard">
+            <div class="card-cli-tier1">
+                <div class="card-header-bar" style="flex-wrap:wrap; gap:10px;">
+                    <div class="card-header-left">
+                        <span class="cmd-title">$ vps --rankings --category=cn_blocked</span>
+                        <span class="cmd-subtitle">// GLOBAL VPS LEADERBOARD & DEALS EVALUATOR (选品榜单)</span>
+                    </div>
+                    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                        <span class="mono text-muted" style="font-size:0.78rem;" id="leaderboard_summary_stat">
+                            CURATED DEALS: <b class="text-success" id="lb_count_val">12</b> | CN-BLOCKED VALUE SPECIALS: <b class="text-warning" id="lb_blocked_val">6</b> (FROM $1.00/mo)
+                        </span>
+                        <button class="btn-cli" onclick="fetchLeaderboard(true)" aria-label="Refresh Leaderboard">[ ↻ REFRESH ]</button>
+                    </div>
+                </div>
+
+                <!-- Leaderboard Category Selector Tabs -->
+                <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; border-bottom:1px solid var(--border-tier3); padding-bottom:12px;" id="leaderboard_category_bar">
+                    <button class="btn-cli active" id="lb_cat_btn_cn_blocked" style="border-color:#FF6B6B; color:#FF6B6B; background:rgba(255,107,107,0.12); font-weight:700;" onclick="switchLeaderboardCategory('cn_blocked')">
+                        🚫 CN被墙小鸡榜 (超值离岸/套CDN)
+                    </button>
+                    <button class="btn-cli" id="lb_cat_btn_value" onclick="switchLeaderboardCategory('value')">
+                        🏆 综合高性价比神机榜
+                    </button>
+                    <button class="btn-cli" id="lb_cat_btn_direct_cn" onclick="switchLeaderboardCategory('direct_cn')">
+                        🚀 CN直连精品线路榜 (CN2 GIA/9929)
+                    </button>
+                    <button class="btn-cli" id="lb_cat_btn_unlock" onclick="switchLeaderboardCategory('unlock')">
+                        🎬 流媒体与AI全解锁榜
+                    </button>
+                    <button class="btn-cli" id="lb_cat_btn_all" onclick="switchLeaderboardCategory('all')">
+                        [ 全部小鸡库 ]
+                    </button>
+                </div>
+
+                <!-- Category Insight / Context Banner -->
+                <div id="lb_category_insight_banner" style="background:rgba(255,107,107,0.08); border:1px solid rgba(255,107,107,0.3); border-radius:var(--radius-sm); padding:10px 14px; margin-bottom:14px; font-family:var(--font-mono); font-size:0.8rem; line-height:1.6;">
+                    <span class="text-warning font-bold">💡 【CN被墙小鸡榜选品指南】</span>
+                    <span style="color:var(--text-primary); margin-left:6px;" id="lb_category_desc_text">
+                        此类 VPS 虽然大陆直连 IP 受 GFW 阻断 / TCP Timeout，但海外与国际网络 (Cloudflare CDN / Google / US / EU) 100% 满血千兆极速！价格仅需常规线路的 20%~40%（年付 $10~$25 起），并配备 1Gbps~10Gbps 超大流量或大硬盘。<b>极力推荐用于：套 Cloudflare CDN 免备案建站、海外 Docker 容器跑任务、海外爬虫数据采集、Telegram Bot 与 Webhook、PT 离线下载及海外反向代理！</b>
+                    </span>
+                </div>
+
+                <!-- Interactive Filters & Search Toolbar -->
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:16px; background:var(--bg-input); border:1px solid var(--border-tier2); border-radius:var(--radius-sm); padding:8px 12px;">
+                    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                        <span class="text-muted" style="font-size:0.78rem;">REGION:</span>
+                        <select id="lb_region_filter" style="background:var(--bg-panel); border:1px solid var(--border-tier2); color:var(--text-primary); padding:4px 8px; border-radius:var(--radius-sm); font-family:var(--font-mono); font-size:0.78rem; outline:none;" onchange="applyLeaderboardFilters()">
+                            <option value="all">All Regions (全部区域)</option>
+                            <option value="US West">US West (美西 洛杉矶/圣何塞/拉斯维加斯)</option>
+                            <option value="US East">US East (美东 纽约/水牛城)</option>
+                            <option value="Europe">Europe (欧洲 德国/法国)</option>
+                            <option value="Singapore">Singapore (新加坡)</option>
+                            <option value="Japan">Japan (日本东京)</option>
+                        </select>
+
+                        <span class="text-muted" style="font-size:0.78rem; margin-left:6px;">SORT:</span>
+                        <select id="lb_sort_filter" style="background:var(--bg-panel); border:1px solid var(--border-tier2); color:var(--text-primary); padding:4px 8px; border-radius:var(--radius-sm); font-family:var(--font-mono); font-size:0.78rem; outline:none;" onchange="applyLeaderboardFilters()">
+                            <option value="recommend">推荐综合评分 (最高)</option>
+                            <option value="price_asc">年付价格 (从低到高)</option>
+                            <option value="price_desc">年付价格 (从高到低)</option>
+                            <option value="ram">内存容量 (从大到小)</option>
+                            <option value="bandwidth">月流量配额 (从大到小)</option>
+                        </select>
+                    </div>
+
+                    <div style="display:flex; gap:8px; align-items:center; flex:1; min-width:200px; max-width:360px;">
+                        <span class="text-success font-bold">$ grep</span>
+                        <input type="text" id="lb_search_input" style="width:100%; background:var(--bg-panel); border:1px solid var(--border-tier2); color:var(--text-primary); padding:4px 10px; border-radius:var(--radius-sm); font-family:var(--font-mono); font-size:0.78rem; outline:none;" placeholder="搜索商家、配置、机房或标签 (如 RackNerd, 4G, 套CDN)..." onkeyup="applyLeaderboardFilters()" />
+                    </div>
+                </div>
+
+                <!-- Dynamic Leaderboard Cards Container -->
+                <div id="leaderboard_cards_container" class="leaderboard-grid">
+                    <!-- Populated via JS fetchLeaderboard() -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             TAB 3: TARGETS ($ cat /etc/netwatch/targets)
              ═══════════════════════════════════════════════════════════ -->
         <section id="tab_targets" class="tab-view" role="region" aria-label="监测目标管理 / Monitoring Targets Configuration">
+
             <div class="card-cli-tier2">
                 <div class="card-header-bar">
                     <div class="card-header-left">
@@ -1138,11 +1362,12 @@
         <!-- ── FOOTER ── -->
         <footer class="terminal-footer" role="contentinfo">
             <div>
-                <b>NETWATCH NETWORK OPERATIONS TERMINAL v3.8.1</b><br>
+                <b>NETWATCH NETWORK OPERATIONS TERMINAL v3.10.0</b><br>
                 <span>monitoring network health in realtime | status: operational</span>
             </div>
             <div class="footer-links" role="navigation" aria-label="Footer Links">
                 <a href="#overview" onclick="switchNavTab('overview')">[ OVERVIEW ]</a>
+                <a href="#leaderboard" onclick="switchNavTab('leaderboard')">[ LEADERBOARD ]</a>
                 <a href="#targets" onclick="switchNavTab('targets')">[ TARGETS ]</a>
                 <a href="#diagnostics" onclick="switchNavTab('diagnostics')">[ DIAGNOSTICS ]</a>
                 <a href="#events" onclick="switchNavTab('events')">[ EVENTS ]</a>
@@ -1187,6 +1412,10 @@
                     <div><b class="text-success">$ ping --all</b> <span class="text-muted" style="margin-left:8px;">// Refresh all telemetry probes</span></div>
                     <span class="badge-bracket status-healthy">[ RUN ]</span>
                 </div>
+                <div class="cmd-palette-item" onclick="runPaletteCmd('leaderboard')" style="padding:10px 12px; background:var(--bg-tier2); border:1px solid var(--border-tier3); border-radius:var(--radius-sm); cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
+                    <div><b class="text-warning">$ vps --rankings</b> <span class="text-muted" style="margin-left:8px;">// View VPS Selection & CN-Blocked Leaderboard</span></div>
+                    <span class="badge-bracket status-warning">[ VIEW ]</span>
+                </div>
                 <div class="cmd-palette-item" onclick="runPaletteCmd('diagnose')" style="padding:10px 12px; background:var(--bg-tier2); border:1px solid var(--border-tier3); border-radius:var(--radius-sm); cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
                     <div><b class="text-cyan">$ diagnose --full</b> <span class="text-muted" style="margin-left:8px;">// Run 12-stage diagnostic pipeline</span></div>
                     <span class="badge-bracket status-cyan">[ RUN ]</span>
@@ -1220,6 +1449,7 @@
             </div>
             <div style="display:flex; flex-direction:column; gap:10px; font-family:var(--font-mono); font-size:0.84rem;">
                 <div><b class="text-success">[ R ]</b> Refresh Data</div>
+                <div><b class="text-success">[ V ]</b> Jump to VPS Leaderboard</div>
                 <div><b class="text-success">[ D ]</b> Jump to Diagnostics</div>
                 <div><b class="text-success">[ L ]</b> Jump to Logs</div>
                 <div><b class="text-success">[ ? ]</b> Toggle Help Modal</div>
@@ -1277,11 +1507,16 @@
             </form>
         </div>
     </div>
+
     <!-- MOBILE FIXED BOTTOM NAVIGATION BAR -->
     <nav class="mobile-bottom-nav">
         <button class="mobile-nav-item active" onclick="switchNavTab('overview', this)">
             <span class="nav-icon">📊</span>
             <span>OVERVIEW</span>
+        </button>
+        <button class="mobile-nav-item" onclick="switchNavTab('leaderboard', this)">
+            <span class="nav-icon">🏆</span>
+            <span>LEADERBOARD</span>
         </button>
         <button class="mobile-nav-item" onclick="switchNavTab('targets', this)">
             <span class="nav-icon">🎯</span>
@@ -1296,6 +1531,7 @@
             <span>EVENTS</span>
         </button>
     </nav>
+
 
     <script>
     let autoScrollLogs = true;
@@ -1552,7 +1788,9 @@
         localStorage.setItem('console_active_tab', tabId);
         window.location.hash = tabId;
 
-        if (tabId === 'targets') {
+        if (tabId === 'leaderboard') {
+            fetchLeaderboard();
+        } else if (tabId === 'targets') {
             fetchTargets();
         } else if (tabId === 'overview') {
             setTimeout(fetchPings, 50);
@@ -2453,6 +2691,7 @@
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
         const key = e.key.toUpperCase();
         if (key === 'R') { fetchSummary(); fetchPings(); fetchStats(); }
+        else if (key === 'V') { switchNavTab('leaderboard'); }
         else if (key === 'D') { switchNavTab('diagnostics'); }
         else if (key === 'L') { switchNavTab('events'); }
         else if (key === 'T') { switchNavTab('targets'); }
@@ -2740,12 +2979,221 @@
         } catch(e) {}
     }
 
+    /* ── 🏆 VPS LEADERBOARD & CN-BLOCKED EVALUATOR CONTROLLER ── */
+    let currentLbCategory = 'cn_blocked';
+    let cachedLeaderboardData = null;
+
+    const CATEGORY_INSIGHTS = {
+        'cn_blocked': {
+            title: '💡 【CN被墙小鸡榜选品指南】',
+            desc: '此类 VPS 虽然大陆直连 IP 受 GFW 阻断 / TCP Timeout，但海外与国际网络 (Cloudflare CDN / Google / US / EU) 100% 满血千兆极速！价格仅需常规线路的 20%~40%（年付 $10~$25 起），并配备 1Gbps~10Gbps 超大流量或大硬盘。<b>极力推荐用于：套 Cloudflare CDN 免备案建站、海外 Docker 容器跑任务、海外爬虫数据采集、Telegram Bot 与 Webhook、PT 离线下载及海外反向代理！</b>',
+            color: '#FF6B6B'
+        },
+        'value': {
+            title: '💡 【综合性价比神机榜选品指南】',
+            desc: '经过海量运维实测综合评分最高的海外多核/大内存神机，兼顾多核心 CPU、大内存及充沛网络带宽，稳定性高，是自建海外开发环境、GitLab/Nexus、轻量级数据库和个人中型站点的最佳选择。',
+            color: '#72F59A'
+        },
+        'direct_cn': {
+            title: '💡 【CN直连精品线路榜选品指南】',
+            desc: '采用电信 CN2 GIA、联通 9929/4837 及移动 CMI 顶级直连优化回程线路，晚高峰依然拥有极低延迟与零丢包表现，适合跨境电商、企业出海、对网络延迟极度敏感的实时远程办公。',
+            color: '#62D9CC'
+        },
+        'unlock': {
+            title: '💡 【流媒体与AI全解锁榜选品指南】',
+            desc: '采用原生纯净双栈 IPv4/IPv6，对 ChatGPT、Claude、TikTok、Netflix 4K、Disney+ 实现全绿解锁，风控评分极低，适合海外社交媒体运营与原生 AI Agent 调度。',
+            color: '#BD93F9'
+        },
+        'all': {
+            title: '💡 【全球全品类 VPS 聚合小鸡库】',
+            desc: '汇聚全球各大知名 VPS 厂商高性价比与特惠机型，支持按价格、内存、流量及机房区域进行多维度极速筛选。',
+            color: '#72F59A'
+        }
+    };
+
+    async function fetchLeaderboard(force = false) {
+        const cat = currentLbCategory;
+        const region = document.getElementById('lb_region_filter') ? document.getElementById('lb_region_filter').value : 'all';
+        const sort = document.getElementById('lb_sort_filter') ? document.getElementById('lb_sort_filter').value : 'recommend';
+        const search = document.getElementById('lb_search_input') ? document.getElementById('lb_search_input').value.trim() : '';
+
+        try {
+            const url = `/api/leaderboard?category=${encodeURIComponent(cat)}&region=${encodeURIComponent(region)}&sort=${encodeURIComponent(sort)}&q=${encodeURIComponent(search)}`;
+            const res = await fetch(url);
+            const data = await res.json();
+            cachedLeaderboardData = data;
+            renderLeaderboard(data);
+
+            const countEl = document.getElementById('lb_count_val');
+            const blockedEl = document.getElementById('lb_blocked_val');
+            if (countEl && data.total_items !== undefined) countEl.textContent = data.total_items;
+            if (blockedEl && data.cn_blocked_count !== undefined) blockedEl.textContent = data.cn_blocked_count;
+        } catch (e) {
+            console.error('Failed to fetch leaderboard:', e);
+        }
+    }
+
+    function switchLeaderboardCategory(catId) {
+        currentLbCategory = catId;
+        document.querySelectorAll('#leaderboard_category_bar button').forEach(btn => {
+            btn.classList.remove('active');
+            btn.style.borderColor = 'var(--border-tier2)';
+            btn.style.color = 'var(--text-secondary)';
+            btn.style.background = 'transparent';
+        });
+
+        const activeBtn = document.getElementById('lb_cat_btn_' + catId);
+        if (activeBtn) {
+            activeBtn.classList.add('active');
+            const info = CATEGORY_INSIGHTS[catId] || CATEGORY_INSIGHTS['cn_blocked'];
+            activeBtn.style.borderColor = info.color;
+            activeBtn.style.color = info.color;
+            activeBtn.style.background = `${info.color}1f`;
+        }
+
+        const insightInfo = CATEGORY_INSIGHTS[catId] || CATEGORY_INSIGHTS['all'];
+        const bannerEl = document.getElementById('lb_category_insight_banner');
+        if (bannerEl) {
+            bannerEl.style.borderColor = `${insightInfo.color}4d`;
+            bannerEl.style.background = `${insightInfo.color}14`;
+            bannerEl.innerHTML = `<span style="color:${insightInfo.color}; font-weight:700;">${insightInfo.title}</span><span style="color:var(--text-primary); margin-left:6px;">${insightInfo.desc}</span>`;
+        }
+
+        fetchLeaderboard();
+    }
+
+    function applyLeaderboardFilters() {
+        fetchLeaderboard();
+    }
+
+    function renderLeaderboard(data) {
+        const container = document.getElementById('leaderboard_cards_container');
+        if (!container) return;
+
+        const items = data.items || [];
+        if (items.length === 0) {
+            container.innerHTML = `
+                <div style="grid-column: 1 / -1; padding: 40px 20px; text-align: center; color: var(--text-muted); font-family: var(--font-mono); background: var(--bg-tier2); border: 1px dashed var(--border-tier2); border-radius: var(--radius-md);">
+                    <div>[ NO VPS MATCHING CURRENT FILTER CRITERIA ]</div>
+                    <div style="font-size: 0.8rem; margin-top: 6px;">Try changing region, category, or search query.</div>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '';
+        items.forEach(item => {
+            const isBlocked = item.category === 'cn_blocked' || item.cn_status === 'BLOCKED';
+            const isOpt = item.cn_status === 'OPTIMIZED';
+
+            let routeClass = 'vps-route-std';
+            if (isBlocked) routeClass = 'vps-route-blocked';
+            else if (isOpt) routeClass = 'vps-route-opt';
+
+            const unlockBadges = [];
+            if (item.unlock) {
+                if (item.unlock.chatgpt) unlockBadges.push('<span class="vps-unlock-pill vps-unlock-ok">🤖 ChatGPT: OK</span>');
+                if (item.unlock.claude) unlockBadges.push('<span class="vps-unlock-pill vps-unlock-ok">🧠 Claude: OK</span>');
+                if (item.unlock.netflix) unlockBadges.push('<span class="vps-unlock-pill vps-unlock-ok">🎬 Netflix: OK</span>');
+                if (item.unlock.tiktok) unlockBadges.push('<span class="vps-unlock-pill vps-unlock-ok">🎵 TikTok: OK</span>');
+            }
+
+            const tagsHtml = (item.tags || []).map(t => `<span class="vps-tag-pill">#${t}</span>`).join('');
+            const prosHtml = (item.pros || []).map(p => `<div><span class="text-success">✔</span> ${p}</div>`).join('');
+            const idealHtml = (item.ideal_for || []).map(i => `<span class="vps-tag-pill" style="border-color:rgba(114,245,154,0.25); color:var(--text-primary);">🎯 ${i}</span>`).join('');
+
+            html += `
+                <div class="vps-card">
+                    <div>
+                        <div class="vps-card-header">
+                            <div>
+                                <div class="vps-provider-title">
+                                    <span>${item.flag || '🌐'}</span>
+                                    <span>${item.provider}</span>
+                                    ${isBlocked ? '<span class="badge-bracket status-warning" style="font-size:0.68rem; padding:1px 5px; color:#FF6B6B; border-color:#FF6B6B;">[ 🚫 被墙超值神机 ]</span>' : (isOpt ? '<span class="badge-bracket status-healthy" style="font-size:0.68rem; padding:1px 5px;">[ 🚀 CN2 GIA ]</span>' : '')}
+                                </div>
+                                <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:2px;">
+                                    ${item.plan_name} · <span class="mono text-muted">${item.datacenter}</span>
+                                </div>
+                            </div>
+                            <div class="vps-price-tag">
+                                $${item.price_usd_yr.toFixed(2)} <span style="font-size:0.75rem; color:var(--text-muted);">/yr</span>
+                                <div class="vps-price-sub">约 $${item.price_usd_mo.toFixed(2)}/mo</div>
+                            </div>
+                        </div>
+
+                        <div class="vps-spec-grid">
+                            <div class="vps-spec-item">
+                                <span class="vps-spec-label">vCPU / RAM</span>
+                                <span class="vps-spec-val">${item.vcpu} Core / ${item.ram_gb} GB</span>
+                            </div>
+                            <div class="vps-spec-item">
+                                <span class="vps-spec-label">DISK STORAGE</span>
+                                <span class="vps-spec-val">${item.disk_gb}G ${item.disk_type}</span>
+                            </div>
+                            <div class="vps-spec-item">
+                                <span class="vps-spec-label">PORT / TRAFFIC</span>
+                                <span class="vps-spec-val">${item.bandwidth_gbps}Gbps / ${item.traffic_tb >= 90 ? '无限流量' : item.traffic_tb + 'TB'}</span>
+                            </div>
+                        </div>
+
+                        <div class="vps-route-bar ${routeClass}">
+                            <div style="font-weight:700;">${item.cn_desc}</div>
+                            <div style="font-size:0.72rem; opacity:0.85; margin-top:2px;">
+                                国际网络: ⚡ ${item.global_latency_ms}ms 极速互联 | 推荐指数: <b class="text-success">${item.recommend_score}/100</b>
+                            </div>
+                        </div>
+
+                        <div style="font-size:0.76rem; color:var(--text-secondary); line-height:1.6; margin-bottom:10px; font-family:var(--font-mono);">
+                            ${prosHtml}
+                        </div>
+
+                        ${unlockBadges.length > 0 ? `<div class="vps-unlock-bar">${unlockBadges.join('')}</div>` : ''}
+
+                        <div class="vps-tags-wrap">
+                            ${idealHtml}
+                        </div>
+                    </div>
+
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border-tier3); padding-top:12px; margin-top:6px; gap:8px;">
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            ${item.coupon_code ? `
+                                <button class="btn-cli" onclick="copyCouponCode('${item.coupon_code}')" style="font-size:0.72rem; padding:3px 6px;" title="点击复制优惠码">
+                                    [ 🏷️ ${item.coupon_code} ]
+                                </button>
+                            ` : '<span class="text-muted" style="font-size:0.72rem;">[ 独家直达特惠 ]</span>'}
+                        </div>
+                        <a href="${item.buy_url}" target="_blank" rel="noopener noreferrer" class="btn-cli-primary" style="font-size:0.76rem; padding:5px 12px; text-decoration:none; display:inline-flex; align-items:center; gap:4px;">
+                            [ 🛒 前往抢购/配置 ]
+                        </a>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    }
+
+    function copyCouponCode(code) {
+        if (!code) return;
+        navigator.clipboard.writeText(code).then(() => {
+            showToast(`✅ 优惠码 [ ${code} ] 已成功复制到剪贴板！`);
+            playCyberSound('success');
+        }).catch(() => {
+            showToast(`🏷️ 优惠码: ${code}`);
+        });
+    }
+
     /* ── 💻 QUICK COMMAND EXECUTION ── */
     function execQuickCmd(action) {
         playCyberSound('click');
         if (action === 'ping_all') {
             showToast('⚡ Executing $ ping --all ...');
             fetchSummary(); fetchPings(); fetchStats();
+        } else if (action === 'leaderboard') {
+            switchNavTab('leaderboard');
+            showToast('🏆 Navigated to VPS Leaderboard');
+            fetchLeaderboard();
         } else if (action === 'diagnose') {
             switchNavTab('diagnostics');
             showToast('🔍 Navigated to Diagnostics pipeline');
@@ -2756,6 +3204,7 @@
             manualCheckVersion();
         }
     }
+
 
     // Init loops
     initSavedTheme();

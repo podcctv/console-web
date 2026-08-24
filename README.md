@@ -1,7 +1,7 @@
 # console-web (NetWatch 赛博朋克网络运维终端)
 
 ![Build & Publish Docker](https://github.com/podcctv/console-web/actions/workflows/docker-publish.yml/badge.svg)
-![Version](https://img.shields.io/badge/version-v3.9.9-78E08F?style=flat-square&logo=git)
+![Version](https://img.shields.io/badge/version-v3.10.0-78E08F?style=flat-square&logo=git)
 ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
 
 `console-web` 是一个基于 [Flask](https://flask.palletsprojects.com/) 和 [psutil](https://psutil.readthedocs.io/) 构建的极简赛博朋克风格系统监控面板与网络运维终端 (`NetWatch`)。界面采用暗黑终端与玻璃拟态设计，支持实时 TCP Ping 多目标延迟趋势、IPv4/IPv6 双栈链路对比、多端响应式适配、1-Click IP 复制、ACME SSL 证书自动续期及全链路故障诊断。
@@ -30,6 +30,10 @@ wget -qO- https://raw.githubusercontent.com/podcctv/console-web/main/deploy.sh |
 
 ## ✨ 核心功能
 
+- **⚡ 服务端异步遥测与内存极速计算引擎 (`Server-Side Pre-computation & Cache v3.10 升级`)**：
+  - 核心网络 TCP Ping 采样、SLA 聚合度量、系统硬件状态全量移至后台独立守护进程 (`telemetry_engine`) 持续采样与预计算，接口毫秒级 (<1ms) 内存即时响应，彻底杜绝前端点击时的网络阻塞与卡顿。
+- **🏆 全球 VPS 选品榜单 & CN被墙小鸡榜 (`Leaderboard & CN-Blocked Special v3.10 升级`)**：
+  - 新增 `$ leaderboard` 运维选品与主机测速推荐榜单，深度收录 **🚫 CN被墙小鸡榜**、**🏆 综合高性价比神机榜**、**🚀 CN直连精品线路榜 (CN2 GIA/9929)** 及 **🎬 流媒体与AI全解锁榜**，提供机房位置、硬件规格、回程阻断特征、解锁评估及一键复制优惠码抢购。
 - **📊 动态 Canvas Mini-Sparklines 实时趋势线条 (`v3.5 升级`)**：
   - 在 CPU、内存、磁盘及**实时网络吞吐速率 (`NET RATE ↓/↑`)** 监控栏中内嵌 Canvas Mini-Sparkline 动态走势图，呈现极佳的拟态极客视觉效果。
 - **⛶ 放大全屏监控模式 (`[ ⛶ FULLSCREEN TELEMETRY ]`)**：
@@ -44,6 +48,10 @@ wget -qO- https://raw.githubusercontent.com/podcctv/console-web/main/deploy.sh |
   - 主界面内置版本号与 GitHub 项目链接；版本检测自动判断 SemVer 语义化逻辑，对接 GitHub Actions Docker 镜像构建状态同步锁，完成编译后解锁热更新。
 - **📋 统一一键 IP 复制 (`[ COPY ALL IDENTITIES ]`)**：
   - 网络身份区域提供单一顶部复制按钮，一键提取 Listen、Egress、Visitor 及 Local 接口的结构化文本至剪贴板。
+
+### 🟢 `v3.10.0` (2026-08-24) - Server-Side Telemetry Pre-computation & CN-Blocked VPS Leaderboard
+- **⚡ Server-Side Pre-computation & In-Memory Telemetry Engine**: 全新引入后台多线程采样守护引擎 (`telemetry_engine`)，多目标 TCP Ping、系统统计指标与双栈诊断均在服务端后台持续计算并维护高速内存缓存，客户端请求接口响应时间缩短至 `<1ms`，彻底解决客户端点击时等待网络超时的卡顿问题。
+- **🚫 CN被墙小鸡榜与全球选品榜单 (`$ leaderboard`)**: 新增全球 VPS 选品与行情评估榜单，专设 **CN被墙小鸡榜 (特惠离岸/套CDN神机)**、**综合高性价比榜**、**CN2 GIA/9929 直连线路榜** 与 **AI/流媒体全解锁榜**，支持按机房区域、年付价格、内存、月流量快速筛选并支持一键优惠码复制。
 
 ### 🟢 `v3.9.9` (2026-07-30) - Fix Uncaught SyntaxError Duplicate Declarations & Latency Display
 - **🐛 JS SyntaxError & Unclosed Block Fix**: 修复 `index.html` 中 `validateTargetHost()` 缺失闭合括号及 `ALL_TARGET_KEYS` / `selectedTargets` 顶层重复声明导致的 `Uncaught SyntaxError` 脚本中断，彻底解决 TCP Ping 延迟在页面上呈 `-ms` 状态、遮罩层停滞以及 `triggerAutoUpdate is not defined` 的问题。

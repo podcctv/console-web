@@ -5,14 +5,23 @@ from datetime import datetime
 from flask import Blueprint, jsonify, request
 
 from app.diagnostics import run_full_diagnostics, get_latest_diag_cache, set_latest_diag_cache
+from app.telemetry_engine import get_cached_diag, set_cached_diag
 
 diagnostics_bp = Blueprint("diagnostics", __name__)
 
 @diagnostics_bp.route("/api/diagnose/full")
 def api_diagnose_full():
     target = request.args.get("target", "github.com").strip()
+    force = request.args.get("force", "false").lower() in ("1", "true", "yes")
+    
+    if not force:
+        cached = get_cached_diag(f"full_{target}")
+        if cached:
+            return jsonify(cached)
+            
     result = run_full_diagnostics(target)
     set_latest_diag_cache(result)
+    set_cached_diag(f"full_{target}", result)
     return jsonify(result)
 
 @diagnostics_bp.route("/api/diagnose/latest")
@@ -22,12 +31,21 @@ def api_diagnose_latest():
         return jsonify(cache)
     result = run_full_diagnostics("github.com")
     set_latest_diag_cache(result)
+    set_cached_diag("full_github.com", result)
     return jsonify(result)
 
 @diagnostics_bp.route("/api/diagnose/dualstack")
 def api_diagnose_dualstack():
     target = request.args.get("target", "google.com").strip()
+    force = request.args.get("force", "false").lower() in ("1", "true", "yes")
+    
+    if not force:
+        cached = get_cached_diag(f"ds_{target}")
+        if cached:
+            return jsonify(cached)
+
     host = target.split(":")[0]
+
     
     v4_info = {"status": "unreachable", "dns_ms": 0, "tcp_ms": 0, "ip": None}
     try:
@@ -72,17 +90,26 @@ def api_diagnose_dualstack():
     else:
         rec = "Both IPv4 and IPv6 unreachable. Check DNS resolution or host network."
         
-    return jsonify({
+    res_payload = {
         "target": host,
         "ipv4": v4_info,
         "ipv6": v6_info,
         "recommendation": rec,
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    })
+    }
+    set_cached_diag(f"ds_{target}", res_payload)
+    return jsonify(res_payload)
 
 @diagnostics_bp.route("/api/diagnose/dns")
 def api_diagnose_dns():
     target = request.args.get("target", "github.com").strip()
+    force = request.args.get("force", "false").lower() in ("1", "true", "yes")
+    
+    if not force:
+        cached = get_cached_diag(f"dns_{target}")
+        if cached:
+            return jsonify(cached)
+
     host = target.split(":")[0]
     
     servers = [
@@ -120,17 +147,26 @@ def api_diagnose_dns():
             })
             
     is_consistent = len(ips_found) <= 1
-    return jsonify({
+    dns_res = {
         "target": host,
         "servers": results,
         "is_consistent": is_consistent,
         "unique_ips": list(ips_found),
         "summary": "各地 DNS 解析一致" if is_consistent else f"检测到 {len(ips_found)} 个不同的 A 记录 IP，可能存在 Anycast/CDN 调度"
-    })
+    }
+    set_cached_diag(f"dns_{target}", dns_res)
+    return jsonify(dns_res)
 
 @diagnostics_bp.route("/api/diagnose/tls")
 def api_diagnose_tls():
     target = request.args.get("target", "github.com").strip()
+    force = request.args.get("force", "false").lower() in ("1", "true", "yes")
+    
+    if not force:
+        cached = get_cached_diag(f"tls_{target}")
+        if cached:
+            return jsonify(cached)
+
     host = target.split(":")[0]
     
     try:
@@ -154,7 +190,7 @@ def api_diagnose_tls():
                 except Exception:
                     pass
                     
-                return jsonify({
+                tls_res = {
                     "target": host,
                     "status": "healthy" if days_left >= 15 else "warning",
                     "tcp_ms": t_tcp,
@@ -165,7 +201,9 @@ def api_diagnose_tls():
                     "expires_after": not_after_str,
                     "days_remaining": days_left,
                     "recommendation": f"TLS 证书运行健康 (剩余 {days_left} 天)" if days_left >= 15 else f"⚠️ 证书即将在 {days_left} 天后到期，请尽快续期！"
-                })
+                }
+                set_cached_diag(f"tls_{target}", tls_res)
+                return jsonify(tls_res)
     except Exception as e:
         return jsonify({
             "target": host,
