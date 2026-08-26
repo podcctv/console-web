@@ -264,26 +264,51 @@ def ensure_acme_sh() -> bool:
 import ipaddress
 
 def _detect_public_ip() -> str:
-    """Detect public IPv4 or IPv6 address from network module and external sources, filtering out WARP/private IPs."""
+    """Detect public IPv4 or IPv6 address from environment, network module, and external sources."""
+    # 1. Direct host environment variables injected by deploy script / Docker
+    for env_k in ("HOST_IPV4", "PUBLIC_IPV4"):
+        v = os.environ.get(env_k)
+        if v:
+            try:
+                from app.network import is_private_ip, is_warp_or_shared_egress_ip
+                if not is_private_ip(v) and not is_warp_or_shared_egress_ip(v):
+                    return v.strip().strip("[]")
+            except Exception:
+                pass
+
+    for env_k in ("HOST_IPV6", "PUBLIC_IPV6", "HOST_IP"):
+        v = os.environ.get(env_k)
+        if v:
+            try:
+                from app.network import is_private_ip, is_warp_or_shared_egress_ip
+                if not is_private_ip(v) and not is_warp_or_shared_egress_ip(v):
+                    return v.strip().strip("[]")
+            except Exception:
+                pass
+
+    # 2. Network module stack discovery
     try:
         from app.network import get_public_ip, is_private_ip, is_warp_or_shared_egress_ip
         ip = get_public_ip()
         if ip and ip not in ("未检测到", "127.0.0.1") and not is_private_ip(ip) and not is_warp_or_shared_egress_ip(ip):
-            return ip
+            return ip.strip().strip("[]")
     except Exception:
         pass
+
+    # 3. Direct external lookup
     for url in ["https://api6.ipify.org", "https://v6.ident.me", "https://6.icanhazip.com", "https://api.ipify.org"]:
         try:
             req = urllib.request.Request(url, headers={"User-Agent": "curl/7.68.0"})
-            with urllib.request.urlopen(req, timeout=4) as resp:
+            with urllib.request.urlopen(req, timeout=3) as resp:
                 ip = resp.read().decode().strip()
                 if ip:
                     from app.network import is_private_ip, is_warp_or_shared_egress_ip
                     if not is_private_ip(ip) and not is_warp_or_shared_egress_ip(ip):
-                        return ip
+                        return ip.strip().strip("[]")
         except Exception:
             continue
-    return socket.gethostname()
+
+    return None
 
 
 def issue_cert(target=None, email=None) -> tuple:
@@ -296,6 +321,9 @@ def issue_cert(target=None, email=None) -> tuple:
 
         if not target:
             target = _detect_public_ip()
+
+        if not target or target in ("未检测到", "None", "127.0.0.1"):
+            return False, "未能自动探测到公网 IP 或域名 (建议在控制台运行 'acme issue 您的域名' 进行申请)"
 
         target = str(target).strip().strip("[]")
 
@@ -311,6 +339,7 @@ def issue_cert(target=None, email=None) -> tuple:
 
         if not acme_cmd:
             return False, "未能安装或找到 acme.sh 工具，请检查系统环境"
+
 
         try:
             is_ip = False
@@ -505,6 +534,8 @@ if __name__ == "__main__":
     print("🔒 ACME 官方 SSL 证书检测与申请管理 (只申请官方证书)")
     print("==================================================")
 
+    target_arg = sys.argv[1] if len(sys.argv) > 1 and sys.argv[1].strip() else None
+
     if is_self_signed_cert():
         print("⚠️ 检测到本地残留的自签名证书，正在自动清理并重新发起 ACME 官方证书申请...")
         remove_cert_files()
@@ -512,7 +543,7 @@ if __name__ == "__main__":
     status = get_cert_status()
     if not status.get("has_cert") or status.get("days_left", 0) <= 7:
         print("🔍 未检测到有效官方 ACME 证书，正在自动触发 ACME / ZeroSSL 证书申请...")
-        ok, msg = issue_cert()
+        ok, msg = issue_cert(target=target_arg)
         print(f"👉 结果: {msg}")
         status = get_cert_status()
     else:
@@ -530,3 +561,4 @@ if __name__ == "__main__":
         sys.exit(0)
     else:
         sys.exit(1)
+

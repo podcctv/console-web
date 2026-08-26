@@ -148,7 +148,13 @@ def is_warp_or_shared_egress_ip(ip_str: str) -> bool:
     return False
 
 def get_public_ipv4() -> str:
-    """Query external endpoints strictly for public IPv4 address."""
+    """Query external endpoints strictly for public IPv4 address, checking HOST_IPV4 env first."""
+    import os
+    for env_k in ("HOST_IPV4", "PUBLIC_IPV4"):
+        v = os.environ.get(env_k)
+        if v and ":" not in v and not is_private_ip(v):
+            return v.strip().strip("[]")
+
     endpoints = [
         "https://api.ipify.org",
         "https://v4.ident.me",
@@ -166,7 +172,13 @@ def get_public_ipv4() -> str:
     return None
 
 def get_public_ipv6() -> str:
-    """Query external endpoints strictly for public IPv6 address."""
+    """Query external endpoints strictly for public IPv6 address, checking HOST_IPV6 env first."""
+    import os
+    for env_k in ("HOST_IPV6", "PUBLIC_IPV6", "HOST_IP"):
+        v = os.environ.get(env_k)
+        if v and ":" in v and not is_private_ip(v):
+            return v.strip().strip("[]")
+
     endpoints = [
         "https://api6.ipify.org",
         "https://v6.ident.me",

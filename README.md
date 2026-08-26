@@ -1,7 +1,7 @@
 # console-web (NetWatch 赛博朋克网络运维终端)
 
 ![Build & Publish Docker](https://github.com/podcctv/console-web/actions/workflows/docker-publish.yml/badge.svg)
-![Version](https://img.shields.io/badge/version-v3.12.0-78E08F?style=flat-square&logo=git)
+![Version](https://img.shields.io/badge/version-v3.13.0-78E08F?style=flat-square&logo=git)
 ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
 
 `console-web` 是一个基于 [Flask](https://flask.palletsprojects.com/) 和 [psutil](https://psutil.readthedocs.io/) 构建的极简赛博朋克风格系统监控面板与网络运维终端 (`NetWatch`)。界面采用暗黑终端与玻璃拟态设计，支持实时 TCP Ping 多目标延迟趋势、IPv4/IPv6 双栈链路对比、纯 IPv6 (纯v6小鸡) 原生支持与 HTTPS 直连、多端响应式适配、1-Click IP 复制、ACME SSL 证书自动续期及全链路故障诊断。
@@ -30,7 +30,8 @@ wget -qO- https://raw.githubusercontent.com/podcctv/console-web/main/deploy.sh |
 
 ## ✨ 核心功能
 
-- **🌐 纯 IPv6 VPS (纯v6小鸡) 极速部署与全场景环境自愈 (`Pure IPv6 Optimization v3.12 升级`)**：
+- **🌐 纯 IPv6 VPS (纯v6小鸡) 极速部署与全场景环境自愈 (`Pure IPv6 Optimization v3.13 升级`)**：
+  - 容器内与宿主机端口通信全面标准化为 `0.0.0.0:8080`，彻底解决 Docker Bridge 桥接转发时 `docker-proxy` 与 `[::]:8080` IPv6 套接字冲突导致的 `ERR_EMPTY_RESPONSE` / 连接无响应问题。
   - 一键部署脚本自动识别纯 IPv6 / IPv6+WARP / 纯v6+DNS64 架构，无 IPv4 出口时自动注入高可用 DNS64 加速通道，消除 GitHub / GHCR 镜像拉取阻断。
   - 智能过滤 Cloudflare WARP 伪公网出口 (`104.28.0.0/15`) 与私网 IP，ACME 官方 SSL 证书申请全面绑定真实公网 IPv6 / 域名，根除 WARP IP 误判导致的申请失败。
   - 彻底解耦 Gunicorn 服务启动与 ACME 证书申请阻塞时序，部署后 Web 端口即时就绪，支持手机 5G / 家用 IPv6 / 校园网直连秒开。
@@ -53,12 +54,19 @@ wget -qO- https://raw.githubusercontent.com/podcctv/console-web/main/deploy.sh |
 - **📋 统一一键 IP 复制 (`[ COPY ALL IDENTITIES ]`)**：
   - 网络身份区域提供单一顶部复制按钮，一键提取 Listen、Egress、Visitor 及 Local 接口的结构化文本至剪贴板。
 
+### 🟢 `v3.13.0` (2026-08-26) - Fix Container Socket Binding & ERR_EMPTY_RESPONSE on IPv6 Hosts
+- **🐛 Docker Bridge Socket Forwarding Fix**: 容器内部 Gunicorn 监听地址统一规范为 `0.0.0.0:8080`，彻底解决 `docker-proxy` 在 Linux 主机上将入站 IPv6/IPv4 连接转发给容器私有 IPv4 (`172.17.0.x`) 时因 IPv6-Only 套接字隔离导致的连接重置 (`ERR_EMPTY_RESPONSE`)。
+- **🔒 Strict Certificate Validation Gate**: `entrypoint.sh` 启动前通过 Python `_cert_is_valid()` 进行证书完整性与时效严格校验，未就绪或破损证书自动安全清理并回退到标准 HTTP 模式，杜绝 HTTPS/HTTP 协议错配。
+- **🌐 Host Inbound IP Environment Injection**: `deploy.sh` 在容器创建时注入宿主机探测到的 `HOST_IPV6` 与 `HOST_IPV4` 环境变量，ACME 模块直接锁定宿主机公网 IPv6/IPv4，避免容器在 NAT/WARP 网络下将容器主机名识别为申请域名的错误。
+- **⚡ Immediate Browser Accessibility**: 部署完成后无论是纯 IPv6、双栈还是纯 IPv4 环境，访问生成的 HTTP/HTTPS URL 均能即时秒开系统仪表盘。
+
 ### 🟢 `v3.12.0` (2026-08-26) - IPv6-Only VPS (纯v6小鸡) Deployment & Auto-Healing Overhaul
 - **⚡ DNS64 / NAT64 Auto-Acceleration**: 一键部署脚本为无 IPv4 出口的纯 IPv6 小鸡自动检测并配置高可用 DNS64 解析通道，消除 GHCR 镜像与 GitHub 源码拉取超时。
 - **🛡️ Cloudflare WARP IP / Egress Filtering**: 彻底识别并过滤 `104.28.0.0/15` 等 WARP / CDN 伪公网出口 IP，杜绝 ACME 证书管理器向 WARP IP 发起无效验证，精准选用原生公网 IPv6 地址。
-- **🚀 Decoupled Non-Blocking Startup**: 移除主进程启动时的同步阻塞 ACME 初始化调用，Gunicorn 立即在 `[::]:8080` 就绪并响应 HTTP 流量，彻底解决 80 端口验证假性超时问题。
+- **🚀 Decoupled Non-Blocking Startup**: 移除主进程启动时的同步阻塞 ACME 初始化调用，Gunicorn 立即就绪并响应 HTTP 流量，彻底解决 80 端口验证假性超时问题。
 - **🔍 Active Readiness Polling**: `deploy.sh` 采用动态就绪轮询替代固定休眠，验证 HTTP-01 路由连通性后平滑重启生效 HTTPS。
 - **📱 Clear Pure IPv6 Guidance & Output**: 针对纯 IPv6 服务器格式化输出标准 `http://[IPv6]:8180` 访问地址，并附赠手机 5G / 家用宽带 IPv6 直连提示与域名 AAAA 直签建议。
+
 
 ### 🟢 `v3.11.0` (2026-08-26) - Pure IPv6 VPS (纯v6小鸡) Full Support, Dual-Stack & Direct IPv6 / HTTPS Access
 - **🌐 Pure IPv6 (纯v6小鸡) & Dual-Stack Binding**: Gunicorn 与 Flask 内置服务器监听地址全面升级为 `[::]:8080`，原生支持 IPv6 / IPv4 双栈连接与纯 IPv6 VPS 直连访问（如 `https://[2001:db8::1]:8180`）。

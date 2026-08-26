@@ -86,60 +86,7 @@ deploy() {
     PORT_MAP="-p 80:8080 -p ${PORT}:8080"
   fi
 
-  echo ""
-  echo "📁 正在创建宿主机持久化目录 (/opt/console-web)..."
-  mkdir -p /opt/console-web/data /opt/console-web/logs /opt/console-web/certs 2>/dev/null || true
-
-  echo "🚀 正在启动容器 [$CONTAINER_NAME]..."
-  docker run -d \
-    --name "$CONTAINER_NAME" \
-    --restart=always \
-    $PORT_MAP \
-    -v /opt/console-web/data:/app/data \
-    -v /opt/console-web/logs:/app/logs \
-    -v /opt/console-web/certs:/app/certs \
-    --memory=128m --memory-swap=128m \
-    "$IMAGE_NAME"
-
-  echo "⏳ 等待容器 Web 服务初始化就绪..."
-  CONTAINER_READY=0
-  for i in $(seq 1 10); do
-    if curl -s --max-time 1 "http://127.0.0.1:${PORT}/" >/dev/null 2>&1 || \
-       curl -s --max-time 1 "http://127.0.0.1:8080/" >/dev/null 2>&1 || \
-       curl -s --max-time 1 "http://[::1]:${PORT}/" >/dev/null 2>&1 || \
-       docker exec "$CONTAINER_NAME" curl -s --max-time 1 "http://127.0.0.1:8080/" >/dev/null 2>&1; then
-      CONTAINER_READY=1
-      break
-    fi
-    sleep 1
-  done
-
-  # Port 80 reachability self-test
-  echo ""
-  echo "🔍 正在测试 80 端口 ACME 挑战可达性..."
-  docker exec "$CONTAINER_NAME" sh -c "mkdir -p /app/certs/.well-known/acme-challenge && echo 'acme_port80_ok' > /app/certs/.well-known/acme-challenge/port80_test" 2>/dev/null || true
-
-  TEST_RES=$(curl -s --max-time 3 "http://127.0.0.1:80/.well-known/acme-challenge/port80_test" 2>/dev/null || \
-             curl -s --max-time 3 "http://[::1]:80/.well-known/acme-challenge/port80_test" 2>/dev/null || echo "")
-  if [ "$TEST_RES" = "acme_port80_ok" ]; then
-    echo "✅ 80 端口 HTTP-01 路由连通性校验成功！ACME CA 即可进行外网验证。"
-  else
-    echo "⚠️ 80 端口本地校验未直通 (若 80 端口被云服务商安全组拦截，ACME 可能会提示验证失败)。"
-    echo "   💡 建议：请在云服务器控制台安全组入站规则中放行 80 端口。"
-  fi
-  docker exec "$CONTAINER_NAME" rm -f /app/certs/.well-known/acme-challenge/port80_test 2>/dev/null || true
-
-  echo ""
-  echo "🔒 正在执行 ACME SSL 官方证书检测与申请..."
-  HAS_SSL=0
-  if docker exec "$CONTAINER_NAME" python -m app.acme_manager; then
-    HAS_SSL=1
-    echo "🔄 正在重启容器以启用 HTTPS 安全加密服务..."
-    docker restart "$CONTAINER_NAME" >/dev/null 2>&1 || true
-    sleep 2
-  fi
-
-  # 1. Detect IPv6 Public Address
+  # 1. Detect IPv6 Public Address on Host
   PUB_IPV6=$(ip -6 route get 2001:4860:4860::8888 2>/dev/null | awk '{for(i=1;i<=NF;i++)if($i=="src")print $(i+1); exit}')
   if is_private_or_warp_ip "$PUB_IPV6"; then
     PUB_IPV6=$(curl -6 -s --max-time 3 https://api6.ipify.org 2>/dev/null || curl -6 -s --max-time 3 https://v6.ident.me 2>/dev/null || echo "")
@@ -148,7 +95,7 @@ deploy() {
     PUB_IPV6=""
   fi
 
-  # 2. Detect IPv4 Public Address
+  # 2. Detect IPv4 Public Address on Host
   RAW_V4=$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++)if($i=="src")print $(i+1); exit}')
   PUB_IPV4="$RAW_V4"
   if is_private_or_warp_ip "$PUB_IPV4"; then
@@ -190,6 +137,70 @@ deploy() {
     PRIMARY_HOST="127.0.0.1"
     ALT_HOST=""
   fi
+
+  echo ""
+  echo "📁 正在创建宿主机持久化目录 (/opt/console-web)..."
+  mkdir -p /opt/console-web/data /opt/console-web/logs /opt/console-web/certs 2>/dev/null || true
+
+  echo "🚀 正在启动容器 [$CONTAINER_NAME]..."
+  docker run -d \
+    --name "$CONTAINER_NAME" \
+    --restart=always \
+    $PORT_MAP \
+    -e HOST_IPV6="$PUB_IPV6" \
+    -e HOST_IPV4="$PUB_IPV4" \
+    -v /opt/console-web/data:/app/data \
+    -v /opt/console-web/logs:/app/logs \
+    -v /opt/console-web/certs:/app/certs \
+    --memory=128m --memory-swap=128m \
+    "$IMAGE_NAME"
+
+  echo "⏳ 等待容器 Web 服务初始化就绪..."
+  CONTAINER_READY=0
+  for i in $(seq 1 10); do
+    if curl -s --max-time 1 "http://127.0.0.1:${PORT}/" >/dev/null 2>&1 || \
+       curl -s --max-time 1 "http://127.0.0.1:8080/" >/dev/null 2>&1 || \
+       curl -s --max-time 1 "http://[::1]:${PORT}/" >/dev/null 2>&1 || \
+       docker exec "$CONTAINER_NAME" curl -s --max-time 1 "http://127.0.0.1:8080/" >/dev/null 2>&1; then
+      CONTAINER_READY=1
+      break
+    fi
+    sleep 1
+  done
+
+  # Port 80 reachability self-test
+  echo ""
+  echo "🔍 正在测试 80 端口 ACME 挑战可达性..."
+  docker exec "$CONTAINER_NAME" sh -c "mkdir -p /app/certs/.well-known/acme-challenge && echo 'acme_port80_ok' > /app/certs/.well-known/acme-challenge/port80_test" 2>/dev/null || true
+
+  TEST_RES=$(curl -s --max-time 3 "http://127.0.0.1:80/.well-known/acme-challenge/port80_test" 2>/dev/null || \
+             curl -s --max-time 3 "http://[::1]:80/.well-known/acme-challenge/port80_test" 2>/dev/null || echo "")
+  if [ "$TEST_RES" = "acme_port80_ok" ]; then
+    echo "✅ 80 端口 HTTP-01 路由连通性校验成功！ACME CA 即可进行外网验证。"
+  else
+    echo "⚠️ 80 端口本地校验未直通 (若 80 端口被云服务商安全组拦截，ACME 可能会提示验证失败)。"
+    echo "   💡 建议：请在云服务器控制台安全组入站规则中放行 80 端口。"
+  fi
+  docker exec "$CONTAINER_NAME" rm -f /app/certs/.well-known/acme-challenge/port80_test 2>/dev/null || true
+
+  echo ""
+  echo "🔒 正在执行 ACME SSL 官方证书检测与申请..."
+  HAS_SSL=0
+  ACME_TARGET="$PUB_IPV4"
+  if [ -z "$ACME_TARGET" ] || is_private_or_warp_ip "$ACME_TARGET"; then
+    ACME_TARGET="$PUB_IPV6"
+  fi
+  if [ -n "$ACME_TARGET" ]; then
+    if docker exec "$CONTAINER_NAME" python -m app.acme_manager "$ACME_TARGET"; then
+      HAS_SSL=1
+      echo "🔄 正在重启容器以启用 HTTPS 安全加密服务..."
+      docker restart "$CONTAINER_NAME" >/dev/null 2>&1 || true
+      sleep 2
+    fi
+  else
+    docker exec "$CONTAINER_NAME" python -m app.acme_manager 2>/dev/null || true
+  fi
+
 
   echo ""
   echo "=================================================="
