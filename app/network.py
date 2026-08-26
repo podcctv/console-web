@@ -113,6 +113,40 @@ def is_private_ip(ip_str: str) -> bool:
     except Exception:
         return True
 
+def is_warp_or_shared_egress_ip(ip_str: str) -> bool:
+    """Check if an IPv4 is a Cloudflare WARP or shared NAT64 egress IP that cannot receive inbound connections."""
+    if not ip_str:
+        return False
+    try:
+        clean_ip = ip_str.strip().strip("[]").split()[0].strip()
+        ip_obj = ipaddress.ip_address(clean_ip)
+        if ip_obj.version != 4:
+            return False
+        # Known Cloudflare WARP and shared CDN proxy egress IPv4 ranges
+        warp_networks = [
+            ipaddress.ip_network("104.28.0.0/15"),    # Cloudflare WARP egress
+            ipaddress.ip_network("104.16.0.0/12"),    # Cloudflare CDN
+            ipaddress.ip_network("162.158.0.0/15"),   # Cloudflare
+            ipaddress.ip_network("172.64.0.0/13"),    # Cloudflare
+            ipaddress.ip_network("198.41.128.0/17"),  # Cloudflare
+            ipaddress.ip_network("108.162.192.0/18"), # Cloudflare
+            ipaddress.ip_network("141.101.64.0/18"),  # Cloudflare
+            ipaddress.ip_network("190.93.240.0/20"),  # Cloudflare
+            ipaddress.ip_network("188.114.96.0/20"),  # Cloudflare
+            ipaddress.ip_network("197.234.240.0/22"), # Cloudflare
+            ipaddress.ip_network("173.245.48.0/20"),  # Cloudflare
+            ipaddress.ip_network("103.21.244.0/22"),  # Cloudflare
+            ipaddress.ip_network("103.22.200.0/22"),  # Cloudflare
+            ipaddress.ip_network("103.31.4.0/22"),    # Cloudflare
+            ipaddress.ip_network("131.0.72.0/22"),    # Cloudflare
+        ]
+        for net in warp_networks:
+            if ip_obj in net:
+                return True
+    except Exception:
+        pass
+    return False
+
 def get_public_ipv4() -> str:
     """Query external endpoints strictly for public IPv4 address."""
     endpoints = [
@@ -147,48 +181,99 @@ def get_public_ipv6() -> str:
                     return v6
         except Exception:
             continue
+
+    # Fallback to local default route for IPv6 (if external IPv6 endpoint times out)
+    try:
+        proc = subprocess.run(
+            ["ip", "-6", "route", "get", "2001:4860:4860::8888"],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=2
+        )
+        if proc.returncode == 0:
+            tokens = proc.stdout.split()
+            if "src" in tokens:
+                src_ip = tokens[tokens.index("src") + 1]
+                if ":" in src_ip and not is_private_ip(src_ip):
+                    return src_ip
+    except Exception:
+        pass
+
     return None
 
 def get_network_stack_info() -> dict:
-    """Detect public IPv4, public IPv6, and classify system network stack."""
+    """Detect public IPv4, public IPv6, recognize WARP egress, and classify network stack."""
     now = time.time()
     with _cache_lock:
         if _public_ip_cache["timestamp"] > 0 and (now - _public_ip_cache["timestamp"] < 300):
             v4 = _public_ip_cache.get("ipv4")
             v6 = _public_ip_cache.get("ipv6")
             ip = _public_ip_cache.get("ip")
-        else:
-            v4 = get_public_ipv4()
-            v6 = get_public_ipv6()
-            ip = v4 or v6 or "未检测到"
-            _public_ip_cache["ipv4"] = v4
-            _public_ip_cache["ipv6"] = v6
-            _public_ip_cache["ip"] = ip
-            _public_ip_cache["timestamp"] = now
+            warp = _public_ip_cache.get("is_warp", False)
+            stack_type = _public_ip_cache.get("stack_type")
+            stack_label = _public_ip_cache.get("stack_label")
+            return {
+                "ipv4": v4,
+                "ipv6": v6,
+                "primary_ip": ip,
+                "is_warp": warp,
+                "stack_type": stack_type,
+                "stack_label": stack_label
+            }
 
-    if v4 and v6:
+    v4 = get_public_ipv4()
+    v6 = get_public_ipv6()
+    is_warp = is_warp_or_shared_egress_ip(v4) if v4 else False
+
+    # Classification logic:
+    # 1. Dual Stack: Real public IPv4 (non-WARP) + Public IPv6
+    if v4 and not is_warp and v6:
         stack_type = "dual"
         stack_label = "IPv4/IPv6 双栈 (Dual-Stack)"
+        primary_ip = v4
+    # 2. IPv6-Only with WARP Outbound: Public IPv6 + Cloudflare WARP IPv4
+    elif v6 and is_warp:
+        stack_type = "ipv6_only_warp"
+        stack_label = "纯 IPv6 (IPv6-Only) + WARP 出口"
+        primary_ip = v6
+    # 3. Pure IPv6 (IPv6-Only): Public IPv6 + No IPv4
     elif v6 and not v4:
         stack_type = "ipv6_only"
         stack_label = "纯 IPv6 (IPv6-Only 纯v6)"
-    elif v4 and not v6:
+        primary_ip = v6
+    # 4. Pure IPv4 (IPv4-Only): Real public IPv4 + No IPv6
+    elif v4 and not is_warp and not v6:
         stack_type = "ipv4_only"
         stack_label = "纯 IPv4 (IPv4-Only)"
+        primary_ip = v4
+    # 5. WARP Only without IPv6
+    elif v4 and is_warp and not v6:
+        stack_type = "warp_only"
+        stack_label = "WARP 出口环境 (无公网入站 IP)"
+        primary_ip = v4
     else:
         stack_type = "local"
         stack_label = "内网 / 本地环境"
+        primary_ip = v4 or v6 or "未检测到"
+
+    with _cache_lock:
+        _public_ip_cache["ipv4"] = v4
+        _public_ip_cache["ipv6"] = v6
+        _public_ip_cache["ip"] = primary_ip
+        _public_ip_cache["is_warp"] = is_warp
+        _public_ip_cache["stack_type"] = stack_type
+        _public_ip_cache["stack_label"] = stack_label
+        _public_ip_cache["timestamp"] = now
 
     return {
         "ipv4": v4,
         "ipv6": v6,
-        "primary_ip": ip,
+        "primary_ip": primary_ip,
+        "is_warp": is_warp,
         "stack_type": stack_type,
         "stack_label": stack_label
     }
 
 def get_public_ip() -> str:
-    """Return primary public IP (IPv4 if available, otherwise IPv6)."""
+    """Return primary public inbound IP (IPv6 if IPv4 is WARP/absent, IPv4 if genuine dual-stack)."""
     stack = get_network_stack_info()
     return stack["primary_ip"]
 

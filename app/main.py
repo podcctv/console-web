@@ -13,7 +13,6 @@ def run_flask_fallback():
         app.run(host="0.0.0.0", port=8080, threaded=True)
 
 if __name__ == "__main__":
-    acme_manager._auto_init()
     cert_file = acme_manager.FULLCHAIN_FILE if acme_manager.FULLCHAIN_FILE.exists() else acme_manager.CERT_FILE
     key_file = acme_manager.KEY_FILE
 

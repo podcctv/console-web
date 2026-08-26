@@ -264,21 +264,23 @@ def ensure_acme_sh() -> bool:
 import ipaddress
 
 def _detect_public_ip() -> str:
-    """Detect public IPv4 or IPv6 address from network module and external sources."""
+    """Detect public IPv4 or IPv6 address from network module and external sources, filtering out WARP/private IPs."""
     try:
-        from app.network import get_public_ip
+        from app.network import get_public_ip, is_private_ip, is_warp_or_shared_egress_ip
         ip = get_public_ip()
-        if ip and ip not in ("未检测到", "127.0.0.1"):
+        if ip and ip not in ("未检测到", "127.0.0.1") and not is_private_ip(ip) and not is_warp_or_shared_egress_ip(ip):
             return ip
     except Exception:
         pass
-    for url in ["https://api64.ipify.org", "https://ifconfig.me", "https://icanhazip.com", "https://api6.ipify.org"]:
+    for url in ["https://api6.ipify.org", "https://v6.ident.me", "https://6.icanhazip.com", "https://api.ipify.org"]:
         try:
             req = urllib.request.Request(url, headers={"User-Agent": "curl/7.68.0"})
             with urllib.request.urlopen(req, timeout=4) as resp:
                 ip = resp.read().decode().strip()
                 if ip:
-                    return ip
+                    from app.network import is_private_ip, is_warp_or_shared_egress_ip
+                    if not is_private_ip(ip) and not is_warp_or_shared_egress_ip(ip):
+                        return ip
         except Exception:
             continue
     return socket.gethostname()
@@ -349,7 +351,7 @@ def issue_cert(target=None, email=None) -> tuple:
                         logger.info("ACME Let's Encrypt IP certificate issued successfully for %s", target)
                         return True, f"成功为 IP 地址 {target} 签发并安装 Let's Encrypt 官方 ACME SSL 证书！"
 
-                return False, f"IP 证书签发失败，请确认 80 端口可被外网访问 (详细: {proc.stdout[:140]})"
+                return False, f"IP 证书签发失败，请确认 80 端口可被外网访问 (若为纯 IPv6 VPS 亦可绑定域名 AAAA 记录后执行 'acme issue your-domain.com' 申请，详细: {proc.stdout[:140]})"
 
             # Case B: Target is a domain name -> Try ZeroSSL first, then Let's Encrypt fallback
             reg_proc = subprocess.run(

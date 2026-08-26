@@ -94,17 +94,27 @@ def run_full_diagnostics(target_input: str):
         with socket.create_connection(("1.1.1.1", 53), timeout=2):
             dur = int((time.time() - start_t) * 1000)
             ipv4_ok = True
-            stages.append({
-                "stage": 3, "name": "IPv4 连通性", "status": "healthy", "duration": dur,
-                "raw": f"公网 IPv4 出口正常 ({dur}ms)", "basis": "成功连通公网 DNS 节点 (1.1.1.1:53)",
-                "fix": "IPv4 链路畅通",
-            })
+            from app.network import get_public_ipv4, is_warp_or_shared_egress_ip
+            v4_addr = get_public_ipv4()
+            if v4_addr and is_warp_or_shared_egress_ip(v4_addr):
+                stages.append({
+                    "stage": 3, "name": "IPv4 连通性", "status": "healthy", "duration": dur,
+                    "raw": f"IPv4 WARP 出口正常 ({dur}ms)",
+                    "basis": f"检测到 Cloudflare WARP 出口代理 ({v4_addr})，出站流量正常",
+                    "fix": "WARP 出站正常工作，入站请使用公网 IPv6 地址",
+                })
+            else:
+                stages.append({
+                    "stage": 3, "name": "IPv4 连通性", "status": "healthy", "duration": dur,
+                    "raw": f"公网 IPv4 出口正常 ({dur}ms)", "basis": "成功连通公网 DNS 节点 (1.1.1.1:53)",
+                    "fix": "IPv4 链路畅通",
+                })
     except Exception as e:
         if ipv6_ok:
             stages.append({
                 "stage": 3, "name": "IPv4 连通性", "status": "healthy", "duration": 0,
                 "raw": "纯 IPv6 运行模式 (未配置公网 IPv4 / 单栈)", "basis": "当前节点为纯 IPv6 VPS (IPv6-Only)",
-                "fix": "如需访问纯 IPv4 目标，建议配置 NAT64 / DNS64 出口网关",
+                "fix": "如需访问纯 IPv4 目标，建议配置 NAT64 / DNS64 出口网关或安装 WARP",
             })
         else:
             stages.append({

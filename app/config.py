@@ -20,7 +20,7 @@ UPTIME_FILE = DATA_DIR / "uptime_history.json"
 TSDB_DATA_FILE = DATA_DIR / "tsdb_history.json"
 
 # Version & Repository
-__version__ = "3.11.0"
+__version__ = "3.12.0"
 GITHUB_REPO_URL = "https://github.com/podcctv/console-web"
 
 # Default ping targets for telemetry (supports IPv4, IPv6, and dual-stack hostnames)

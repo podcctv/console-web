@@ -227,7 +227,7 @@ def compute_summary_telemetry(client_ip: str = "127.0.0.1") -> dict:
             "serverListenSource": "bind [::]:8080 (Dual-Stack & IPv6)",
             "serverEgress": egress_ip,
             "serverEgressSource": "Cloudflare / IPify API",
-            "ipv4Egress": ipv4_egress or "N/A (IPv6-Only 纯v6)",
+            "ipv4Egress": f"{ipv4_egress} (WARP 出口代理)" if stack_type == "ipv6_only_warp" and ipv4_egress else (ipv4_egress or "N/A (IPv6-Only 纯v6)"),
             "ipv6Egress": ipv6_egress or "N/A (IPv4-Only)",
             "stackType": stack_type,
             "stackLabel": stack_label,

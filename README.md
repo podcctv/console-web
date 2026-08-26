@@ -1,7 +1,7 @@
 # console-web (NetWatch 赛博朋克网络运维终端)
 
 ![Build & Publish Docker](https://github.com/podcctv/console-web/actions/workflows/docker-publish.yml/badge.svg)
-![Version](https://img.shields.io/badge/version-v3.11.0-78E08F?style=flat-square&logo=git)
+![Version](https://img.shields.io/badge/version-v3.12.0-78E08F?style=flat-square&logo=git)
 ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
 
 `console-web` 是一个基于 [Flask](https://flask.palletsprojects.com/) 和 [psutil](https://psutil.readthedocs.io/) 构建的极简赛博朋克风格系统监控面板与网络运维终端 (`NetWatch`)。界面采用暗黑终端与玻璃拟态设计，支持实时 TCP Ping 多目标延迟趋势、IPv4/IPv6 双栈链路对比、纯 IPv6 (纯v6小鸡) 原生支持与 HTTPS 直连、多端响应式适配、1-Click IP 复制、ACME SSL 证书自动续期及全链路故障诊断。
@@ -30,10 +30,10 @@ wget -qO- https://raw.githubusercontent.com/podcctv/console-web/main/deploy.sh |
 
 ## ✨ 核心功能
 
-- **🌐 纯 IPv6 VPS (纯v6小鸡) 与双栈原生全功能支持 (`Pure IPv6 & Dual-Stack v3.11 升级`)**：
-  - 服务端端口统一绑定 `[::]:8080`，原生支持 IPv6 直接访问（如 `http://[2001:db8::1]:8180` 与 `https://[2001:db8::1]:8180`）与 IPv4 双栈监听。
-  - 智能嗅探出口公网 IPv4 与 IPv6 地址，顶部导航与 Hero 面板实时浮现协议栈徽标（`[🟣 PURE IPV6 (纯v6)]` / `[🟢 DUAL-STACK 双栈]` / `[🔵 IPV4-ONLY]`）。
-  - ACME SSL 证书自动申请与 HTTP-01 验证全面打通 IPv6 链路；全链路网络诊断与 DNS 解析原生支持 AAAA 记录与 IPv6 目标。
+- **🌐 纯 IPv6 VPS (纯v6小鸡) 极速部署与全场景环境自愈 (`Pure IPv6 Optimization v3.12 升级`)**：
+  - 一键部署脚本自动识别纯 IPv6 / IPv6+WARP / 纯v6+DNS64 架构，无 IPv4 出口时自动注入高可用 DNS64 加速通道，消除 GitHub / GHCR 镜像拉取阻断。
+  - 智能过滤 Cloudflare WARP 伪公网出口 (`104.28.0.0/15`) 与私网 IP，ACME 官方 SSL 证书申请全面绑定真实公网 IPv6 / 域名，根除 WARP IP 误判导致的申请失败。
+  - 彻底解耦 Gunicorn 服务启动与 ACME 证书申请阻塞时序，部署后 Web 端口即时就绪，支持手机 5G / 家用 IPv6 / 校园网直连秒开。
 - **⚡ 服务端异步遥测与内存极速计算引擎 (`Server-Side Pre-computation & Cache v3.10 升级`)**：
   - 核心网络 TCP Ping 采样、SLA 聚合度量、系统硬件状态全量移至后台独立守护进程 (`telemetry_engine`) 持续采样与预计算，接口毫秒级 (<1ms) 内存即时响应，彻底杜绝前端点击时的网络阻塞与卡顿。
 - **🏆 全球 VPS 选品榜单 & CN被墙小鸡榜 (`Leaderboard & CN-Blocked Special v3.10 升级`)**：
@@ -52,6 +52,13 @@ wget -qO- https://raw.githubusercontent.com/podcctv/console-web/main/deploy.sh |
   - 主界面内置版本号与 GitHub 项目链接；版本检测自动判断 SemVer 语义化逻辑，对接 GitHub Actions Docker 镜像构建状态同步锁，完成编译后解锁热更新。
 - **📋 统一一键 IP 复制 (`[ COPY ALL IDENTITIES ]`)**：
   - 网络身份区域提供单一顶部复制按钮，一键提取 Listen、Egress、Visitor 及 Local 接口的结构化文本至剪贴板。
+
+### 🟢 `v3.12.0` (2026-08-26) - IPv6-Only VPS (纯v6小鸡) Deployment & Auto-Healing Overhaul
+- **⚡ DNS64 / NAT64 Auto-Acceleration**: 一键部署脚本为无 IPv4 出口的纯 IPv6 小鸡自动检测并配置高可用 DNS64 解析通道，消除 GHCR 镜像与 GitHub 源码拉取超时。
+- **🛡️ Cloudflare WARP IP / Egress Filtering**: 彻底识别并过滤 `104.28.0.0/15` 等 WARP / CDN 伪公网出口 IP，杜绝 ACME 证书管理器向 WARP IP 发起无效验证，精准选用原生公网 IPv6 地址。
+- **🚀 Decoupled Non-Blocking Startup**: 移除主进程启动时的同步阻塞 ACME 初始化调用，Gunicorn 立即在 `[::]:8080` 就绪并响应 HTTP 流量，彻底解决 80 端口验证假性超时问题。
+- **🔍 Active Readiness Polling**: `deploy.sh` 采用动态就绪轮询替代固定休眠，验证 HTTP-01 路由连通性后平滑重启生效 HTTPS。
+- **📱 Clear Pure IPv6 Guidance & Output**: 针对纯 IPv6 服务器格式化输出标准 `http://[IPv6]:8180` 访问地址，并附赠手机 5G / 家用宽带 IPv6 直连提示与域名 AAAA 直签建议。
 
 ### 🟢 `v3.11.0` (2026-08-26) - Pure IPv6 VPS (纯v6小鸡) Full Support, Dual-Stack & Direct IPv6 / HTTPS Access
 - **🌐 Pure IPv6 (纯v6小鸡) & Dual-Stack Binding**: Gunicorn 与 Flask 内置服务器监听地址全面升级为 `[::]:8080`，原生支持 IPv6 / IPv4 双栈连接与纯 IPv6 VPS 直连访问（如 `https://[2001:db8::1]:8180`）。
