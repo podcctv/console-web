@@ -6,6 +6,7 @@ from flask import Blueprint, jsonify, request
 
 from app.diagnostics import run_full_diagnostics, get_latest_diag_cache, set_latest_diag_cache
 from app.telemetry_engine import get_cached_diag, set_cached_diag
+from app.network import parse_host_port
 
 diagnostics_bp = Blueprint("diagnostics", __name__)
 
@@ -44,26 +45,28 @@ def api_diagnose_dualstack():
         if cached:
             return jsonify(cached)
 
-    host = target.split(":")[0]
-
+    host, _ = parse_host_port(target, 80)
+    clean_host = host.strip().strip("[]")
     
     v4_info = {"status": "unreachable", "dns_ms": 0, "tcp_ms": 0, "ip": None}
     try:
         t0 = time.time()
-        v4_ip = socket.gethostbyname(host)
-        v4_info["dns_ms"] = int((time.time() - t0) * 1000)
-        v4_info["ip"] = v4_ip
-        t1 = time.time()
-        with socket.create_connection((v4_ip, 80), timeout=2):
-            v4_info["tcp_ms"] = int((time.time() - t1) * 1000)
-            v4_info["status"] = "healthy"
+        v4_res = socket.getaddrinfo(clean_host, 80, socket.AF_INET)
+        if v4_res:
+            v4_ip = v4_res[0][4][0]
+            v4_info["dns_ms"] = int((time.time() - t0) * 1000)
+            v4_info["ip"] = v4_ip
+            t1 = time.time()
+            with socket.create_connection((v4_ip, 80), timeout=2):
+                v4_info["tcp_ms"] = int((time.time() - t1) * 1000)
+                v4_info["status"] = "healthy"
     except Exception as e:
         v4_info["error"] = str(e)
         
     v6_info = {"status": "unreachable", "dns_ms": 0, "tcp_ms": 0, "ip": None}
     try:
         t0 = time.time()
-        v6_res = socket.getaddrinfo(host, 80, socket.AF_INET6)
+        v6_res = socket.getaddrinfo(clean_host, 80, socket.AF_INET6)
         if v6_res:
             v6_ip = v6_res[0][4][0]
             v6_info["dns_ms"] = int((time.time() - t0) * 1000)
@@ -86,12 +89,12 @@ def api_diagnose_dualstack():
     elif v4_info["status"] == "healthy":
         rec = "IPv4 functional; IPv6 unreachable or missing AAAA record."
     elif v6_info["status"] == "healthy":
-        rec = "IPv6 functional; IPv4 unreachable."
+        rec = "IPv6 functional; IPv4 unreachable (Node may be pure IPv6)."
     else:
         rec = "Both IPv4 and IPv6 unreachable. Check DNS resolution or host network."
         
     res_payload = {
-        "target": host,
+        "target": clean_host,
         "ipv4": v4_info,
         "ipv6": v6_info,
         "recommendation": rec,
@@ -110,14 +113,15 @@ def api_diagnose_dns():
         if cached:
             return jsonify(cached)
 
-    host = target.split(":")[0]
+    host, _ = parse_host_port(target, 80)
+    clean_host = host.strip().strip("[]")
     
     servers = [
         {"name": "Local DNS", "ip": "system"},
-        {"name": "AliDNS", "ip": "223.5.5.5"},
+        {"name": "AliDNS (v4/v6)", "ip": "223.5.5.5 / 2400:3200::1"},
         {"name": "DNSPod", "ip": "119.29.29.29"},
-        {"name": "Cloudflare", "ip": "1.1.1.1"},
-        {"name": "Google DNS", "ip": "8.8.8.8"},
+        {"name": "Cloudflare (v4/v6)", "ip": "1.1.1.1 / 2606:4700:4700::1111"},
+        {"name": "Google DNS (v4/v6)", "ip": "8.8.8.8 / 2001:4860:4860::8888"},
     ]
     
     results = []
@@ -126,7 +130,9 @@ def api_diagnose_dns():
     for s in servers:
         t0 = time.time()
         try:
-            res_ip = socket.gethostbyname(host)
+            addr_info = socket.getaddrinfo(clean_host, None)
+            res_ips = [item[4][0] for item in addr_info if item[4]]
+            res_ip = res_ips[0] if res_ips else clean_host
             dur = int((time.time() - t0) * 1000)
             ips_found.add(res_ip)
             results.append({
@@ -148,11 +154,11 @@ def api_diagnose_dns():
             
     is_consistent = len(ips_found) <= 1
     dns_res = {
-        "target": host,
+        "target": clean_host,
         "servers": results,
         "is_consistent": is_consistent,
         "unique_ips": list(ips_found),
-        "summary": "各地 DNS 解析一致" if is_consistent else f"检测到 {len(ips_found)} 个不同的 A 记录 IP，可能存在 Anycast/CDN 调度"
+        "summary": "各地 DNS 解析一致" if is_consistent else f"检测到 {len(ips_found)} 个不同的 IP (A/AAAA 记录)，可能存在 Anycast/CDN 调度"
     }
     set_cached_diag(f"dns_{target}", dns_res)
     return jsonify(dns_res)
@@ -167,15 +173,17 @@ def api_diagnose_tls():
         if cached:
             return jsonify(cached)
 
-    host = target.split(":")[0]
+    host, _ = parse_host_port(target, 443)
+    clean_host = host.strip().strip("[]")
     
     try:
         t0 = time.time()
         ctx = ssl.create_default_context()
-        with socket.create_connection((host, 443), timeout=3) as sock:
+        sni_host = clean_host if (not clean_host.replace(".", "").isdigit() and ":" not in clean_host) else None
+        with socket.create_connection((clean_host, 443), timeout=3) as sock:
             t_tcp = int((time.time() - t0) * 1000)
             t1 = time.time()
-            with ctx.wrap_socket(sock, server_hostname=host) as ssock:
+            with ctx.wrap_socket(sock, server_hostname=sni_host) as ssock:
                 t_tls = int((time.time() - t1) * 1000)
                 cert = ssock.getpeercert()
                 
@@ -191,7 +199,7 @@ def api_diagnose_tls():
                     pass
                     
                 tls_res = {
-                    "target": host,
+                    "target": clean_host,
                     "status": "healthy" if days_left >= 15 else "warning",
                     "tcp_ms": t_tcp,
                     "tls_ms": t_tls,
@@ -206,7 +214,7 @@ def api_diagnose_tls():
                 return jsonify(tls_res)
     except Exception as e:
         return jsonify({
-            "target": host,
+            "target": clean_host,
             "status": "critical",
             "error": str(e),
             "recommendation": f"TLS 握手失败: {e}"

@@ -20,16 +20,16 @@ UPTIME_FILE = DATA_DIR / "uptime_history.json"
 TSDB_DATA_FILE = DATA_DIR / "tsdb_history.json"
 
 # Version & Repository
-__version__ = "3.10.0"
+__version__ = "3.11.0"
 GITHUB_REPO_URL = "https://github.com/podcctv/console-web"
 
-# Default ping targets for telemetry
+# Default ping targets for telemetry (supports IPv4, IPv6, and dual-stack hostnames)
 PING_TARGETS = {
-    "ping_cloudflare": "1.1.1.1:53",
-    "ping_google": "8.8.8.8:53",
-    "ping_cu": "zj-cu-v4.ip.zstaticcdn.com:80",
-    "ping_cm": "zj-cm-v4.ip.zstaticcdn.com:80",
-    "ping_ct": "zj-ct-v4.ip.zstaticcdn.com:80",
+    "ping_cloudflare": "one.one.one.one:53",
+    "ping_google": "dns.google:53",
+    "ping_alidns": "dns.alidns.com:53",
+    "ping_ipv6_cf": "[2606:4700:4700::1111]:53",
+    "ping_ipv6_google": "[2001:4860:4860::8888]:53",
 }
 
 # Supported shell commands
@@ -40,9 +40,9 @@ COMMANDS = {
 
 # Default target policy list
 DEFAULT_TARGETS = [
-    {"id": "t1", "name": "Zhejiang Unicom CDN", "target": "zj-cu-v4.ip.zstaticcdn.com:80", "type": "tcp", "freq": 30, "threshold_warn": 160, "threshold_crit": 250, "enabled": True},
-    {"id": "t2", "name": "Zhejiang Mobile CDN", "target": "zj-cm-v4.ip.zstaticcdn.com:80", "type": "tcp", "freq": 30, "threshold_warn": 160, "threshold_crit": 250, "enabled": True},
-    {"id": "t3", "name": "Zhejiang Telecom CDN", "target": "zj-ct-v4.ip.zstaticcdn.com:80", "type": "tcp", "freq": 30, "threshold_warn": 160, "threshold_crit": 250, "enabled": True},
-    {"id": "t4", "name": "Cloudflare DNS", "target": "1.1.1.1:53", "type": "dns", "freq": 60, "threshold_warn": 100, "threshold_crit": 200, "enabled": True},
-    {"id": "t5", "name": "Google DNS", "target": "8.8.8.8:53", "type": "dns", "freq": 60, "threshold_warn": 100, "threshold_crit": 200, "enabled": True},
+    {"id": "t1", "name": "Cloudflare DNS (Dual-Stack)", "target": "one.one.one.one:53", "type": "dns", "freq": 30, "threshold_warn": 100, "threshold_crit": 200, "enabled": True},
+    {"id": "t2", "name": "Google DNS (Dual-Stack)", "target": "dns.google:53", "type": "dns", "freq": 30, "threshold_warn": 100, "threshold_crit": 200, "enabled": True},
+    {"id": "t3", "name": "AliDNS (Dual-Stack)", "target": "dns.alidns.com:53", "type": "dns", "freq": 30, "threshold_warn": 100, "threshold_crit": 200, "enabled": True},
+    {"id": "t4", "name": "Cloudflare IPv6 DNS", "target": "[2606:4700:4700::1111]:53", "type": "dns", "freq": 60, "threshold_warn": 150, "threshold_crit": 250, "enabled": True},
+    {"id": "t5", "name": "Google IPv6 DNS", "target": "[2001:4860:4860::8888]:53", "type": "dns", "freq": 60, "threshold_warn": 150, "threshold_crit": 250, "enabled": True},
 ]

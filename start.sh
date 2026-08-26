@@ -62,10 +62,10 @@ if [ "$USE_GUNICORN" -eq 1 ]; then
     echo "🔒 检测到 SSL 证书，Gunicorn 将以 HTTPS 模式启动..."
     SSL_ARGS="--certfile $ROOT_DIR/certs/cert.pem --keyfile $ROOT_DIR/certs/key.pem"
   fi
-  echo "🚀 使用 gunicorn 启动 (监听 0.0.0.0:8080)..."
-  exec "$PYTHON_BIN" -m gunicorn -b 0.0.0.0:8080 $SSL_ARGS main:app
+  echo "🚀 使用 gunicorn 启动 (监听 [::]:8080 IPv6/IPv4 双栈)..."
+  exec "$PYTHON_BIN" -m gunicorn -b [::]:8080 $SSL_ARGS main:app
 else
-  echo "🚀 使用内置服务器启动 (监听 0.0.0.0:8080)..."
+  echo "🚀 使用内置服务器启动 (监听 [::]:8080 IPv6/IPv4 双栈)..."
   exec "$PYTHON_BIN" main.py
 fi
 

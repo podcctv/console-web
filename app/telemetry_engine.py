@@ -15,11 +15,30 @@ import psutil
 from app.config import PING_TARGETS
 from app.tsdb import tsdb
 from app.network import (
-    tcp_ping, icmp_ping, get_public_ip, is_private_ip, get_auto_node_id
+    tcp_ping, icmp_ping, get_public_ip, get_public_ipv4, get_public_ipv6,
+    get_network_stack_info, is_private_ip, get_auto_node_id
 )
 from app.system_stats import get_system_stats_data, get_uptime_history_data
 
 logger = logging.getLogger(__name__)
+
+def _detect_local_interface():
+    """Detect the most relevant primary physical network interface and address."""
+    try:
+        addrs = psutil.net_if_addrs()
+        for iface_name, iface_addrs in addrs.items():
+            if iface_name.lower().startswith(("lo", "docker", "veth", "br-", "cni")):
+                continue
+            for addr in iface_addrs:
+                if addr.family == socket.AF_INET and not addr.address.startswith("127."):
+                    return f"{addr.address} / {addr.netmask or '24'}", f"{iface_name} interface"
+                if hasattr(socket, "AF_INET6") and addr.family == socket.AF_INET6:
+                    clean_v6 = addr.address.split("%")[0]
+                    if not clean_v6.startswith(("fe80", "::1", "fc", "fd")):
+                        return f"{clean_v6} / 64", f"{iface_name} interface"
+    except Exception:
+        pass
+    return "127.0.0.1 / 8", "local interface"
 
 # Global In-Memory Cache Store
 _CACHE_LOCK = threading.Lock()
@@ -126,9 +145,23 @@ def compute_pings_telemetry(target_filter: str = "all") -> dict:
     return results
 
 def compute_summary_telemetry(client_ip: str = "127.0.0.1") -> dict:
-    """Compute system summary metrics from TSDB."""
-    egress_ip = get_public_ip()
-    listen_ip = "72.18.80.151"
+    """Compute system summary metrics from TSDB and dynamic network stack."""
+    stack_info = get_network_stack_info()
+    egress_ip = stack_info.get("primary_ip") or "未检测到"
+    ipv4_egress = stack_info.get("ipv4")
+    ipv6_egress = stack_info.get("ipv6")
+    stack_type = stack_info.get("stack_type", "unknown")
+    stack_label = stack_info.get("stack_label", "未知网络环境")
+
+    local_iface_str, local_iface_name = _detect_local_interface()
+
+    # Formulate server listen string (use brackets for IPv6 if pure v6 or if primary is v6)
+    if ":" in egress_ip:
+        server_listen_display = f"[{egress_ip}]:8180"
+    elif not is_private_ip(egress_ip):
+        server_listen_display = f"{egress_ip}:8180"
+    else:
+        server_listen_display = "127.0.0.1:8180"
 
     history_samples = tsdb.query("global", limit=60)
     valid_samples = [s for s in history_samples if s.get("latency") is not None]
@@ -190,15 +223,18 @@ def compute_summary_telemetry(client_ip: str = "127.0.0.1") -> dict:
         "lastUpdateTimestamp": time.time(),
         "realtimeConnected": True,
         "ipInfo": {
-            "serverListen": f"{listen_ip}:8180",
-            "serverListenSource": "bind 0.0.0.0:8080",
-            "serverEgress": egress_ip if not is_private_ip(egress_ip) else "37.114.48.47",
-            "serverEgressSource": "ipify API",
+            "serverListen": server_listen_display,
+            "serverListenSource": "bind [::]:8080 (Dual-Stack & IPv6)",
+            "serverEgress": egress_ip,
+            "serverEgressSource": "Cloudflare / IPify API",
+            "ipv4Egress": ipv4_egress or "N/A (IPv6-Only 纯v6)",
+            "ipv6Egress": ipv6_egress or "N/A (IPv4-Only)",
+            "stackType": stack_type,
+            "stackLabel": stack_label,
             "visitorIp": client_ip or "127.0.0.1",
             "visitorIpSource": "request client header",
-            "localInterface": "37.114.48.47 / 24",
-            "localInterfaceSource": "eth0 interface",
-            "ipv6Egress": "2a0e:6a80:3:483::100"
+            "localInterface": local_iface_str,
+            "localInterfaceSource": local_iface_name,
         }
     }
 

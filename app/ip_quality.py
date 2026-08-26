@@ -309,13 +309,21 @@ def get_ip_quality(ip: str = None, force: bool = False) -> dict:
     Returns a dict with keys: basic, risk, media, timestamp
     """
     if not ip:
-        # Detect public IP
+        # Detect public IP (IPv4 or IPv6)
         try:
-            req = urllib.request.Request("https://ifconfig.me", headers={"User-Agent": "curl/7.68.0"})
-            with urllib.request.urlopen(req, timeout=3) as resp:
-                ip = resp.read().decode().strip()
+            from app.network import get_public_ip
+            ip = get_public_ip()
         except Exception:
-            ip = "unknown"
+            ip = None
+        if not ip or ip in ("unknown", "未检测到"):
+            try:
+                req = urllib.request.Request("https://api64.ipify.org", headers={"User-Agent": "curl/7.68.0"})
+                with urllib.request.urlopen(req, timeout=3) as resp:
+                    ip = resp.read().decode().strip()
+            except Exception:
+                ip = "unknown"
+
+    ip = str(ip).strip().strip("[]")
 
     if not force:
         cached = _get_cached(ip)

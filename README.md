@@ -1,10 +1,10 @@
 # console-web (NetWatch 赛博朋克网络运维终端)
 
 ![Build & Publish Docker](https://github.com/podcctv/console-web/actions/workflows/docker-publish.yml/badge.svg)
-![Version](https://img.shields.io/badge/version-v3.10.0-78E08F?style=flat-square&logo=git)
+![Version](https://img.shields.io/badge/version-v3.11.0-78E08F?style=flat-square&logo=git)
 ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
 
-`console-web` 是一个基于 [Flask](https://flask.palletsprojects.com/) 和 [psutil](https://psutil.readthedocs.io/) 构建的极简赛博朋克风格系统监控面板与网络运维终端 (`NetWatch`)。界面采用暗黑终端与玻璃拟态设计，支持实时 TCP Ping 多目标延迟趋势、IPv4/IPv6 双栈链路对比、多端响应式适配、1-Click IP 复制、ACME SSL 证书自动续期及全链路故障诊断。
+`console-web` 是一个基于 [Flask](https://flask.palletsprojects.com/) 和 [psutil](https://psutil.readthedocs.io/) 构建的极简赛博朋克风格系统监控面板与网络运维终端 (`NetWatch`)。界面采用暗黑终端与玻璃拟态设计，支持实时 TCP Ping 多目标延迟趋势、IPv4/IPv6 双栈链路对比、纯 IPv6 (纯v6小鸡) 原生支持与 HTTPS 直连、多端响应式适配、1-Click IP 复制、ACME SSL 证书自动续期及全链路故障诊断。
 
 <img width="1012" height="1054" alt="image" src="https://github.com/user-attachments/assets/5093b202-5b38-4929-ac9a-1db5062d863a" />
 
@@ -12,7 +12,7 @@
 
 ## 🚀 一键快速部署 (推荐)
 
-在 Linux 服务器（Ubuntu、Debian、CentOS、Alpine 等）上直接运行以下指令，即可一键自动安装 Docker 并完成镜像部署：
+在 Linux 服务器（Ubuntu、Debian、CentOS、Alpine 等，支持纯 IPv6 / 双栈 / 纯 IPv4）上直接运行以下指令，即可一键自动安装 Docker 并完成镜像部署：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/podcctv/console-web/main/deploy.sh | sh
@@ -24,12 +24,16 @@ curl -fsSL https://raw.githubusercontent.com/podcctv/console-web/main/deploy.sh 
 wget -qO- https://raw.githubusercontent.com/podcctv/console-web/main/deploy.sh | sh
 ```
 
-> 💡 **部署说明**：脚本会自动检查并安装 Docker（如未安装），从 GHCR (`ghcr.io/podcctv/console-web:latest`) 拉取预构建镜像并在 `8180` 端口运行容器，数据与证书默认自动持久化挂载至宿主机 `/opt/console-web` 目录。
+> 💡 **部署说明**：脚本会自动检查并安装 Docker（如未安装），从 GHCR (`ghcr.io/podcctv/console-web:latest`) 拉取预构建镜像并在 `8180` 端口运行容器，数据与证书默认自动持久化挂载至宿主机 `/opt/console-web` 目录。对于纯 IPv6 服务器自动格式化输出 `https://[IPv6]:8180` 访问链接。
 
 ---
 
 ## ✨ 核心功能
 
+- **🌐 纯 IPv6 VPS (纯v6小鸡) 与双栈原生全功能支持 (`Pure IPv6 & Dual-Stack v3.11 升级`)**：
+  - 服务端端口统一绑定 `[::]:8080`，原生支持 IPv6 直接访问（如 `http://[2001:db8::1]:8180` 与 `https://[2001:db8::1]:8180`）与 IPv4 双栈监听。
+  - 智能嗅探出口公网 IPv4 与 IPv6 地址，顶部导航与 Hero 面板实时浮现协议栈徽标（`[🟣 PURE IPV6 (纯v6)]` / `[🟢 DUAL-STACK 双栈]` / `[🔵 IPV4-ONLY]`）。
+  - ACME SSL 证书自动申请与 HTTP-01 验证全面打通 IPv6 链路；全链路网络诊断与 DNS 解析原生支持 AAAA 记录与 IPv6 目标。
 - **⚡ 服务端异步遥测与内存极速计算引擎 (`Server-Side Pre-computation & Cache v3.10 升级`)**：
   - 核心网络 TCP Ping 采样、SLA 聚合度量、系统硬件状态全量移至后台独立守护进程 (`telemetry_engine`) 持续采样与预计算，接口毫秒级 (<1ms) 内存即时响应，彻底杜绝前端点击时的网络阻塞与卡顿。
 - **🏆 全球 VPS 选品榜单 & CN被墙小鸡榜 (`Leaderboard & CN-Blocked Special v3.10 升级`)**：
@@ -49,7 +53,12 @@ wget -qO- https://raw.githubusercontent.com/podcctv/console-web/main/deploy.sh |
 - **📋 统一一键 IP 复制 (`[ COPY ALL IDENTITIES ]`)**：
   - 网络身份区域提供单一顶部复制按钮，一键提取 Listen、Egress、Visitor 及 Local 接口的结构化文本至剪贴板。
 
-### 🟢 `v3.10.0` (2026-08-24) - Server-Side Telemetry Pre-computation & CN-Blocked VPS Leaderboard
+### 🟢 `v3.11.0` (2026-08-26) - Pure IPv6 VPS (纯v6小鸡) Full Support, Dual-Stack & Direct IPv6 / HTTPS Access
+- **🌐 Pure IPv6 (纯v6小鸡) & Dual-Stack Binding**: Gunicorn 与 Flask 内置服务器监听地址全面升级为 `[::]:8080`，原生支持 IPv6 / IPv4 双栈连接与纯 IPv6 VPS 直连访问（如 `https://[2001:db8::1]:8180`）。
+- **🔒 IPv6 ACME SSL & HTTPS Access**: ACME SSL 证书管理器深度适配 IPv6，支持 IPv6-Only 节点及绑定 AAAA 记录域名的 Let's Encrypt HTTP-01 自动验证与 HTTPS 安全加密访问。
+- **📊 Dynamic Stack Sniffing & Visual Badge**: 新增网络协议栈嗅探引擎，自动识别 `IPv4/IPv6 双栈`、`纯 IPv6 (IPv6-Only)` 及 `纯 IPv4`，顶部状态栏与 Hero 身份抽屉动态展示专属高亮徽标。
+- **🛠️ IPv6 Telemetry & Diagnostics Refactor**: 修复 IPv6 地址 host/port 解析，`socket.getaddrinfo` 同时支持 A 与 AAAA 记录解析，全链路诊断对纯 IPv6 机器免误报，支持 1-Click 复制完整 IPv4/IPv6 网络身份。
+- **🚀 deploy.sh Script IPv6 Host IP Auto-Detection**: 一键部署脚本自动探测 IPv6 默认路由出口，部署完成后为纯 IPv6 机器生成标准中括号 URL (`https://[IPv6]:8180`)。
 - **⚡ Server-Side Pre-computation & In-Memory Telemetry Engine**: 全新引入后台多线程采样守护引擎 (`telemetry_engine`)，多目标 TCP Ping、系统统计指标与双栈诊断均在服务端后台持续计算并维护高速内存缓存，客户端请求接口响应时间缩短至 `<1ms`，彻底解决客户端点击时等待网络超时的卡顿问题。
 - **🚫 CN被墙小鸡榜与全球选品榜单 (`$ leaderboard`)**: 新增全球 VPS 选品与行情评估榜单，专设 **CN被墙小鸡榜 (特惠离岸/套CDN神机)**、**综合高性价比榜**、**CN2 GIA/9929 直连线路榜** 与 **AI/流媒体全解锁榜**，支持按机房区域、年付价格、内存、月流量快速筛选并支持一键优惠码复制。
 

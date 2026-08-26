@@ -95,16 +95,32 @@ deploy() {
     sleep 2
   fi
 
-  SERVER_IP=$(ip route get 1 2>/dev/null | awk '{print $7; exit}' || curl -s ifconfig.me || echo "your-server-ip")
+  # Detect Public IP (Supports IPv4, IPv6-only, and Dual-Stack)
+  SERVER_IP=$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{print $7; exit}' || \
+              ip -6 route get 2001:4860:4860::8888 2>/dev/null | awk '{print $7; exit}' || \
+              curl -s https://api.ipify.org || \
+              curl -s https://api64.ipify.org || \
+              curl -s https://ifconfig.me || \
+              echo "your-server-ip")
+
+  # Format URL Host with brackets for IPv6 according to RFC 3986
+  if echo "$SERVER_IP" | grep -q ":"; then
+    URL_HOST="[${SERVER_IP}]"
+    STACK_DESC="纯 IPv6 (IPv6-Only) / 双栈环境"
+  else
+    URL_HOST="${SERVER_IP}"
+    STACK_DESC="IPv4 / 双栈环境"
+  fi
+
   echo ""
   echo "=================================================="
-  echo "🎉 部署完成！Console-Web 已成功在后台运行。"
+  echo "🎉 部署完成！Console-Web 已成功在后台运行 (${STACK_DESC})。"
   if [ "$HAS_SSL" -eq 1 ]; then
     echo "🔒 ACME SSL 官方证书检测通过，已开启 HTTPS 安全加密访问。"
-    echo "👉 HTTPS 访问地址: https://${SERVER_IP}:${PORT} (或 https://${SERVER_IP})"
-    echo "👉 HTTP  备用地址: http://${SERVER_IP}:${PORT}"
+    echo "👉 HTTPS 访问地址: https://${URL_HOST}:${PORT} (或 https://${URL_HOST})"
+    echo "👉 HTTP  备用地址: http://${URL_HOST}:${PORT}"
   else
-    echo "👉 访问地址: http://${SERVER_IP}:${PORT}"
+    echo "👉 访问地址: http://${URL_HOST}:${PORT}"
     echo "💡 证书未签发成功提示：请确认 80 端口已在云服务器安全组中开放，然后在控制台终端运行 'acme issue' 即可重新申请！"
   fi
   echo "=================================================="

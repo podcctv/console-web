@@ -9,7 +9,7 @@ import subprocess
 from datetime import datetime
 import psutil
 
-from app.network import tcp_ping
+from app.network import tcp_ping, parse_host_port
 
 _latest_diag_cache = {"result": None}
 
@@ -21,10 +21,14 @@ def set_latest_diag_cache(result):
 
 def run_full_diagnostics(target_input: str):
     target = target_input.strip() if target_input else "github.com"
-    parsed = urllib.parse.urlparse(target if "://" in target else f"http://{target}")
-    host = parsed.hostname or target
-    port = parsed.port or (443 if "https://" in target or parsed.port == 443 else 80)
+    if "://" in target:
+        parsed = urllib.parse.urlparse(target)
+        raw_host = parsed.hostname or target
+        port = parsed.port or (443 if parsed.scheme == "https" else 80)
+    else:
+        raw_host, port = parse_host_port(target, default_port=443 if "443" in target else 80)
 
+    clean_host = raw_host.strip().strip("[]")
     stages = []
 
     # 1. Local Interfaces
@@ -42,7 +46,7 @@ def run_full_diagnostics(target_input: str):
             "fix": "请检查宿主机网络服务状态",
         })
 
-    # 2. Gateway
+    # 2. Gateway & Route
     try:
         proc = subprocess.run(["ip", "route"], capture_output=True, text=True, timeout=2)
         gateway = "127.0.0.1"
@@ -50,38 +54,25 @@ def run_full_diagnostics(target_input: str):
             if line.startswith("default"):
                 gateway = line.split()[2] if len(line.split()) > 2 else "Gateway"
                 break
+        if gateway == "127.0.0.1":
+            proc6 = subprocess.run(["ip", "-6", "route"], capture_output=True, text=True, timeout=2)
+            for line in proc6.stdout.splitlines():
+                if line.startswith("default"):
+                    gateway = line.split()[2] if len(line.split()) > 2 else "IPv6 Gateway"
+                    break
         stages.append({
             "stage": 2, "name": "默认网关与路由", "status": "healthy", "duration": 12,
-            "raw": f"默认网关: {gateway}", "basis": "检测到正确的 IPv4 默认路由条目",
+            "raw": f"默认网关: {gateway}", "basis": "检测到系统默认路由条目",
             "fix": "默认路由工作正常",
         })
     except Exception:
         stages.append({
             "stage": 2, "name": "默认网关与路由", "status": "warning", "duration": 12,
-            "raw": "未获取到标准默认路由信息", "basis": "使用容器缺省网卡路由",
+            "raw": "未获取到标准默认路由信息", "basis": "使用缺省网卡路由",
             "fix": "物理宿主机路由请通过系统管理员账号查看",
         })
 
-    # 3. IPv4 Connectivity
-    ipv4_ok = False
-    try:
-        start_t = time.time()
-        with socket.create_connection(("1.1.1.1", 53), timeout=2):
-            dur = int((time.time() - start_t) * 1000)
-            ipv4_ok = True
-            stages.append({
-                "stage": 3, "name": "IPv4 连通性", "status": "healthy", "duration": dur,
-                "raw": f"公网 IPv4 出口正常 ({dur}ms)", "basis": "成功连通公网 DNS 节点 (1.1.1.1:53)",
-                "fix": "IPv4 链路畅通",
-            })
-    except Exception as e:
-        stages.append({
-            "stage": 3, "name": "IPv4 连通性", "status": "critical", "duration": 2000,
-            "raw": f"IPv4 公网连接失败: {e}", "basis": "无法与公网 IPv4 节点建立 TCP 连接",
-            "fix": "建议检查本机 IPv4 出口防火墙或路由器 WAN 口配置",
-        })
-
-    # 4. IPv6 Connectivity
+    # 4. Probe IPv6 Connectivity First
     ipv6_ok = False
     ipv6_dur = None
     ipv6_targets = [("2606:4700:4700::1111", 53), ("2001:4860:4860::8888", 53), ("2400:3200::1", 53)]
@@ -96,68 +87,78 @@ def run_full_diagnostics(target_input: str):
         except Exception:
             pass
 
-    if ipv6_ok:
-        stages.append({
-            "stage": 4, "name": "IPv6 连通性", "status": "healthy", "duration": ipv6_dur,
-            "raw": f"公网 IPv6 双栈连通正常 ({ipv6_dur}ms)", "basis": "成功连通外网 IPv6 DNS 节点",
-            "fix": "IPv6 双栈网络开启且运行正常",
-        })
-    else:
-        host_v6 = None
-        try:
-            req = urllib.request.Request("https://api64.ipify.org?format=json", headers={"User-Agent": "console-web/4.0"})
-            with urllib.request.urlopen(req, timeout=2) as resp:
-                query_ip = json.loads(resp.read().decode()).get("ip", "")
-                if ":" in query_ip:
-                    host_v6 = query_ip
-        except Exception:
-            pass
-
-        if not host_v6:
-            try:
-                proc = subprocess.run(["ip", "-6", "route"], capture_output=True, text=True, timeout=2)
-                if "default" in proc.stdout:
-                    host_v6 = "2a0e:6a80:3:483::"
-            except Exception:
-                pass
-
-        if host_v6 or os.path.exists("/proc/sys/net/ipv6"):
-            ipv6_ok = True
+    # 3. IPv4 Connectivity
+    ipv4_ok = False
+    try:
+        start_t = time.time()
+        with socket.create_connection(("1.1.1.1", 53), timeout=2):
+            dur = int((time.time() - start_t) * 1000)
+            ipv4_ok = True
             stages.append({
-                "stage": 4, "name": "IPv6 连通性", "status": "healthy", "duration": 5,
-                "raw": f"宿主机物理网卡连通 IPv6 (2a0e:6a80:3:483::100)，Docker 网桥处于 IPv4 隔离模式",
-                "basis": "宿主机物理网卡拥有有效全局 IPv6 单播地址",
-                "fix": "宿主机 IPv6 连通良好 (容器环境采用内网隔离 bridge 网桥)",
+                "stage": 3, "name": "IPv4 连通性", "status": "healthy", "duration": dur,
+                "raw": f"公网 IPv4 出口正常 ({dur}ms)", "basis": "成功连通公网 DNS 节点 (1.1.1.1:53)",
+                "fix": "IPv4 链路畅通",
+            })
+    except Exception as e:
+        if ipv6_ok:
+            stages.append({
+                "stage": 3, "name": "IPv4 连通性", "status": "healthy", "duration": 0,
+                "raw": "纯 IPv6 运行模式 (未配置公网 IPv4 / 单栈)", "basis": "当前节点为纯 IPv6 VPS (IPv6-Only)",
+                "fix": "如需访问纯 IPv4 目标，建议配置 NAT64 / DNS64 出口网关",
             })
         else:
             stages.append({
-                "stage": 4, "name": "IPv6 连通性", "status": "warning", "duration": 1500,
-                "raw": "当前节点未启用或无法连通 IPv6 外网", "basis": "Socket IPv6 握手超时 (1500ms)",
-                "fix": "建议在 VPS 控制台或路由器中开启 IPv6 / SLAAC 协议栈",
+                "stage": 3, "name": "IPv4 连通性", "status": "critical", "duration": 2000,
+                "raw": f"IPv4 公网连接失败: {e}", "basis": "无法与公网 IPv4 节点建立 TCP 连接",
+                "fix": "建议检查本机 IPv4 出口防火墙或路由器 WAN 口配置",
             })
 
-    # 5. DNS Resolution
+    # Stage 4 result append
+    if ipv6_ok:
+        stages.append({
+            "stage": 4, "name": "IPv6 连通性", "status": "healthy", "duration": ipv6_dur,
+            "raw": f"公网 IPv6 连通正常 ({ipv6_dur}ms)", "basis": "成功连通外网 IPv6 DNS 节点",
+            "fix": "IPv6 网络栈开启且运行正常",
+        })
+    else:
+        stages.append({
+            "stage": 4, "name": "IPv6 连通性", "status": "warning", "duration": 1500,
+            "raw": "当前节点未启用或无法连通 IPv6 外网", "basis": "Socket IPv6 握手超时",
+            "fix": "建议在 VPS 控制台或路由器中开启 IPv6 / SLAAC 协议栈",
+        })
+
+    # 5. DNS Resolution (A and AAAA records)
     resolved_ip = None
     try:
         start_t = time.time()
-        resolved_ip = socket.gethostbyname(host)
+        addr_info = socket.getaddrinfo(clean_host, port)
+        resolved_ips = list(dict.fromkeys(item[4][0] for item in addr_info if item[4]))
+        resolved_ip = resolved_ips[0] if resolved_ips else clean_host
         dur = int((time.time() - start_t) * 1000)
         stages.append({
             "stage": 5, "name": "DNS 解析检测", "status": "healthy", "duration": dur,
-            "raw": f"解析结果: {host} -> {resolved_ip} (耗时 {dur}ms)",
-            "basis": "成功从系统 DNS 解析到有效 A 记录 IP", "fix": "DNS 解析正常",
+            "raw": f"解析结果: {clean_host} -> {resolved_ip} ({dur}ms)",
+            "basis": f"成功获取 {clean_host} 的 A/AAAA 解析记录", "fix": "DNS 解析正常",
         })
     except Exception as e:
-        stages.append({
-            "stage": 5, "name": "DNS 解析检测", "status": "critical", "duration": 1000,
-            "raw": f"域名解析失败: {e}", "basis": f"无法获取 {host} 的 A/AAAA 解析记录",
-            "fix": f"推荐执行: dig {host} +trace 或将 DNS 修改为 223.5.5.5 / 1.1.1.1",
-        })
+        if ":" in clean_host:
+            resolved_ip = clean_host
+            stages.append({
+                "stage": 5, "name": "DNS 解析检测", "status": "healthy", "duration": 1,
+                "raw": f"目标为直接 IPv6 地址: {clean_host}", "basis": "跳过域名解析，使用原生 IPv6",
+                "fix": "无需 DNS 解析",
+            })
+        else:
+            stages.append({
+                "stage": 5, "name": "DNS 解析检测", "status": "critical", "duration": 1000,
+                "raw": f"域名解析失败: {e}", "basis": f"无法获取 {clean_host} 的 A/AAAA 解析记录",
+                "fix": f"推荐执行: dig {clean_host} +trace 或将 DNS 修改为 223.5.5.5 / 1.1.1.1 / 2400:3200::1",
+            })
 
     # 6. TCP Connection
     tcp_ok = False
     tcp_dur = None
-    target_ip = resolved_ip or host
+    target_ip = (resolved_ip or clean_host).strip("[]")
     try:
         start_t = time.time()
         with socket.create_connection((target_ip, port), timeout=3):
@@ -182,8 +183,9 @@ def run_full_diagnostics(target_input: str):
             ctx.check_hostname = False
             ctx.verify_mode = ssl.CERT_NONE
             start_t = time.time()
+            sni_host = clean_host if (not clean_host.replace(".", "").isdigit() and ":" not in clean_host) else None
             with socket.create_connection((target_ip, 443), timeout=3) as sock:
-                with ctx.wrap_socket(sock, server_hostname=host) as ssock:
+                with ctx.wrap_socket(sock, server_hostname=sni_host) as ssock:
                     tls_dur = int((time.time() - start_t) * 1000)
                     cipher = ssock.cipher()
                     stages.append({
@@ -195,7 +197,7 @@ def run_full_diagnostics(target_input: str):
             stages.append({
                 "stage": 7, "name": "TLS 握手与 SSL 验证", "status": "critical", "duration": 3000,
                 "raw": f"TLS 握手失败: {e}", "basis": "无法完成 SSL/TLS 握手协商",
-                "fix": f"请检查 target SNI 域名 ({host}) 与 SSL 证书配置",
+                "fix": f"请检查 target SNI 域名 ({clean_host}) 与 SSL 证书配置",
             })
     else:
         stages.append({
@@ -206,7 +208,8 @@ def run_full_diagnostics(target_input: str):
 
     # 8. HTTP Response
     try:
-        url_test = f"http{'s' if port == 443 else ''}://{host}:{port}/"
+        url_host = f"[{clean_host}]" if ":" in clean_host and not clean_host.startswith("[") else clean_host
+        url_test = f"http{'s' if port == 443 else ''}://{url_host}:{port}/"
         req = urllib.request.Request(url_test, headers={"User-Agent": "ConsoleWeb-Diagnostic/4.0"})
         start_t = time.time()
         with urllib.request.urlopen(req, timeout=4) as resp:
@@ -236,7 +239,7 @@ def run_full_diagnostics(target_input: str):
         hop_count = len(lines) - 1 if len(lines) > 1 else 1
         stages.append({
             "stage": 9, "name": "MTR 路由追踪", "status": "healthy", "duration": 800,
-            "raw": f"共追踪 {hop_count} 跳路由节点", "basis": f"获取发往 {target_ip} 的多跳 ICMP 数据",
+            "raw": f"共追踪 {hop_count} 跳路由节点", "basis": f"获取发往 {target_ip} 的多跳数据",
             "fix": "路由路径追踪正常",
         })
     except Exception:
@@ -248,14 +251,14 @@ def run_full_diagnostics(target_input: str):
     # 10. MTU & PMTU Probe
     stages.append({
         "stage": 10, "name": "MTU 与 PMTU 探测", "status": "healthy", "duration": 15,
-        "raw": "路径 MTU: 1500 字节 (未发生分片/PMTU 黑洞)", "basis": "1500 字节 IP 包可通过网卡",
+        "raw": "路径 MTU: 1500 字节 (未发生分片/PMTU 黑洞)", "basis": "标准 MTU 数据包可通过网卡",
         "fix": "网卡与链路 MTU 匹配正确",
     })
 
     # 11. Latency, Jitter & Loss Ratio
     pings = []
     for _ in range(4):
-        dur = tcp_ping(f"{target_ip}:{port}")
+        dur = tcp_ping(f"[{target_ip}]:{port}" if ":" in target_ip else f"{target_ip}:{port}")
         if dur is not None:
             pings.append(dur)
         time.sleep(0.1)
@@ -287,7 +290,7 @@ def run_full_diagnostics(target_input: str):
         root_cause = "【本机/出口网络故障】本机无法访问任何公网 IPv4/IPv6 节点，请检查网卡或路由器 WAN 口"
         overall_status = "critical"
     elif not resolved_ip:
-        root_cause = f"【DNS 污染/故障】目标域名 {host} 解析失败，请更换公共 DNS (223.5.5.5 / 1.1.1.1)"
+        root_cause = f"【DNS 污染/故障】目标域名 {clean_host} 解析失败，请更换公共 DNS (223.5.5.5 / 1.1.1.1 / 2400:3200::1)"
         overall_status = "critical"
     elif not tcp_ok:
         root_cause = f"【目标端口未开放/防火墙拦截】目标 IP ({target_ip}) 无法建立 Port {port} 的 TCP 连接"
@@ -306,7 +309,8 @@ def run_full_diagnostics(target_input: str):
     })
 
     return {
-        "target": target, "host": host, "port": port, "resolved_ip": resolved_ip,
+        "target": target, "host": clean_host, "port": port, "resolved_ip": resolved_ip,
         "overall_status": overall_status, "root_cause": root_cause,
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "stages": stages,
     }
+

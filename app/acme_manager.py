@@ -261,9 +261,18 @@ def ensure_acme_sh() -> bool:
     return get_acme_cmd() is not None
 
 
+import ipaddress
+
 def _detect_public_ip() -> str:
-    """Detect public IP from multiple sources."""
-    for url in ["https://ifconfig.me", "https://api64.ipify.org", "https://icanhazip.com"]:
+    """Detect public IPv4 or IPv6 address from network module and external sources."""
+    try:
+        from app.network import get_public_ip
+        ip = get_public_ip()
+        if ip and ip not in ("未检测到", "127.0.0.1"):
+            return ip
+    except Exception:
+        pass
+    for url in ["https://api64.ipify.org", "https://ifconfig.me", "https://icanhazip.com", "https://api6.ipify.org"]:
         try:
             req = urllib.request.Request(url, headers={"User-Agent": "curl/7.68.0"})
             with urllib.request.urlopen(req, timeout=4) as resp:
@@ -286,8 +295,10 @@ def issue_cert(target=None, email=None) -> tuple:
         if not target:
             target = _detect_public_ip()
 
+        target = str(target).strip().strip("[]")
+
         # Fix: Ensure email domain part is NOT a raw IP address (e.g. admin@37.114.48.47), which ZeroSSL API rejects
-        if not email or "@" not in email or email.split("@")[-1].replace(".", "").isdigit():
+        if not email or "@" not in email or email.split("@")[-1].replace(".", "").replace(":", "").isdigit():
             email = "admin@console-web.org"
         logger.info("ACME issue starting for target=%s, email=%s", target, email)
 
@@ -300,9 +311,14 @@ def issue_cert(target=None, email=None) -> tuple:
             return False, "未能安装或找到 acme.sh 工具，请检查系统环境"
 
         try:
-            is_ip = target.replace(".", "").isdigit() or ":" in target
+            is_ip = False
+            try:
+                ipaddress.ip_address(target)
+                is_ip = True
+            except Exception:
+                is_ip = False
 
-            # Case A: Target is an IP address -> Use Let's Encrypt with shortlived certificate profile
+            # Case A: Target is an IP address (IPv4 or IPv6) -> Use Let's Encrypt with shortlived certificate profile
             if is_ip:
                 logger.info("Target %s is an IP address, registering Let's Encrypt account and using shortlived profile...", target)
                 subprocess.run(
